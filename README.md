@@ -240,7 +240,6 @@ You can install the frontend repo into your Volto project using mrs-developer.
 Example mrs.developer.json extended:
 
 ```json
-
   "volto-interaktiv-kyra": {
     "output": "packages",
     "package": "volto-interaktiv-kyra",
@@ -249,7 +248,6 @@ Example mrs.developer.json extended:
     "path": "src",
     "develop": true
   }
-}
 ```
 
 Then:
