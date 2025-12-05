@@ -1,0 +1,13 @@
+// Prompts
+export const GET_PROMPTS = 'GET_PROMPTS';
+export const CREATE_PROMPT = 'CREATE_PROMPT';
+export const UPDATE_PROMPT = 'UPDATE_PROMPT';
+export const DELETE_PROMPT = 'DELETE_PROMPT';
+
+// Prompt Files
+export const UPLOAD_PROMPT_FILES = 'UPLOAD_PROMPT_FILES';
+export const DELETE_PROMPT_FILE = 'DELETE_PROMPT_FILE';
+
+// Settings
+export const GET_KYRA_SETTINGS = 'GET_KYRA_SETTINGS';
+export const UPDATE_KYRA_SETTINGS = 'UPDATE_KYRA_SETTINGS';
