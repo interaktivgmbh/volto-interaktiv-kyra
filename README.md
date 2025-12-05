@@ -27,10 +27,10 @@ Repositories
   ![Kyra AI Settings](src/theme/assets/showcase/showcase-1.gif)
 
 - Prompt Manager UI
-  ![Kyra Prompt Manager - overview](src/theme/assets/showcase/showcase-3.gif)
+  ![Kyra Prompt Manager - overview](src/theme/assets/showcase/showcase-2.gif)
 
 - Slate editor toolbar with two AI buttons
-  ![Slate toolbar Kyra buttons](src/theme/assets/showcase/showcase-2.gif)
+  ![Slate toolbar Kyra buttons](src/theme/assets/showcase/showcase-3.gif)
 
 ---
 
