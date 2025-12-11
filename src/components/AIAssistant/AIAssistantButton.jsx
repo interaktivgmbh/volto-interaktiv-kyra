@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useIntl } from 'react-intl';
 
 import { selectPromptsGrouped } from '../../helpers/selectPromptsGrouped';
 import { getPrompts } from '../../redux/actions';
 
 const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
   const dispatch = useDispatch();
+  const intl = useIntl();
+  const locale = (intl.locale || 'en').toLowerCase();
+  const isDe = locale.startsWith('de');
+  const t = (en, de) => (isDe && de ? de : en);
 
   const grouped = useSelector(selectPromptsGrouped) || {};
   const categories = Object.keys(grouped);
 
-  const loading = useSelector((state) => state.kyra?.loading);
-  const loaded = useSelector((state) => state.kyra?.loaded);
-  const itemsLength = useSelector(
-    (state) => (state.kyra?.items || []).length,
-  );
+  const { loading, loaded, itemsLength } = useSelector(({ kyra }) => ({
+    loading: kyra?.loading,
+    loaded: kyra?.loaded,
+    itemsLength: (kyra?.items || []).length,
+  }));
 
   useEffect(() => {
     if (!loading && !loaded && itemsLength === 0) {
@@ -49,7 +54,7 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
           color: '#666',
         }}
       >
-        Prompts werden geladen …
+        {t('Prompts are loading…', 'Prompts werden geladen …')}
       </div>
     );
   }
@@ -63,7 +68,7 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
           color: '#666',
         }}
       >
-        Keine Prompts verfügbar.
+        {t('No prompts available.', 'Keine Prompts verfügbar.')}
       </div>
     );
   }
@@ -150,15 +155,15 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
 
         {prompts.length === 0 && (
           <div
-            style={{
-              padding: '6px 10px',
-              fontSize: '0.8rem',
-              color: '#777',
-            }}
-          >
-            Keine Prompts in dieser Kategorie.
-          </div>
-        )}
+          style={{
+            padding: '6px 10px',
+            fontSize: '0.8rem',
+            color: '#777',
+          }}
+        >
+          {t('No prompts in this category.', 'Keine Prompts in dieser Kategorie.')}
+        </div>
+      )}
       </div>
     </div>
   );

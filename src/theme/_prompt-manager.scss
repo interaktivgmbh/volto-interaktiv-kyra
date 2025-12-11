@@ -1,0 +1,142 @@
+.prompt-manager {
+  &__intro {
+    margin-top: 1rem;
+  }
+
+  &__progress {
+    margin-bottom: 1.5rem;
+  }
+
+  &__toggle-button {
+    margin-bottom: 2rem;
+  }
+
+  &__existing-header {
+    margin-top: 2rem;
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  &__dropzone-wrapper {
+    margin-bottom: 1rem;
+  }
+
+  &__dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 0.75rem;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #b3b3b3;
+    }
+  }
+
+  &__dropzone--active {
+    background: #f0f8ff;
+    border-color: #2185d0;
+  }
+
+  &__dropzone-text {
+    margin: 0;
+  }
+
+  &__file-input {
+    display: none;
+  }
+
+  &__file-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  &__file-card {
+    width: 80px;
+    font-size: 10px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  &__file-thumb {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+
+  &__file-icon {
+    width: 100%;
+    height: 60px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  &__thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+}
+
+.prompt-file-preview {
+  &__image {
+    max-width: 200px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+
+  &__frame {
+    width: 100%;
+    height: 300px;
+    margin-top: 10px;
+  }
+
+  &__text {
+    background: #f5f5f5;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+  }
+}
+
+.ui.modal.kyra-centered-modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: 80% !important;
+  max-width: 1100px !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+}
+
+.ui.modal.kyra-centered-modal > .content.scrolling {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 120px) !important;
+}
+
+@media (max-width: 768px) {
+  .ui.modal.kyra-centered-modal {
+    width: 95% !important;
+  }
+}

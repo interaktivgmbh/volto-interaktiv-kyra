@@ -1,19 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useReducer } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  Header,
-  Container,
-  Loader,
-  Message,
-  Button,
-  Icon,
-  Table,
-  Form,
-  Modal,
-  Divider,
-  Progress,
-} from 'semantic-ui-react';
-
+import { Header, Container, Button, Icon, Progress } from 'semantic-ui-react';
 import { Api } from '@plone/volto/helpers';
 import { useIntl } from 'react-intl';
 
@@ -26,43 +13,117 @@ import {
   deletePromptFile,
 } from '../../redux/actions';
 
-import PromptFilePreview from './PromptFilePreview';
+import CreatePromptModal from './CreatePromptModal';
+import EditPromptModal from './EditPromptModal';
+import PromptList from './PromptList';
+import { splitCategories } from './utils';
 
 const api = new Api();
 
-const modalStyleFix = (
-  <style>{`
-    .ui.modal.kyra-centered-modal {
-      position: fixed !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) !important;
-      margin: 0 !important;
-      width: 80% !important;
-      max-width: 1100px !important;
-      max-height: 90vh !important;
-      overflow: hidden !important;
-      border-radius: 12px !important;
-    }
-    .ui.modal.kyra-centered-modal > .content.scrolling {
-      overflow-y: auto !important;
-      max-height: calc(90vh - 120px) !important;
-    }
-    @media (max-width: 768px) {
-      .ui.modal.kyra-centered-modal {
-        width: 95% !important;
-      }
-    }
-  `}</style>
-);
+const initialState = {
+  uploadProgress: 0,
+  uploading: false,
+  showCreateModal: false,
+  showEditModal: false,
+  createForm: {
+    name: '',
+    description: '',
+    text: '',
+    categories: '',
+    actionType: 'replace',
+  },
+  editForm: {
+    id: '',
+    name: '',
+    description: '',
+    text: '',
+    categories: '',
+    actionType: 'replace',
+  },
+  uploadedFiles: [],
+  editAttachedFiles: [],
+  editNewFiles: [],
+  selectedPreviewFile: null,
+};
 
-const formatSizeMB = (sizeBytes) => {
-  if (!sizeBytes) return '0.00 MB';
-  return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_MODAL':
+      return { ...state, [action.modal]: action.value };
+    case 'SET_CREATE_FIELD':
+      return {
+        ...state,
+        createForm: { ...state.createForm, [action.field]: action.value },
+      };
+    case 'RESET_CREATE_FORM':
+      return {
+        ...state,
+        createForm: initialState.createForm,
+        uploadedFiles: [],
+      };
+    case 'SET_EDIT_FIELD':
+      return {
+        ...state,
+        editForm: { ...state.editForm, [action.field]: action.value },
+      };
+    case 'SET_EDIT_FORM':
+      return { ...state, editForm: { ...initialState.editForm, ...action.form } };
+    case 'APPEND_UPLOADED_FILES':
+      return {
+        ...state,
+        uploadedFiles: [...state.uploadedFiles, ...action.files],
+      };
+    case 'CLEAR_UPLOADED_FILES':
+      return { ...state, uploadedFiles: [] };
+    case 'SET_EDIT_ATTACHED_FILES':
+      return { ...state, editAttachedFiles: action.files };
+    case 'APPEND_EDIT_NEW_FILES':
+      return {
+        ...state,
+        editNewFiles: [...state.editNewFiles, ...action.files],
+      };
+    case 'SET_EDIT_NEW_FILES':
+      return { ...state, editNewFiles: action.files };
+    case 'SET_SELECTED_PREVIEW_FILE':
+      return { ...state, selectedPreviewFile: action.file };
+    case 'UPLOAD_START':
+      return { ...state, uploading: true, uploadProgress: 10 };
+    case 'UPLOAD_INCREMENT':
+      return {
+        ...state,
+        uploadProgress:
+          state.uploadProgress < 90
+            ? state.uploadProgress + 10
+            : state.uploadProgress,
+      };
+    case 'UPLOAD_COMPLETE':
+      return { ...state, uploadProgress: 100 };
+    case 'UPLOAD_RESET':
+      return { ...state, uploading: false, uploadProgress: 0 };
+    default:
+      return state;
+  }
+};
+
+const makeFileItems = (files) =>
+  (files || []).map((file) => ({
+    file,
+    previewUrl:
+      file.type && file.type.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : null,
+  }));
+
+const clearFileItems = (items) => {
+  (items || []).forEach((item) => {
+    if (item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
+  });
 };
 
 const PromptManager = () => {
-  const dispatch = useDispatch();
+  const reduxDispatch = useDispatch();
   const intl = useIntl();
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
@@ -72,158 +133,92 @@ const PromptManager = () => {
   const loading = useSelector((state) => state.kyra?.loading);
   const error = useSelector((state) => state.kyra?.error);
 
+  const [
+    {
+      uploadProgress,
+      uploading,
+      showCreateModal,
+      showEditModal,
+      createForm,
+      editForm,
+      uploadedFiles,
+      editAttachedFiles,
+      editNewFiles,
+      selectedPreviewFile,
+    },
+    localDispatch,
+  ] = useReducer(reducer, initialState);
+
   useEffect(() => {
-    dispatch(getPrompts());
-  }, [dispatch]);
+    reduxDispatch(getPrompts());
+  }, [reduxDispatch]);
 
-  const makeFileItems = (fileList) =>
-    Array.from(fileList || []).map((file) => ({
-      file,
-      previewUrl:
-        file.type && file.type.startsWith('image/')
-          ? URL.createObjectURL(file)
-          : null,
-    }));
-
-  const clearFileItems = (items) => {
-    (items || []).forEach((item) => {
-      if (item.previewUrl) {
-        URL.revokeObjectURL(item.previewUrl);
-      }
-    });
-  };
-
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  const startUploadProgress = () => {
-    setUploading(true);
-    setUploadProgress(10);
+  const startUploadProgress = useCallback(() => {
+    localDispatch({ type: 'UPLOAD_START' });
     const interval = setInterval(() => {
-      setUploadProgress((prev) => (prev < 90 ? prev + 10 : prev));
+      localDispatch({ type: 'UPLOAD_INCREMENT' });
     }, 300);
     return interval;
-  };
+  }, []);
 
-  const finishUploadProgress = (interval) => {
+  const finishUploadProgress = useCallback((interval) => {
     if (interval) {
       clearInterval(interval);
     }
-    setUploadProgress(100);
-    setTimeout(() => {
-      setUploading(false);
-      setUploadProgress(0);
-    }, 500);
-  };
+    localDispatch({ type: 'UPLOAD_COMPLETE' });
+    setTimeout(() => localDispatch({ type: 'UPLOAD_RESET' }), 500);
+  }, []);
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]); // [{file, previewUrl}]
-  const [isDraggingCreate, setIsDraggingCreate] = useState(false);
-
-  const [createForm, setCreateForm] = useState({
-    name: '',
-    description: '',
-    text: '',
-    categories: '',
-    actionType: 'replace',
-  });
-
-  const resetCreateForm = () => {
-    setCreateForm({
-      name: '',
-      description: '',
-      text: '',
-      categories: '',
-      actionType: 'replace',
-    });
+  const resetCreateForm = useCallback(() => {
     clearFileItems(uploadedFiles);
-    setUploadedFiles([]);
-  };
+    localDispatch({ type: 'RESET_CREATE_FORM' });
+  }, [uploadedFiles]);
 
-  const handleCreatePrompt = async () => {
-    const payload = {
-      ...createForm,
-      categories: createForm.categories
-        .split(',')
-        .map((c) => c.trim())
-        .filter(Boolean),
-    };
+  const resetEditFiles = useCallback(() => {
+    clearFileItems(editNewFiles);
+    localDispatch({ type: 'SET_EDIT_NEW_FILES', files: [] });
+  }, [editNewFiles]);
 
-    let progressInterval = null;
+  const handleCloseCreateModal = useCallback(() => {
+    resetCreateForm();
+    localDispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: false });
+  }, [resetCreateForm]);
 
-    try {
-      const res = await dispatch(createPrompt(payload));
-      const created = res?.result || res || {};
-      const promptId = created.id || created.uid;
+  const handleCloseEditModal = useCallback(() => {
+    resetEditFiles();
+    localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+    localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
+  }, [resetEditFiles]);
 
-      if (uploadedFiles.length > 0 && promptId) {
-        progressInterval = startUploadProgress();
-        await dispatch(
-          uploadPromptFiles(
-            promptId,
-            uploadedFiles.map((item) => item.file),
-          ),
-        );
+  const handleCreateFieldChange = useCallback((field, value) => {
+    localDispatch({ type: 'SET_CREATE_FIELD', field, value });
+  }, []);
+
+  const handleEditFieldChange = useCallback((field, value) => {
+    localDispatch({ type: 'SET_EDIT_FIELD', field, value });
+  }, []);
+
+  const handleAddCreateFiles = useCallback(
+    (files) => {
+      const items = makeFileItems(files);
+      if (items.length) {
+        localDispatch({ type: 'APPEND_UPLOADED_FILES', files: items });
       }
+    },
+    [],
+  );
 
-      dispatch(getPrompts());
-      resetCreateForm();
-      setShowCreateModal(false);
-    } catch (e) {
-      // ignore
-    } finally {
-      if (progressInterval) {
-        finishUploadProgress(progressInterval);
+  const handleAddEditFiles = useCallback(
+    (files) => {
+      const items = makeFileItems(files);
+      if (items.length) {
+        localDispatch({ type: 'APPEND_EDIT_NEW_FILES', files: items });
       }
-    }
-  };
+    },
+    [],
+  );
 
-  const handleCreateInputChange = (e) => {
-    const items = makeFileItems(e.target.files);
-    setUploadedFiles((prev) => [...prev, ...items]);
-    e.target.value = null;
-  };
-
-  const handleCreateDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingCreate(false);
-
-    const items = makeFileItems(e.dataTransfer.files);
-    if (items.length > 0) {
-      setUploadedFiles((prev) => [...prev, ...items]);
-    }
-  };
-
-  const handleCreateDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingCreate(true);
-  };
-
-  const handleCreateDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingCreate(false);
-  };
-
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({
-    id: '',
-    name: '',
-    description: '',
-    text: '',
-    categories: '',
-    actionType: 'replace',
-  });
-
-  const [editAttachedFiles, setEditAttachedFiles] = useState([]);
-  const [editNewFiles, setEditNewFiles] = useState([]);
-  const [isDraggingEdit, setIsDraggingEdit] = useState(false);
-
-  const [selectedPreviewFile, setSelectedPreviewFile] = useState(null);
-
-  const loadPromptFiles = async (promptId) => {
+  const loadPromptFiles = useCallback(async (promptId) => {
     try {
       const result = await api.get(`/@ai-prompt-files/${promptId}`);
       const baseFiles =
@@ -231,10 +226,7 @@ const PromptManager = () => {
 
       const filesWithThumbs = await Promise.all(
         baseFiles.map(async (file) => {
-          if (
-            file.content_type &&
-            file.content_type.startsWith('image/')
-          ) {
+          if (file.content_type && file.content_type.startsWith('image/')) {
             try {
               const full = await api.get(
                 `/@ai-prompt-files/${promptId}/${file.id}`,
@@ -243,169 +235,216 @@ const PromptManager = () => {
                 return { ...file, thumbData: full.data };
               }
             } catch (e) {
-              console.error('Thumbnail load failed', e);
+              // ignore thumbnails
             }
           }
           return file;
         }),
       );
 
-      setEditAttachedFiles(filesWithThumbs);
-    } catch (e) {
-      setEditAttachedFiles([]);
-    }
-  };
-
-  const loadPreviewFile = (promptId, fileId) => {
-    api
-      .get(`/@ai-prompt-files/${promptId}/${fileId}`)
-      .then((file) => setSelectedPreviewFile(file))
-      .catch(() => setSelectedPreviewFile(null));
-  };
-
-  const handleDownload = (promptId, fileId, fallbackFilename) => {
-    api
-      .get(`/@ai-prompt-files/${promptId}/${fileId}`)
-      .then((file) => {
-        if (!file || !file.data) {
-          console.error('Keine Dateidaten im Response:', file);
-          return;
-        }
-
-        const base64Data = file.data;
-        const contentType =
-          file.content_type || 'application/octet-stream';
-        const filename =
-          file.filename || fallbackFilename || 'download';
-
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: contentType });
-
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      })
-      .catch((err) => {
-        console.error('Download error:', err);
+      localDispatch({
+        type: 'SET_EDIT_ATTACHED_FILES',
+        files: filesWithThumbs,
       });
-  };
-
-  const handleOpenEditModal = (prompt) => {
-    setEditForm({
-      id: prompt.id,
-      name: prompt.name || '',
-      description: prompt.description || '',
-      text: prompt.text || '',
-      categories: Array.isArray(prompt.categories)
-        ? prompt.categories.join(', ')
-        : '',
-      actionType: prompt.actionType || 'replace',
-    });
-
-    setSelectedPreviewFile(null);
-    clearFileItems(editNewFiles);
-    setEditNewFiles([]);
-    setShowEditModal(true);
-
-    loadPromptFiles(prompt.id);
-  };
-
-  const handleUpdatePrompt = async () => {
-    const payload = {
-      ...editForm,
-      categories: editForm.categories
-        .split(',')
-        .map((c) => c.trim())
-        .filter(Boolean),
-    };
-
-    let progressInterval = null;
-
-    try {
-      await dispatch(updatePrompt(editForm.id, payload));
-
-      if (editNewFiles.length > 0) {
-        progressInterval = startUploadProgress();
-        await dispatch(
-          uploadPromptFiles(
-            editForm.id,
-            editNewFiles.map((item) => item.file),
-          ),
-        );
-      }
-
-      dispatch(getPrompts());
-      clearFileItems(editNewFiles);
-      setEditNewFiles([]);
-      setShowEditModal(false);
     } catch (e) {
-      // ignore
-    } finally {
-      if (progressInterval) {
-        finishUploadProgress(progressInterval);
+      localDispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
+    }
+  }, []);
+
+  const loadPreviewFile = useCallback(async (promptId, fileId) => {
+    try {
+      const file = await api.get(`/@ai-prompt-files/${promptId}/${fileId}`);
+      localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file });
+    } catch (e) {
+      localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+    }
+  }, []);
+
+  const handleDownload = useCallback(async (promptId, fileId, fallbackFilename) => {
+    try {
+      const file = await api.get(`/@ai-prompt-files/${promptId}/${fileId}`);
+      if (!file || !file.data) {
+        return;
       }
+
+      const base64Data = file.data;
+      const contentType = file.content_type || 'application/octet-stream';
+      const filename = file.filename || fallbackFilename || 'download';
+
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: contentType });
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      // ignore download errors
     }
-  };
+  }, []);
 
-  const handleEditInputChange = (e) => {
-    const items = makeFileItems(e.target.files);
-    setEditNewFiles((prev) => [...prev, ...items]);
-    e.target.value = null;
-  };
+  const handleOpenCreateModal = useCallback(() => {
+    localDispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: true });
+  }, []);
 
-  const handleEditDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingEdit(false);
+  const submitPrompt = useCallback(
+    async ({ mode, form, files = [] }) => {
+      const payload = {
+        ...form,
+        categories: splitCategories(form.categories),
+      };
 
-    const items = makeFileItems(e.dataTransfer.files);
-    if (items.length > 0) {
-      setEditNewFiles((prev) => [...prev, ...items]);
-    }
-  };
+      let progressInterval = null;
 
-  const handleEditDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingEdit(true);
-  };
+      try {
+        const response =
+          mode === 'create'
+            ? await reduxDispatch(createPrompt(payload))
+            : await reduxDispatch(updatePrompt(form.id, payload));
 
-  const handleEditDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingEdit(false);
-  };
+        const created = response?.result || response || {};
+        const promptId =
+          mode === 'create' ? created.id || created.uid : form.id;
 
-  const handleDeletePrompt = (id) => {
-    dispatch(deletePrompt(id)).then(() => dispatch(getPrompts()));
-  };
+        if (files.length > 0 && promptId) {
+          progressInterval = startUploadProgress();
+          await reduxDispatch(
+            uploadPromptFiles(promptId, files.map((item) => item.file)),
+          );
+        }
 
-  const handleDeleteAttachedFile = (fileId) => {
-    setEditAttachedFiles((files) => files.filter((f) => f.id !== fileId));
+        reduxDispatch(getPrompts());
+        return promptId;
+      } catch (e) {
+        return null;
+      } finally {
+        if (progressInterval) {
+          finishUploadProgress(progressInterval);
+        }
+      }
+    },
+    [finishUploadProgress, reduxDispatch, startUploadProgress],
+  );
 
-    dispatch(deletePromptFile(editForm.id, fileId)).then(() => {
-      loadPromptFiles(editForm.id);
-      dispatch(getPrompts());
+  const handleCreatePrompt = useCallback(async () => {
+    const promptId = await submitPrompt({
+      mode: 'create',
+      form: createForm,
+      files: uploadedFiles,
     });
-  };
+
+    if (promptId) {
+      resetCreateForm();
+      localDispatch({
+        type: 'SET_MODAL',
+        modal: 'showCreateModal',
+        value: false,
+      });
+    }
+  }, [
+    createForm,
+    resetCreateForm,
+    submitPrompt,
+    uploadedFiles,
+  ]);
+
+  const handleOpenEditModal = useCallback(
+    (prompt) => {
+      localDispatch({
+        type: 'SET_EDIT_FORM',
+        form: {
+          id: prompt.id,
+          name: prompt.name || '',
+          description: prompt.description || '',
+          text: prompt.text || '',
+          categories: Array.isArray(prompt.categories)
+            ? prompt.categories.join(', ')
+            : '',
+          actionType: prompt.actionType || 'replace',
+        },
+      });
+
+      localDispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
+      localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+      resetEditFiles();
+      localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: true });
+      loadPromptFiles(prompt.id);
+    },
+    [loadPromptFiles, resetEditFiles],
+  );
+
+  const handleUpdatePrompt = useCallback(async () => {
+    const promptId = await submitPrompt({
+      mode: 'update',
+      form: editForm,
+      files: editNewFiles,
+    });
+
+    if (promptId) {
+      resetEditFiles();
+      localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
+    }
+  }, [
+    editForm,
+    editNewFiles,
+    resetEditFiles,
+    submitPrompt,
+  ]);
+
+  const handleDeletePrompt = useCallback(
+    async (id) => {
+      try {
+        await reduxDispatch(deletePrompt(id));
+        reduxDispatch(getPrompts());
+      } catch (e) {
+        // ignore delete errors
+      }
+    },
+    [reduxDispatch],
+  );
+
+  const handleDeleteAttachedFile = useCallback(
+    async (fileId) => {
+      localDispatch({
+        type: 'SET_EDIT_ATTACHED_FILES',
+        files: editAttachedFiles.filter((file) => file.id !== fileId),
+      });
+
+      try {
+        await reduxDispatch(deletePromptFile(editForm.id, fileId));
+        await loadPromptFiles(editForm.id);
+        reduxDispatch(getPrompts());
+      } catch (e) {
+        // ignore delete errors
+      }
+    },
+    [editAttachedFiles, editForm.id, loadPromptFiles, reduxDispatch],
+  );
+
+  const handlePreviewAttachedFile = useCallback(
+    (fileId) => loadPreviewFile(editForm.id, fileId),
+    [editForm.id, loadPreviewFile],
+  );
+
+  const handleDownloadAttachedFile = useCallback(
+    (fileId, filename) => handleDownload(editForm.id, fileId, filename),
+    [editForm.id, handleDownload],
+  );
 
   return (
     <Container className="prompt-manager">
-      {modalStyleFix}
-
       <Header as="h1">
         {t('AI Prompt Manager', 'AI Prompt Manager')}
       </Header>
 
-      <p style={{ marginTop: '1rem' }}>
+      <p className="prompt-manager__intro">
         {t(
           'Manage AI prompts for the Slate editor. Create, edit and delete instructions.',
           'Verwalten Sie KI-Prompts für den Slate Editor. Erstellen, bearbeiten und löschen Sie Anweisungen.',
@@ -418,7 +457,7 @@ const PromptManager = () => {
           active
           indicating
           size="small"
-          style={{ marginBottom: '1.5rem' }}
+          className="prompt-manager__progress"
         >
           {t('Uploading files …', 'Dateien werden hochgeladen …')}
         </Progress>
@@ -429,8 +468,8 @@ const PromptManager = () => {
         basic={showCreateModal}
         icon
         labelPosition="left"
-        style={{ marginBottom: '2rem' }}
-        onClick={() => setShowCreateModal(!showCreateModal)}
+        className="prompt-manager__toggle-button"
+        onClick={showCreateModal ? handleCloseCreateModal : handleOpenCreateModal}
       >
         <Icon name={showCreateModal ? 'chevron up' : 'plus'} />
         {showCreateModal
@@ -438,527 +477,45 @@ const PromptManager = () => {
           : t('Create prompt', 'Prompt erstellen')}
       </Button>
 
-      <Modal
+      <CreatePromptModal
         open={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-        }}
-        size="large"
-        closeIcon
-        className="kyra-centered-modal"
-      >
-        <Modal.Header>
-          {t('Create new prompt', 'Neuen Prompt erstellen')}
-        </Modal.Header>
-        <Modal.Content scrolling>
-          <Form>
-            <Form.Field>
-              <label>{t('Name', 'Name')}</label>
-              <Form.Input
-                value={createForm.name}
-                onChange={(_, { value }) =>
-                  setCreateForm({ ...createForm, name: value })
-                }
-              />
-            </Form.Field>
+        onClose={handleCloseCreateModal}
+        onSubmit={handleCreatePrompt}
+        form={createForm}
+        onFieldChange={handleCreateFieldChange}
+        files={uploadedFiles}
+        onFilesSelected={handleAddCreateFiles}
+        t={t}
+      />
 
-            <Form.Field>
-              <label>{t('Description', 'Beschreibung')}</label>
-              <Form.TextArea
-                value={createForm.description}
-                onChange={(_, { value }) =>
-                  setCreateForm({ ...createForm, description: value })
-                }
-              />
-            </Form.Field>
-
-            <Form.Field>
-              <label>{t('Prompt text', 'Prompt-Text')}</label>
-              <Form.TextArea
-                value={createForm.text}
-                onChange={(_, { value }) =>
-                  setCreateForm({ ...createForm, text: value })
-                }
-              />
-            </Form.Field>
-
-            <Form.Field>
-              <label>
-                {t(
-                  'Categories (comma-separated)',
-                  'Kategorien (durch Komma getrennt)',
-                )}
-              </label>
-              <Form.Input
-                value={createForm.categories}
-                onChange={(_, { value }) =>
-                  setCreateForm({ ...createForm, categories: value })
-                }
-              />
-            </Form.Field>
-
-            <Form.Field>
-              <label>
-                {t(
-                  'Upload files (drag & drop or button)',
-                  'Dateien hochladen (Drag-&-Drop oder Button)',
-                )}
-              </label>
-
-              <div
-                onDragOver={handleCreateDragOver}
-                onDragLeave={handleCreateDragLeave}
-                onDrop={handleCreateDrop}
-                style={{
-                  border: '2px dashed #ccc',
-                  borderRadius: 8,
-                  padding: '1rem',
-                  textAlign: 'center',
-                  marginBottom: '0.75rem',
-                  background: isDraggingCreate ? '#f0f8ff' : 'transparent',
-                  cursor: 'pointer',
-                }}
-                onClick={() =>
-                  document.getElementById('fileUploadInputCreate').click()
-                }
-              >
-                <Icon name="upload" />
-                <p style={{ margin: 0 }}>
-                  {t(
-                    'Drop files here or click to select',
-                    'Dateien hierher ziehen oder klicken, um auszuwählen',
-                  )}
-                </p>
-              </div>
-
-              <input
-                id="fileUploadInputCreate"
-                type="file"
-                multiple
-                style={{ display: 'none' }}
-                onChange={handleCreateInputChange}
-              />
-
-              {uploadedFiles.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                    marginTop: '0.5rem',
-                  }}
-                >
-                  {uploadedFiles.map((item, idx) => (
-                    <div
-                      key={`${item.file.name}-${idx}`}
-                      style={{
-                        width: 80,
-                        fontSize: 10,
-                        textAlign: 'center',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {item.previewUrl ? (
-                        <img
-                          src={item.previewUrl}
-                          alt={item.file.name}
-                          style={{
-                            width: '100%',
-                            height: 60,
-                            objectFit: 'cover',
-                            borderRadius: 4,
-                            marginBottom: 4,
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: '100%',
-                            height: 60,
-                            borderRadius: 4,
-                            border: '1px solid #ddd',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 4,
-                          }}
-                        >
-                          <Icon name="file outline" />
-                        </div>
-                      )}
-                      <span title={item.file.name}>{item.file.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Form.Field>
-          </Form>
-        </Modal.Content>
-
-        <Modal.Actions>
-          <Button
-            onClick={() => {
-              resetCreateForm();
-              setShowCreateModal(false);
-            }}
-          >
-            {t('Cancel', 'Abbrechen')}
-          </Button>
-          <Button primary onClick={handleCreatePrompt}>
-            {t('Create prompt', 'Prompt erstellen')}
-          </Button>
-        </Modal.Actions>
-      </Modal>
-
-      <Modal
+      <EditPromptModal
         open={showEditModal}
-        onClose={() => {
-          clearFileItems(editNewFiles);
-          setEditNewFiles([]);
-          setShowEditModal(false);
-        }}
-        size="large"
-        closeIcon
-        className="kyra-centered-modal"
-      >
-        <Modal.Header>
-          {t('Edit prompt', 'Prompt bearbeiten')}
-        </Modal.Header>
-        <Modal.Content scrolling>
-          <Form>
-            <Form.Field>
-              <label>{t('Name', 'Name')}</label>
-              <Form.Input
-                value={editForm.name}
-                onChange={(_, { value }) =>
-                  setEditForm({ ...editForm, name: value })
-                }
-              />
-            </Form.Field>
+        onClose={handleCloseEditModal}
+        onSubmit={handleUpdatePrompt}
+        form={editForm}
+        onFieldChange={handleEditFieldChange}
+        newFiles={editNewFiles}
+        onFilesSelected={handleAddEditFiles}
+        attachedFiles={editAttachedFiles}
+        onPreviewFile={handlePreviewAttachedFile}
+        onDownloadFile={handleDownloadAttachedFile}
+        onDeleteFile={handleDeleteAttachedFile}
+        selectedPreviewFile={selectedPreviewFile}
+        t={t}
+      />
 
-            <Form.Field>
-              <label>{t('Description', 'Beschreibung')}</label>
-              <Form.TextArea
-                value={editForm.description}
-                onChange={(_, { value }) =>
-                  setEditForm({ ...editForm, description: value })
-                }
-              />
-            </Form.Field>
-
-            <Form.Field>
-              <label>{t('Prompt text', 'Prompt-Text')}</label>
-              <Form.TextArea
-                value={editForm.text}
-                onChange={(_, { value }) =>
-                  setEditForm({ ...editForm, text: value })
-                }
-              />
-            </Form.Field>
-
-            <Form.Field>
-              <label>{t('Categories', 'Kategorien')}</label>
-              <Form.Input
-                value={editForm.categories}
-                onChange={(_, { value }) =>
-                  setEditForm({ ...editForm, categories: value })
-                }
-              />
-            </Form.Field>
-
-            <Form.Field>
-              <label>
-                {t(
-                  'Upload more files (drag & drop or button)',
-                  'Weitere Dateien hochladen (Drag-&-Drop oder Button)',
-                )}
-              </label>
-
-              <div
-                onDragOver={handleEditDragOver}
-                onDragLeave={handleEditDragLeave}
-                onDrop={handleEditDrop}
-                style={{
-                  border: '2px dashed #ccc',
-                  borderRadius: 8,
-                  padding: '1rem',
-                  textAlign: 'center',
-                  marginBottom: '0.75rem',
-                  background: isDraggingEdit ? '#f0f8ff' : 'transparent',
-                  cursor: 'pointer',
-                }}
-                onClick={() =>
-                  document.getElementById('fileUploadInputEdit').click()
-                }
-              >
-                <Icon name="upload" />
-                <p style={{ margin: 0 }}>
-                  {t(
-                    'Drop files here or click to select',
-                    'Dateien hierher ziehen oder klicken, um auszuwählen',
-                  )}
-                </p>
-              </div>
-
-              <input
-                id="fileUploadInputEdit"
-                type="file"
-                multiple
-                style={{ display: 'none' }}
-                onChange={handleEditInputChange}
-              />
-
-              {editNewFiles.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                    marginTop: '0.5rem',
-                  }}
-                >
-                  {editNewFiles.map((item, idx) => (
-                    <div
-                      key={`${item.file.name}-${idx}`}
-                      style={{
-                        width: 80,
-                        fontSize: 10,
-                        textAlign: 'center',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {item.previewUrl ? (
-                        <img
-                          src={item.previewUrl}
-                          alt={item.file.name}
-                          style={{
-                            width: '100%',
-                            height: 60,
-                            objectFit: 'cover',
-                            borderRadius: 4,
-                            marginBottom: 4,
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: '100%',
-                            height: 60,
-                            borderRadius: 4,
-                            border: '1px solid #ddd',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 4,
-                          }}
-                        >
-                          <Icon name="file outline" />
-                        </div>
-                      )}
-                      <span title={item.file.name}>{item.file.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Form.Field>
-
-            <Divider />
-
-            <Header as="h2">
-              {t('Attached files', 'Angehängte Dateien')}
-            </Header>
-
-            {editAttachedFiles.length === 0 ? (
-              <p>{t('No files attached.', 'Keine Dateien angehängt.')}</p>
-            ) : (
-              <Table basic="very">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.HeaderCell>
-                      {t('File', 'Datei')}
-                    </Table.HeaderCell>
-                    <Table.HeaderCell>
-                      {t('Size', 'Größe')}
-                    </Table.HeaderCell>
-                    <Table.HeaderCell>
-                      {t('Thumbnail', 'Thumbnail')}
-                    </Table.HeaderCell>
-                    <Table.HeaderCell>
-                      {t('Preview', 'Vorschau')}
-                    </Table.HeaderCell>
-                    <Table.HeaderCell>
-                      {t('Download', 'Download')}
-                    </Table.HeaderCell>
-                    <Table.HeaderCell>
-                      {t('Delete', 'Löschen')}
-                    </Table.HeaderCell>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {editAttachedFiles.map((file) => (
-                    <Table.Row key={file.id}>
-                      <Table.Cell>{file.filename}</Table.Cell>
-                      <Table.Cell>{formatSizeMB(file.size)}</Table.Cell>
-
-                      <Table.Cell>
-                        {file.content_type &&
-                          file.content_type.startsWith('image/') &&
-                          file.thumbData && (
-                            <img
-                              src={`data:${file.content_type};base64,${file.thumbData}`}
-                              alt={file.filename}
-                              style={{
-                                width: 48,
-                                height: 48,
-                                objectFit: 'cover',
-                                borderRadius: 4,
-                              }}
-                            />
-                          )}
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            loadPreviewFile(editForm.id, file.id)
-                          }
-                        >
-                          {t('Preview', 'Vorschau')}
-                        </Button>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <Button
-                          size="small"
-                          color="blue"
-                          onClick={() =>
-                            handleDownload(
-                              editForm.id,
-                              file.id,
-                              file.filename,
-                            )
-                          }
-                        >
-                          {t('Download', 'Download')}
-                        </Button>
-                      </Table.Cell>
-
-                      <Table.Cell>
-                        <Button
-                          size="small"
-                          color="red"
-                          onClick={() =>
-                            handleDeleteAttachedFile(file.id)
-                          }
-                        >
-                          {t('Delete', 'Löschen')}
-                        </Button>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table>
-            )}
-
-            {selectedPreviewFile && (
-              <>
-                <Divider />
-                <PromptFilePreview file={selectedPreviewFile} />
-              </>
-            )}
-          </Form>
-        </Modal.Content>
-
-        <Modal.Actions>
-          <Button
-            onClick={() => {
-              clearFileItems(editNewFiles);
-              setEditNewFiles([]);
-              setShowEditModal(false);
-            }}
-          >
-            {t('Cancel', 'Abbrechen')}
-          </Button>
-          <Button primary onClick={handleUpdatePrompt}>
-            {t('Save changes', 'Änderungen speichern')}
-          </Button>
-        </Modal.Actions>
-      </Modal>
-
-      <Header as="h1">
+      <Header as="h2" className="prompt-manager__existing-header">
         {t('Existing prompts', 'Vorhandene Prompts')}
       </Header>
 
-      {loading && (
-        <Loader active>
-          {t('Loading prompts …', 'Prompts werden geladen …')}
-        </Loader>
-      )}
-
-      {error && (
-        <Message negative>
-          <Message.Header>
-            {t('Error while loading', 'Fehler beim Laden')}
-          </Message.Header>
-          <p>{error.message}</p>
-        </Message>
-      )}
-
-      <Table celled striped>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>{t('Name', 'Name')}</Table.HeaderCell>
-            <Table.HeaderCell>
-              {t('Description', 'Beschreibung')}
-            </Table.HeaderCell>
-            <Table.HeaderCell>
-              {t('Categories', 'Kategorien')}
-            </Table.HeaderCell>
-            <Table.HeaderCell>
-              {t('Action', 'Aktion')}
-            </Table.HeaderCell>
-            <Table.HeaderCell textAlign="right">
-              {t('Actions', 'Aktionen')}
-            </Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {prompts.map((prompt) => (
-            <Table.Row key={prompt.id}>
-              <Table.Cell>{prompt.name}</Table.Cell>
-              <Table.Cell>{prompt.description}</Table.Cell>
-              <Table.Cell>
-                {Array.isArray(prompt.categories)
-                  ? prompt.categories.join(', ')
-                  : ''}
-              </Table.Cell>
-              <Table.Cell>
-                {prompt.actionType === 'append'
-                  ? t('Append', 'Anhängen')
-                  : t('Replace', 'Ersetzen')}
-              </Table.Cell>
-
-              <Table.Cell textAlign="right">
-                <Button
-                  size="small"
-                  onClick={() => handleOpenEditModal(prompt)}
-                >
-                  {t('Edit', 'Bearbeiten')}
-                </Button>
-                <Button
-                  size="small"
-                  color="red"
-                  onClick={() => handleDeletePrompt(prompt.id)}
-                >
-                  {t('Delete', 'Löschen')}
-                </Button>
-              </Table.Cell>
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table>
+      <PromptList
+        prompts={prompts}
+        loading={loading}
+        error={error}
+        onEdit={handleOpenEditModal}
+        onDelete={handleDeletePrompt}
+        t={t}
+      />
     </Container>
   );
 };

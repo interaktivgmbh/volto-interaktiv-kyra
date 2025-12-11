@@ -1,5 +1,6 @@
 import React, {useEffect} from 'react';
 import {useDispatch} from 'react-redux';
+import './theme/main.scss';
 
 import applyRoutes from './routes';
 import reducer from './redux/reducer';

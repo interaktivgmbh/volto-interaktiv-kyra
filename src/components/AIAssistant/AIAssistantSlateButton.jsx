@@ -77,7 +77,7 @@ const AIAssistantSlateButton = () => {
   const isDe = locale.startsWith('de');
   const t = (en, de) => (isDe && de ? de : en);
 
-  const [open, setOpen] = useState(false); // Prompt-Dropdown
+  const [isPromptDropdownOpen, setPromptDropdownOpen] = useState(false); // Prompt-Dropdown
   const [isRunning, setIsRunning] = useState(false);
 
   const [status, setStatus] = useState(null);
@@ -110,17 +110,17 @@ const AIAssistantSlateButton = () => {
   }, [status]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!isPromptDropdownOpen) return;
 
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setOpen(false);
+        setPromptDropdownOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open]);
+  }, [isPromptDropdownOpen]);
 
   const getSelectionText = () => {
     try {
@@ -259,12 +259,12 @@ const AIAssistantSlateButton = () => {
   };
 
   const handleSelectPrompt = async (prompt) => {
-    setOpen(false);
+    setPromptDropdownOpen(false);
     await runPrompt({ prompt, preview: false });
   };
 
   const handleOpenCustomChat = () => {
-    setOpen(false);
+    setPromptDropdownOpen(false);
     setChatOpen(true);
     setChatResult(null);
   };
@@ -623,7 +623,7 @@ const AIAssistantSlateButton = () => {
           e.preventDefault();
           if (isRunning) return;
           setChatOpen(false);
-          setOpen((prev) => !prev);
+          setPromptDropdownOpen((prev) => !prev);
         }}
       />
 
@@ -633,12 +633,12 @@ const AIAssistantSlateButton = () => {
         onMouseDown={(e) => {
           e.preventDefault();
           if (isRunning) return;
-          setOpen(false);
+          setPromptDropdownOpen(false);
           handleOpenCustomChat();
         }}
       />
 
-      {open && !isRunning && (
+      {isPromptDropdownOpen && !isRunning && (
         <div
           className="ai-slate-dropdown"
           style={{

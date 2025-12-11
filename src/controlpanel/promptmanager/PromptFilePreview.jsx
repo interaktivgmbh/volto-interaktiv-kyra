@@ -10,19 +10,20 @@ const PromptFilePreview = ({ file }) => {
   if (!file) return null;
 
   const { filename, content_type, data } = file;
+  const contentType = content_type || '';
 
-  const isImage = content_type.startsWith('image/');
-  const isPDF = content_type === 'application/pdf';
+  const isImage = contentType.startsWith('image/');
+  const isPDF = contentType === 'application/pdf';
   const isText =
-    content_type.startsWith('text/') ||
+    contentType.startsWith('text/') ||
     filename.endsWith('.txt') ||
     filename.endsWith('.md');
 
-  const blob = data ? `data:${content_type};base64,${data}` : null;
+  const blob = data ? `data:${contentType};base64,${data}` : null;
 
   const noPreviewLabel =
     t('No preview available (type: ', 'Keine Vorschau verfügbar (Typ: ') +
-    content_type +
+    contentType +
     ')';
 
   return (
@@ -32,37 +33,15 @@ const PromptFilePreview = ({ file }) => {
       </h4>
 
       {isImage && blob && (
-        <img
-          src={blob}
-          alt={filename}
-          style={{
-            maxWidth: '200px',
-            borderRadius: '6px',
-            marginTop: '10px',
-          }}
-        />
+        <img src={blob} alt={filename} className="prompt-file-preview__image" />
       )}
 
       {isPDF && blob && (
-        <iframe
-          src={blob}
-          style={{ width: '100%', height: '300px', marginTop: '10px' }}
-          title={filename}
-        />
+        <iframe src={blob} className="prompt-file-preview__frame" title={filename} />
       )}
 
       {isText && blob && (
-        <pre
-          style={{
-            background: '#f5f5f5',
-            padding: '10px',
-            maxHeight: '200px',
-            overflowY: 'auto',
-            marginTop: '10px',
-          }}
-        >
-          {atob(file.data)}
-        </pre>
+        <pre className="prompt-file-preview__text">{atob(file.data)}</pre>
       )}
 
       {!isImage && !isPDF && !isText && <p>{noPreviewLabel}</p>}
