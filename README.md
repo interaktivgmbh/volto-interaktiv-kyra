@@ -251,6 +251,16 @@ Example `mrs.developer.json` extended:
   }
 ```
 
+After setting up mrs-developer, make sure the add-on is also registered in your main Volto project's `package.json` so Volto loads it:
+
+```json
+{
+  "addons": [
+    "@interaktiv.de/volto-interaktiv-kyra"
+  ]
+}
+```
+
 Then:
 
 ```bash
@@ -261,16 +271,6 @@ If your project doesn’t use a Makefile, the equivalent is usually:
 
 ```bash
 pnpm install
-```
-
-After setting up mrs-developer, make sure the add-on is also registered in your main Volto project's `package.json` so Volto loads it:
-
-```json
-{
-  "addons": [
-    "@interaktiv.de/volto-interaktiv-kyra"
-  ]
-}
 ```
 
 ---
