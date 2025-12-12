@@ -237,7 +237,7 @@ Ensure:
 
 You can install the frontend repo into your Volto project using mrs-developer.
 
-Example mrs.developer.json extended:
+Example `mrs.developer.json` extended:
 
 ```json
   "volto-interaktiv-kyra": {
@@ -246,6 +246,7 @@ Example mrs.developer.json extended:
     "url": "git@github.com:interaktivgmbh/volto-interaktiv-kyra.git",
     "https": "https://github.com/interaktivgmbh/volto-interaktiv-kyra.git",
     "path": "src",
+    "branch": "main",
     "develop": true
   }
 ```
@@ -260,6 +261,16 @@ If your project doesn’t use a Makefile, the equivalent is usually:
 
 ```bash
 pnpm install
+```
+
+After setting up mrs-developer, make sure the add-on is also registered in your main Volto project's `package.json` so Volto loads it:
+
+```json
+{
+  "addons": [
+    "@interaktiv.de/volto-interaktiv-kyra"
+  ]
+}
 ```
 
 ---
