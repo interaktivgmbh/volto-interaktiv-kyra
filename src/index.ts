@@ -22,20 +22,11 @@ export default function applyConfig(config) {
 
   config.settings.controlPanelsIcons = {
     ...config.settings.controlPanelsIcons,
-    'kyra-prompts': chatSVG,
+    'ai-prompt-manager': chatSVG,
     'ai-assist-settings': robotSVG,
   };
 
-  config.settings.controlpanels = [
-    ...config.settings.controlpanels,
-    {
-      '@id': '/kyra-prompts',
-      id: 'kyra-prompts',
-      title: 'AI Prompt Manager',
-      group: 'Add-on Configuration',
-      path: '/controlpanel/kyra-prompts',
-    },
-  ];
+  console.log(config.settings.controlpanels);
 
   config.addonReducers = {
     ...config.addonReducers,
