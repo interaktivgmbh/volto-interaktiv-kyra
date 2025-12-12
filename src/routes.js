@@ -4,7 +4,7 @@ export default function applyRoutes(config) {
   config.addonRoutes = [
     ...(config.addonRoutes || []),
     {
-      path: '/controlpanel/kyra-prompts',
+      path: '/controlpanel/ai-prompt-manager',
       component: PromptManager,
     },
   ];
