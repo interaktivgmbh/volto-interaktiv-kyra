@@ -15,6 +15,12 @@
     margin-top: 2rem;
   }
 
+  &__field-error {
+    color: #9f3a38;
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+
   &__label {
     display: block;
     margin-bottom: 0.5rem;

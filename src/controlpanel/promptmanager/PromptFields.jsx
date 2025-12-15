@@ -7,15 +7,19 @@ const PromptFields = ({
   t,
   idPrefix,
   categoriesLabel,
+  errors = {},
 }) => (
   <>
-    <Form.Field>
+    <Form.Field error={!!errors.name} required>
       <label htmlFor={`${idPrefix}-name`}>{t('Name', 'Name')}</label>
       <Form.Input
         id={`${idPrefix}-name`}
         value={form.name}
         onChange={(_, { value }) => onChange('name', value)}
       />
+      {errors.name && (
+        <div className="prompt-manager__field-error">{errors.name}</div>
+      )}
     </Form.Field>
 
     <Form.Field>
@@ -29,7 +33,7 @@ const PromptFields = ({
       />
     </Form.Field>
 
-    <Form.Field>
+    <Form.Field error={!!errors.text} required>
       <label htmlFor={`${idPrefix}-text`}>
         {t('Prompt text', 'Prompt-Text')}
       </label>
@@ -38,6 +42,9 @@ const PromptFields = ({
         value={form.text}
         onChange={(_, { value }) => onChange('text', value)}
       />
+      {errors.text && (
+        <div className="prompt-manager__field-error">{errors.text}</div>
+      )}
     </Form.Field>
 
     <Form.Field>
@@ -52,6 +59,21 @@ const PromptFields = ({
         id={`${idPrefix}-categories`}
         value={form.categories}
         onChange={(_, { value }) => onChange('categories', value)}
+      />
+    </Form.Field>
+
+    <Form.Field>
+      <label htmlFor={`${idPrefix}-action`}>
+        {t('Action', 'Aktion')}
+      </label>
+      <Form.Select
+        id={`${idPrefix}-action`}
+        options={[
+          { key: 'replace', value: 'replace', text: t('Replace', 'Ersetzen') },
+          { key: 'append', value: 'append', text: t('Append', 'Anhängen') },
+        ]}
+        value={form.actionType}
+        onChange={(_, { value }) => onChange('actionType', value)}
       />
     </Form.Field>
   </>

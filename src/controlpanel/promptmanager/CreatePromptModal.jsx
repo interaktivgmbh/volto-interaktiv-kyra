@@ -11,6 +11,8 @@ const CreatePromptModal = ({
   onFieldChange,
   files,
   onFilesSelected,
+  fieldErrors,
+  submitting,
   t,
 }) => (
   <Modal
@@ -29,6 +31,7 @@ const CreatePromptModal = ({
           idPrefix="create"
           form={form}
           onChange={onFieldChange}
+          errors={fieldErrors}
           t={t}
         />
 
@@ -50,7 +53,7 @@ const CreatePromptModal = ({
 
     <Modal.Actions>
       <Button onClick={onClose}>{t('Cancel', 'Abbrechen')}</Button>
-      <Button primary onClick={onSubmit}>
+      <Button primary onClick={onSubmit} loading={submitting}>
         {t('Create prompt', 'Prompt erstellen')}
       </Button>
     </Modal.Actions>

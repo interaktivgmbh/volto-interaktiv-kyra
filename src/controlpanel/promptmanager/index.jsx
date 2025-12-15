@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useReducer } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Header, Container, Button, Icon, Progress } from 'semantic-ui-react';
+import { Header, Container, Button, Icon, Progress, Message } from 'semantic-ui-react';
 import { Api } from '@plone/volto/helpers';
 import { useIntl } from 'react-intl';
 
@@ -23,6 +23,7 @@ const api = new Api();
 const initialState = {
   uploadProgress: 0,
   uploading: false,
+  submitting: false,
   showCreateModal: false,
   showEditModal: false,
   createForm: {
@@ -44,6 +45,11 @@ const initialState = {
   editAttachedFiles: [],
   editNewFiles: [],
   selectedPreviewFile: null,
+  formErrors: {
+    create: {},
+    edit: {},
+  },
+  status: null,
 };
 
 const reducer = (state, action) => {
@@ -60,6 +66,7 @@ const reducer = (state, action) => {
         ...state,
         createForm: initialState.createForm,
         uploadedFiles: [],
+        formErrors: { ...state.formErrors, create: {} },
       };
     case 'SET_EDIT_FIELD':
       return {
@@ -86,6 +93,17 @@ const reducer = (state, action) => {
       return { ...state, editNewFiles: action.files };
     case 'SET_SELECTED_PREVIEW_FILE':
       return { ...state, selectedPreviewFile: action.file };
+    case 'SET_FORM_ERRORS':
+      return {
+        ...state,
+        formErrors: { ...state.formErrors, [action.scope]: action.errors || {} },
+      };
+    case 'SET_STATUS':
+      return { ...state, status: action.status };
+    case 'CLEAR_STATUS':
+      return { ...state, status: null };
+    case 'SET_SUBMITTING':
+      return { ...state, submitting: action.value };
     case 'UPLOAD_START':
       return { ...state, uploading: true, uploadProgress: 10 };
     case 'UPLOAD_INCREMENT':
@@ -137,6 +155,7 @@ const PromptManager = () => {
     {
       uploadProgress,
       uploading,
+      submitting,
       showCreateModal,
       showEditModal,
       createForm,
@@ -145,6 +164,8 @@ const PromptManager = () => {
       editAttachedFiles,
       editNewFiles,
       selectedPreviewFile,
+      formErrors,
+      status,
     },
     localDispatch,
   ] = useReducer(reducer, initialState);
@@ -181,12 +202,14 @@ const PromptManager = () => {
 
   const handleCloseCreateModal = useCallback(() => {
     resetCreateForm();
+    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
     localDispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: false });
   }, [resetCreateForm]);
 
   const handleCloseEditModal = useCallback(() => {
     resetEditFiles();
     localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors: {} });
     localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
   }, [resetEditFiles]);
 
@@ -224,27 +247,47 @@ const PromptManager = () => {
       const baseFiles =
         result?.files || result?.items || (Array.isArray(result) ? result : []);
 
-      const filesWithThumbs = await Promise.all(
-        baseFiles.map(async (file) => {
-          if (file.content_type && file.content_type.startsWith('image/')) {
-            try {
-              const full = await api.get(
-                `/@ai-prompt-files/${promptId}/${file.id}`,
-              );
-              if (full?.data) {
-                return { ...file, thumbData: full.data };
-              }
-            } catch (e) {
-              // ignore thumbnails
-            }
+      const filesWithMeta = [];
+      for (const file of baseFiles) {
+        let full = null;
+        try {
+          full = await api.get(`/@ai-prompt-files/${promptId}/${file.id}`);
+        } catch (e) {
+          // ignore missing full file; fall back to base meta
+        }
+
+        const contentType =
+          file.content_type ||
+          full?.content_type ||
+          file.contentType ||
+          full?.contentType ||
+          null;
+
+        let size = file.size || file.length || full?.size || null;
+        if (!size && full?.data) {
+          try {
+            size = atob(full.data).length;
+          } catch (e) {
+            size = null;
           }
-          return file;
-        }),
-      );
+        }
+
+        const enriched = {
+          ...file,
+          content_type: contentType,
+          size,
+        };
+
+        if (contentType && contentType.startsWith('image/') && full?.data) {
+          enriched.thumbData = full.data;
+        }
+
+        filesWithMeta.push(enriched);
+      }
 
       localDispatch({
         type: 'SET_EDIT_ATTACHED_FILES',
-        files: filesWithThumbs,
+        files: filesWithMeta,
       });
     } catch (e) {
       localDispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
@@ -291,8 +334,23 @@ const PromptManager = () => {
   }, []);
 
   const handleOpenCreateModal = useCallback(() => {
+    localDispatch({ type: 'CLEAR_STATUS' });
     localDispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: true });
   }, []);
+
+  const validateForm = useCallback(
+    (form) => {
+      const errors = {};
+      if (!form.name || !form.name.trim()) {
+        errors.name = t('Name is required', 'Name ist erforderlich');
+      }
+      if (!form.text || !form.text.trim()) {
+        errors.text = t('Prompt text is required', 'Prompt-Text ist erforderlich');
+      }
+      return errors;
+    },
+    [t],
+  );
 
   const submitPrompt = useCallback(
     async ({ mode, form, files = [] }) => {
@@ -334,18 +392,52 @@ const PromptManager = () => {
   );
 
   const handleCreatePrompt = useCallback(async () => {
+    const errors = validateForm(createForm);
+    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors });
+    if (Object.keys(errors).length) {
+      localDispatch({
+        type: 'SET_STATUS',
+        status: {
+          type: 'error',
+          message: t('Please fill out the required fields.', 'Bitte die Pflichtfelder ausfüllen.'),
+        },
+      });
+      return;
+    }
+
+    localDispatch({ type: 'SET_STATUS', status: null });
+    localDispatch({ type: 'SET_SUBMITTING', value: true });
+
     const promptId = await submitPrompt({
       mode: 'create',
       form: createForm,
       files: uploadedFiles,
     });
 
+    localDispatch({ type: 'SET_SUBMITTING', value: false });
+
     if (promptId) {
       resetCreateForm();
+      localDispatch({
+        type: 'SET_STATUS',
+        status: {
+          type: 'success',
+          message: t('Prompt created successfully.', 'Prompt wurde erfolgreich erstellt.'),
+        },
+      });
       localDispatch({
         type: 'SET_MODAL',
         modal: 'showCreateModal',
         value: false,
+      });
+      localDispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
+    } else {
+      localDispatch({
+        type: 'SET_STATUS',
+        status: {
+          type: 'error',
+          message: t('Creating the prompt failed.', 'Prompt konnte nicht erstellt werden.'),
+        },
       });
     }
   }, [
@@ -353,6 +445,8 @@ const PromptManager = () => {
     resetCreateForm,
     submitPrompt,
     uploadedFiles,
+    t,
+    validateForm,
   ]);
 
   const handleOpenEditModal = useCallback(
@@ -381,21 +475,57 @@ const PromptManager = () => {
   );
 
   const handleUpdatePrompt = useCallback(async () => {
+    const errors = validateForm(editForm);
+    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors });
+    if (Object.keys(errors).length) {
+      localDispatch({
+        type: 'SET_STATUS',
+        status: {
+          type: 'error',
+          message: t('Please fill out the required fields.', 'Bitte die Pflichtfelder ausfüllen.'),
+        },
+      });
+      return;
+    }
+
+    localDispatch({ type: 'SET_STATUS', status: null });
+    localDispatch({ type: 'SET_SUBMITTING', value: true });
+
     const promptId = await submitPrompt({
       mode: 'update',
       form: editForm,
       files: editNewFiles,
     });
 
+    localDispatch({ type: 'SET_SUBMITTING', value: false });
+
     if (promptId) {
       resetEditFiles();
       localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
+      localDispatch({
+        type: 'SET_STATUS',
+        status: {
+          type: 'success',
+          message: t('Changes saved successfully.', 'Änderungen wurden gespeichert.'),
+        },
+      });
+      localDispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors: {} });
+    } else {
+      localDispatch({
+        type: 'SET_STATUS',
+        status: {
+          type: 'error',
+          message: t('Saving changes failed.', 'Speichern der Änderungen fehlgeschlagen.'),
+        },
+      });
     }
   }, [
     editForm,
     editNewFiles,
     resetEditFiles,
     submitPrompt,
+    t,
+    validateForm,
   ]);
 
   const handleDeletePrompt = useCallback(
@@ -451,6 +581,21 @@ const PromptManager = () => {
         )}
       </p>
 
+      {status && (
+        <Message
+          positive={status.type === 'success'}
+          negative={status.type === 'error'}
+          onDismiss={() => localDispatch({ type: 'CLEAR_STATUS' })}
+        >
+          <Message.Header>
+            {status.type === 'success'
+              ? t('Success', 'Erfolg')
+              : t('Error', 'Fehler')}
+          </Message.Header>
+          <p>{status.message}</p>
+        </Message>
+      )}
+
       {uploading && (
         <Progress
           percent={uploadProgress}
@@ -485,6 +630,8 @@ const PromptManager = () => {
         onFieldChange={handleCreateFieldChange}
         files={uploadedFiles}
         onFilesSelected={handleAddCreateFiles}
+        fieldErrors={formErrors.create}
+        submitting={submitting}
         t={t}
       />
 
@@ -501,6 +648,8 @@ const PromptManager = () => {
         onDownloadFile={handleDownloadAttachedFile}
         onDeleteFile={handleDeleteAttachedFile}
         selectedPreviewFile={selectedPreviewFile}
+        fieldErrors={formErrors.edit}
+        submitting={submitting}
         t={t}
       />
 

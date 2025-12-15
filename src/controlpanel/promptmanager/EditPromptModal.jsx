@@ -18,6 +18,8 @@ const EditPromptModal = ({
   onDownloadFile,
   onDeleteFile,
   selectedPreviewFile,
+  fieldErrors,
+  submitting,
   t,
 }) => (
   <Modal
@@ -34,6 +36,7 @@ const EditPromptModal = ({
           idPrefix="edit"
           form={form}
           onChange={onFieldChange}
+          errors={fieldErrors}
           t={t}
           categoriesLabel={t('Categories', 'Kategorien')}
         />
@@ -74,7 +77,7 @@ const EditPromptModal = ({
 
     <Modal.Actions>
       <Button onClick={onClose}>{t('Cancel', 'Abbrechen')}</Button>
-      <Button primary onClick={onSubmit}>
+      <Button primary onClick={onSubmit} loading={submitting}>
         {t('Save changes', 'Änderungen speichern')}
       </Button>
     </Modal.Actions>
