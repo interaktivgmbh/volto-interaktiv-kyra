@@ -6,7 +6,7 @@ import applyRoutes from './routes';
 import reducer from './redux/reducer';
 import {chatSVG, robotSVG} from './helpers/icons';
 import {getPrompts} from './redux/actions';
-
+import ChatWidgetProvider from './components/AIChat/ChatWidgetProvider';
 
 const KyraPromptLoader: React.FC = () => {
   const dispatch = useDispatch();
@@ -19,14 +19,11 @@ const KyraPromptLoader: React.FC = () => {
 };
 
 export default function applyConfig(config) {
-
   config.settings.controlPanelsIcons = {
     ...config.settings.controlPanelsIcons,
     'ai-prompt-manager': chatSVG,
     'ai-assist-settings': robotSVG,
   };
-
-  console.log(config.settings.controlpanels);
 
   config.addonReducers = {
     ...config.addonReducers,
@@ -35,12 +32,18 @@ export default function applyConfig(config) {
 
   config.settings.appExtras = [
     ...(config.settings.appExtras || []),
-    KyraPromptLoader,
+    {
+      match: '',
+      component: () => (
+        <>
+          <KyraPromptLoader / >
+        <ChatWidgetProvider / >
+        </>
+      ),
+    },
   ];
 
   config = applyRoutes(config);
-
-  console.log(config);
 
   return config;
 }
