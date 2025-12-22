@@ -71,6 +71,15 @@ const ChatPanel: React.FC<Props> = ({
           </div>
         </div>
         <div className="kyra-ai-chat__header-actions">
+          <button
+            type="button"
+            className="kyra-ai-chat__header-icon-button"
+            onClick={onNewConversation}
+            aria-label="Start new chat"
+            title="Start new chat"
+          >
+            <span>+</span>
+          </button>
           <button type="button" onClick={onToggleHistory}>
             History
           </button>
@@ -82,15 +91,15 @@ const ChatPanel: React.FC<Props> = ({
           </button>
         </div>
       </div>
-      <div className="kyra-ai-chat__tabs">
-        <button
-          type="button"
-          className={activeTab === 'chat' ? 'is-active' : ''}
-          onClick={() => onTabChange('chat')}
-        >
-          Chat
-        </button>
-        {capabilities.can_edit && (
+      {capabilities.can_edit && (
+        <div className="kyra-ai-chat__tabs">
+          <button
+            type="button"
+            className={activeTab === 'chat' ? 'is-active' : ''}
+            onClick={() => onTabChange('chat')}
+          >
+            Chat
+          </button>
           <button
             type="button"
             className={activeTab === 'actions' ? 'is-active' : ''}
@@ -98,8 +107,8 @@ const ChatPanel: React.FC<Props> = ({
           >
             Actions
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="kyra-ai-chat__body">
         {activeTab === 'chat' ? (
           <>
@@ -129,7 +138,7 @@ const ChatPanel: React.FC<Props> = ({
         )}
       </div>
       {activeTab === 'chat' && (
-        <Composer onSend={onSend} disabled={isSending} />
+        <Composer onSend={onSend} disabled={isSending} rows={isDocked ? 5 : 2} />
       )}
       <HistoryDrawer
         open={showHistory}

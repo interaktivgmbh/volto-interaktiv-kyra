@@ -419,10 +419,12 @@ const ChatWidgetProvider: React.FC = () => {
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
       />
-      <LauncherButton
-        onClick={() => setIsOpen((value) => !value)}
-        isOpen={isOpen}
-      />
+      {!isOpen && (
+        <LauncherButton
+          onClick={() => setIsOpen((value) => !value)}
+          isOpen={isOpen}
+        />
+      )}
     </div>
   );
 };
