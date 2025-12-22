@@ -7,6 +7,8 @@ import copySVG from '../theme/assets/icons/copy.svg';
 import thumbUpSVG from '../theme/assets/icons/thumb_up.svg';
 import thumbDownSVG from '../theme/assets/icons/thumb_down.svg';
 import refreshSVG from '../theme/assets/icons/refresh.svg';
+import historySVG from '../theme/assets/icons/history.svg';
+import newchatSVG from '../theme/assets/icons/new-chat.svg';
 
 export {
   robotSVG,
@@ -18,4 +20,6 @@ export {
   thumbUpSVG,
   thumbDownSVG,
   refreshSVG,
+  historySVG,
+  newchatSVG
 };

@@ -99,42 +99,45 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
       {success && <div className="kyra-ai-chat__success">{success}</div>}
       {plan && (
         <div className="kyra-ai-chat__actions-plan">
-          <div className="kyra-ai-chat__actions-section">
-            <div className="kyra-ai-chat__actions-title">Plan preview</div>
-            <div className="kyra-ai-chat__actions-summary">
-              {plan.preview?.summary || 'No summary provided.'}
-            </div>
-            {plan.preview?.diff && (
-              <pre className="kyra-ai-chat__actions-diff">
-                {plan.preview.diff}
-              </pre>
-            )}
-            {plan.preview?.human_steps && plan.preview.human_steps.length > 0 && (
-              <ul className="kyra-ai-chat__actions-steps">
-                {plan.preview.human_steps.map((step, index) => (
-                  <li key={`${step}-${index}`}>{step}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="kyra-ai-chat__actions-section">
-            <div className="kyra-ai-chat__actions-title">Actions</div>
-            {plan.actions.length === 0 ? (
-              <div className="kyra-ai-chat__actions-empty">
-                No changes proposed yet.
+          <div className="kyra-ai-chat__actions-plan-inner">
+            <div className="kyra-ai-chat__actions-section">
+              <div className="kyra-ai-chat__actions-title">Plan preview</div>
+              <div className="kyra-ai-chat__actions-summary">
+                {plan.preview?.summary || 'No summary provided.'}
               </div>
-            ) : (
-              <ul className="kyra-ai-chat__actions-list">
-                {plan.actions.map((action, index) => (
-                  <li key={`${action.type}-${index}`}>
-                    <strong>{action.type}</strong>
-                    {action.payload && (
-                      <pre>{JSON.stringify(action.payload, null, 2)}</pre>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+              {plan.preview?.diff && (
+                <pre className="kyra-ai-chat__actions-diff">
+                  {plan.preview.diff}
+                </pre>
+              )}
+              {plan.preview?.human_steps &&
+                plan.preview.human_steps.length > 0 && (
+                  <ul className="kyra-ai-chat__actions-steps">
+                    {plan.preview.human_steps.map((step, index) => (
+                      <li key={`${step}-${index}`}>{step}</li>
+                    ))}
+                  </ul>
+                )}
+            </div>
+            <div className="kyra-ai-chat__actions-section">
+              <div className="kyra-ai-chat__actions-title">Actions</div>
+              {plan.actions.length === 0 ? (
+                <div className="kyra-ai-chat__actions-empty">
+                  No changes proposed yet.
+                </div>
+              ) : (
+                <ul className="kyra-ai-chat__actions-list">
+                  {plan.actions.map((action, index) => (
+                    <li key={`${action.type}-${index}`}>
+                      <strong>{action.type}</strong>
+                      {action.payload && (
+                        <pre>{JSON.stringify(action.payload, null, 2)}</pre>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
           <label className="kyra-ai-chat__actions-confirm">
             <input

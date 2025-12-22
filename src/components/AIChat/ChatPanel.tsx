@@ -5,6 +5,8 @@ import Composer from './Composer';
 import HistoryDrawer from './HistoryDrawer';
 import MessageList from './MessageList';
 import type { ChatCapabilities, ChatContextPayload, ChatConversation, ChatMessage } from './types';
+import { Icon } from '@plone/volto/components';
+import { historySVG, newchatSVG } from '../../helpers/icons';
 
 type Props = {
   isOpen: boolean;
@@ -78,10 +80,16 @@ const ChatPanel: React.FC<Props> = ({
             aria-label="Start new chat"
             title="Start new chat"
           >
-            <span>+</span>
+            <Icon name={newchatSVG} size="18px" />
           </button>
-          <button type="button" onClick={onToggleHistory}>
-            History
+          <button
+            type="button"
+            className="kyra-ai-chat__header-icon-button kyra-ai-chat__header-icon-button--history"
+            onClick={onToggleHistory}
+            aria-label="History"
+            title="History"
+          >
+            <Icon name={historySVG} size="18px" />
           </button>
           <button type="button" onClick={onToggleDock}>
             {isDocked ? 'Float' : 'Dock'}

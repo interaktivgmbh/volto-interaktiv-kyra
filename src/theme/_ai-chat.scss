@@ -78,6 +78,30 @@
   animation: ai-chat-dock-in 0.25s ease-out;
 }
 
+.kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body {
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+}
+
+.kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.9);
+}
+
+.kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body::-webkit-scrollbar-track {
+  background: rgba(237, 242, 247, 0.8);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body::-webkit-scrollbar-thumb {
+  background: rgba(59, 151, 212, 0.6);
+  border-radius: 999px;
+}
+
 .kyra-ai-chat__header {
   padding: 16px 16px 10px;
   display: flex;
@@ -133,6 +157,27 @@
 
 .kyra-ai-chat__header-icon-button:hover {
   background: rgba(59, 151, 212, 0.25);
+}
+
+.kyra-ai-chat__header-icon-button img {
+  width: 18px;
+  height: 18px;
+}
+
+.kyra-ai-chat__header-icon-button .icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.kyra-ai-chat__header-icon-button .icon svg path {
+  fill: none !important;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.kyra-ai-chat__header-icon-button--history .icon svg path {
+  stroke-width: 2.4;
 }
 
 .kyra-ai-chat__tabs {
@@ -211,7 +256,6 @@
 .kyra-ai-chat__message {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .kyra-ai-chat__message--user {
@@ -511,6 +555,82 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.kyra-ai-chat__panel--docked .kyra-ai-chat__actions-plan {
+  max-height: 420px;
+}
+
+.kyra-ai-chat__actions-plan-inner {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 6px;
+}
+
+.kyra-ai-chat__actions-plan-inner::-webkit-scrollbar {
+  width: 4px;
+}
+
+.kyra-ai-chat__actions-plan-inner::-webkit-scrollbar-thumb {
+  background: rgba(59, 151, 212, 0.6);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__actions-plan-inner,
+.kyra-ai-chat__actions-diff,
+.kyra-ai-chat__actions-steps,
+.kyra-ai-chat__actions-list {
+  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+  scrollbar-width: thin;
+}
+
+.kyra-ai-chat__actions-plan-inner::-webkit-scrollbar,
+.kyra-ai-chat__actions-diff::-webkit-scrollbar,
+.kyra-ai-chat__actions-steps::-webkit-scrollbar,
+.kyra-ai-chat__actions-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.kyra-ai-chat__actions-plan-inner::-webkit-scrollbar-track,
+.kyra-ai-chat__actions-diff::-webkit-scrollbar-track,
+.kyra-ai-chat__actions-steps::-webkit-scrollbar-track,
+.kyra-ai-chat__actions-list::-webkit-scrollbar-track {
+  background: rgba(237, 242, 247, 0.8);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__actions-plan-inner::-webkit-scrollbar-thumb,
+.kyra-ai-chat__actions-diff::-webkit-scrollbar-thumb,
+.kyra-ai-chat__actions-steps::-webkit-scrollbar-thumb,
+.kyra-ai-chat__actions-list::-webkit-scrollbar-thumb {
+  background: rgba(59, 151, 212, 0.6);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__actions-input {
+  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+  scrollbar-width: thin;
+}
+
+.kyra-ai-chat__actions-input::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.kyra-ai-chat__actions-input::-webkit-scrollbar-track {
+  background: rgba(237, 242, 247, 0.8);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__actions-input::-webkit-scrollbar-thumb {
+  background: rgba(59, 151, 212, 0.6);
+  border-radius: 999px;
 }
 
 .kyra-ai-chat__actions-section {
@@ -539,6 +659,7 @@
   font-size: 12px;
   border: 1px solid var(--ai-chat-border);
   overflow-x: auto;
+  max-height: 120px;
 }
 
 .kyra-ai-chat__actions-steps,
