@@ -4,7 +4,7 @@ import ActionsTab from './ActionsTab';
 import Composer from './Composer';
 import HistoryDrawer from './HistoryDrawer';
 import MessageList from './MessageList';
-import type { ChatCapabilities, ChatContextPayload, ChatConversation } from './types';
+import type { ChatCapabilities, ChatContextPayload, ChatConversation, ChatMessage } from './types';
 
 type Props = {
   isOpen: boolean;
@@ -23,7 +23,7 @@ type Props = {
   onToggleHistory: () => void;
   onTabChange: (tab: 'chat' | 'actions') => void;
   onSend: (content: string) => void;
-  onFeedback: (messageId: string, rating: 'up' | 'down') => void;
+  onRegenerate?: (message: ChatMessage) => void;
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
 };
@@ -51,7 +51,7 @@ const ChatPanel: React.FC<Props> = ({
   onToggleHistory,
   onTabChange,
   onSend,
-  onFeedback,
+  onRegenerate,
   onSelectConversation,
   onNewConversation,
 }) => {
@@ -117,7 +117,7 @@ const ChatPanel: React.FC<Props> = ({
             </div>
             <MessageList
               messages={conversation?.messages || []}
-              onFeedback={onFeedback}
+              onRegenerate={onRegenerate}
             />
           </>
         ) : (

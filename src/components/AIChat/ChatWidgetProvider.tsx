@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 
 import ChatPanel from './ChatPanel';
 import LauncherButton from './LauncherButton';
-import { getAiCapabilities, postAiChat, postAiChatStream, postAiFeedback } from './api';
+import { getAiCapabilities, postAiChat, postAiChatStream } from './api';
 import {
   loadLocalConversations,
   removeLocalConversation,
@@ -357,23 +357,17 @@ const ChatWidgetProvider: React.FC = () => {
     }
   };
 
-  const handleFeedback = async (messageId: string, rating: 'up' | 'down') => {
-    if (!conversation) return;
-    const updatedMessages = conversation.messages.map((message) =>
-      message.id === messageId ? { ...message, feedback: rating } : message,
-    );
-    const updatedConversation = {
-      ...conversation,
-      messages: updatedMessages,
-      updatedAt: new Date().toISOString(),
-    };
-    setConversation(updatedConversation);
-    persistConversation(updatedConversation);
-    try {
-      await postAiFeedback({ message_id: messageId, rating }, token);
-    } catch (_error) {
-      // Ignore feedback errors for now.
-    }
+  const handleRegenerate = (assistantMessage: ChatMessage) => {
+    if (isSending) return;
+    const current = conversationRef.current;
+    if (!current) return;
+    const index = current.messages.findIndex((m) => m.id === assistantMessage.id);
+    if (index === -1) return;
+    const lastUser = [...current.messages.slice(0, index)]
+      .reverse()
+      .find((m) => m.role === 'user' && m.content);
+    if (!lastUser?.content) return;
+    handleSend(lastUser.content);
   };
 
   const handleSelectConversation = (conversationId: string) => {
@@ -411,7 +405,7 @@ const ChatWidgetProvider: React.FC = () => {
         onToggleHistory={() => setShowHistory((value) => !value)}
         onTabChange={setActiveTab}
         onSend={handleSend}
-        onFeedback={handleFeedback}
+        onRegenerate={handleRegenerate}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
       />

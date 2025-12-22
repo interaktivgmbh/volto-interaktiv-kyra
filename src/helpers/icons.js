@@ -3,5 +3,19 @@ import chatSVG from '../theme/assets/icons/chat.svg';
 import aiSVG from '../theme/assets/icons/ai.svg';
 import sendSVG from '../theme/assets/icons/send.svg';
 import aichatSVG from '../theme/assets/icons/ai_chat.svg';
+import copySVG from '../theme/assets/icons/copy.svg';
+import thumbUpSVG from '../theme/assets/icons/thumb_up.svg';
+import thumbDownSVG from '../theme/assets/icons/thumb_down.svg';
+import refreshSVG from '../theme/assets/icons/refresh.svg';
 
-export { robotSVG, chatSVG, aiSVG, sendSVG, aichatSVG };
+export {
+  robotSVG,
+  chatSVG,
+  aiSVG,
+  sendSVG,
+  aichatSVG,
+  copySVG,
+  thumbUpSVG,
+  thumbDownSVG,
+  refreshSVG,
+};
