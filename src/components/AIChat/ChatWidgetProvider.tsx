@@ -8,6 +8,8 @@ import {
   loadLocalConversations,
   removeLocalConversation,
   saveLocalConversation,
+  loadPanelMode,
+  savePanelMode,
 } from './storage';
 import type {
   ChatCapabilities,
@@ -38,7 +40,9 @@ const ChatWidgetProvider: React.FC = () => {
   const content = useSelector((state: any) => state.content?.data);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isDocked, setIsDocked] = useState(false);
+  const [isDocked, setIsDocked] = useState(
+    () => loadPanelMode() === 'docked',
+  );
   const [activeTab, setActiveTab] = useState<'chat' | 'actions'>('chat');
   const [showHistory, setShowHistory] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -401,7 +405,13 @@ const ChatWidgetProvider: React.FC = () => {
           }
         }}
         onClose={() => setIsOpen(false)}
-        onToggleDock={() => setIsDocked((value) => !value)}
+        onToggleDock={() =>
+          setIsDocked((value) => {
+            const next = !value;
+            savePanelMode(next ? 'docked' : 'floating');
+            return next;
+          })
+        }
         onToggleHistory={() => setShowHistory((value) => !value)}
         onTabChange={setActiveTab}
         onSend={handleSend}

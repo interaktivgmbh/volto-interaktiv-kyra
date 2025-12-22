@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type {ChatMessage} from './types';
 
@@ -75,6 +75,13 @@ const IconCheck = () => (
 
 const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
   const rendered = useMemo(() => messages, [messages]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [messages]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down' | null>>(
     {},
@@ -91,7 +98,7 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
   };
 
   return (
-    <div className="kyra-ai-chat__messages">
+    <div className="kyra-ai-chat__messages" ref={containerRef}>
       {rendered.map((message) => {
         const isAssistant = message.role === 'assistant';
         const isStreaming = message.status === 'streaming';

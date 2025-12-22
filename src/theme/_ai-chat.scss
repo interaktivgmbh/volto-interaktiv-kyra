@@ -170,6 +170,23 @@
   gap: 10px;
   overflow-y: auto;
   padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(48, 125, 176, 0.6) rgba(255, 255, 255, 0.8);
+  scroll-behavior: smooth;
+}
+
+.kyra-ai-chat__messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kyra-ai-chat__messages::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__messages::-webkit-scrollbar-thumb {
+  background: rgba(59, 151, 212, 0.7);
+  border-radius: 999px;
 }
 
 .kyra-ai-chat__message {
