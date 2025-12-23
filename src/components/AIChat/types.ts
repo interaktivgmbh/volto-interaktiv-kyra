@@ -55,19 +55,18 @@ export type AiActionsApplyResponse = {
 };
 
 export type ChatContextPayload = {
-  mode: 'page' | 'selection' | 'sources';
+  mode: 'page' | 'summarize' | 'related' | 'search';
   page?: {
     uid?: string;
     url?: string;
   };
-  selection?: {
-    text?: string;
-  };
-  sources?: Array<{
-    uid?: string;
-    url?: string;
-    type?: string;
-  }>;
+  query?: string;
+  selection_text?: string;
+};
+
+export type ChatQuickAction = {
+  label: string;
+  mode: ChatContextPayload['mode'];
 };
 
 export type ChatRequestPayload = {
@@ -92,10 +91,22 @@ export type ChatResponsePayload = {
   };
   citations?: Citation[];
   capabilities?: ChatCapabilities;
+  used_context?: Array<{
+    id?: string;
+    title?: string;
+    url?: string;
+    type?: string;
+    score?: number;
+  }>;
 };
 
 export type FeedbackPayload = {
   message_id: string;
   rating: 'up' | 'down';
   comment?: string;
+};
+
+export type AiChatTranslations = {
+  language?: string;
+  notice?: string;
 };

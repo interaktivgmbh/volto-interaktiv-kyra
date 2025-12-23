@@ -7,6 +7,7 @@ import type {
   Citation,
   AiActionPlan,
   AiActionsApplyResponse,
+  AiChatTranslations,
 } from './types';
 
 const buildApiUrl = (path: string) => {
@@ -305,4 +306,24 @@ export const postAiChatStream = async (
 
   await consumeEventStream(response.body, handlers, signal);
   return { fallback: false };
+};
+
+export const getAiChatTranslations = async (
+  token?: string,
+): Promise<AiChatTranslations> => {
+  const response = await fetch(buildApiUrl('/@@ai-chat-translations'), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'AI chat translations request failed');
+  }
+
+  return response.json();
 };

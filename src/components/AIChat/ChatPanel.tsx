@@ -4,7 +4,13 @@ import ActionsTab from './ActionsTab';
 import Composer from './Composer';
 import HistoryDrawer from './HistoryDrawer';
 import MessageList from './MessageList';
-import type { ChatCapabilities, ChatContextPayload, ChatConversation, ChatMessage } from './types';
+import type {
+  ChatCapabilities,
+  ChatContextPayload,
+  ChatConversation,
+  ChatMessage,
+  ChatQuickAction,
+} from './types';
 import { Icon } from '@plone/volto/components';
 import { historySVG, newchatSVG } from '../../helpers/icons';
 
@@ -24,17 +30,14 @@ type Props = {
   onToggleDock: () => void;
   onToggleHistory: () => void;
   onTabChange: (tab: 'chat' | 'actions') => void;
-  onSend: (content: string) => void;
+  onSend: (content: string, contextOverrides?: Partial<ChatContextPayload>) => void;
+  quickActions?: ChatQuickAction[];
+  onQuickAction?: (action: ChatQuickAction) => void;
   onRegenerate?: (message: ChatMessage) => void;
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
+  languageNotice?: string;
 };
-
-const QUICK_ACTIONS = [
-  'Summarize this page',
-  'Find related content',
-  'Answer questions about this page',
-];
 
 const ChatPanel: React.FC<Props> = ({
   isOpen,
@@ -56,6 +59,9 @@ const ChatPanel: React.FC<Props> = ({
   onRegenerate,
   onSelectConversation,
   onNewConversation,
+  quickActions = [],
+  onQuickAction,
+  languageNotice,
 }) => {
   if (!isOpen) return null;
 
@@ -99,6 +105,9 @@ const ChatPanel: React.FC<Props> = ({
           </button>
         </div>
       </div>
+      {languageNotice && (
+        <div className="kyra-ai-chat__language-note">{languageNotice}</div>
+      )}
       {capabilities.can_edit && (
         <div className="kyra-ai-chat__tabs">
           <button
@@ -121,17 +130,19 @@ const ChatPanel: React.FC<Props> = ({
         {activeTab === 'chat' ? (
           <>
             {error && <div className="kyra-ai-chat__error">{error}</div>}
-            <div className="kyra-ai-chat__quick-actions">
-              {QUICK_ACTIONS.map((action) => (
-                <button
-                  type="button"
-                  key={action}
-                  onClick={() => onSend(action)}
-                >
-                  {action}
-                </button>
-              ))}
-            </div>
+            {quickActions?.length ? (
+              <div className="kyra-ai-chat__quick-actions">
+                {quickActions.map((action) => (
+                  <button
+                    type="button"
+                    key={`${action.mode}-${action.label}`}
+                    onClick={() => onQuickAction?.(action)}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <MessageList
               messages={conversation?.messages || []}
               onRegenerate={onRegenerate}

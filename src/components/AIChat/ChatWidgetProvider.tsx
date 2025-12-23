@@ -3,7 +3,12 @@ import { useSelector } from 'react-redux';
 
 import ChatPanel from './ChatPanel';
 import LauncherButton from './LauncherButton';
-import { getAiCapabilities, postAiChat, postAiChatStream } from './api';
+import {
+  getAiCapabilities,
+  getAiChatTranslations,
+  postAiChat,
+  postAiChatStream,
+} from './api';
 import {
   loadLocalConversations,
   removeLocalConversation,
@@ -17,6 +22,8 @@ import type {
   ChatMessage,
   ChatRequestPayload,
   ChatResponsePayload,
+  ChatContextPayload,
+  ChatQuickAction,
 } from './types';
 
 const DEFAULT_CAPABILITIES: ChatCapabilities = {
@@ -34,6 +41,12 @@ const buildTitle = (content: string) => {
   if (trimmed.length <= 60) return trimmed;
   return `${trimmed.slice(0, 57)}...`;
 };
+
+const QUICK_ACTIONS: ChatQuickAction[] = [
+  { label: 'Summarize this page', mode: 'summarize' },
+  { label: 'Find related content', mode: 'related' },
+  { label: 'Search the site', mode: 'search' },
+];
 
 const ChatWidgetProvider: React.FC = () => {
   const token = useSelector((state: any) => state.userSession?.token);
@@ -53,19 +66,43 @@ const ChatWidgetProvider: React.FC = () => {
   const [conversation, setConversation] = useState<ChatConversation | null>(
     null,
   );
+  const [languageNotice, setLanguageNotice] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState('');
   const conversationRef = useRef<ChatConversation | null>(null);
   const streamControllerRef = useRef<AbortController | null>(null);
+  const fallbackLanguage = useMemo(() => {
+    if (typeof document !== 'undefined') {
+      const docLang = document.documentElement?.lang;
+      if (docLang) return docLang;
+    }
+    if (typeof navigator !== 'undefined') {
+      return (
+        navigator.language ||
+        // eslint-disable-next-line @typescript-eslint/dot-notation
+        (navigator as any)['userLanguage'] ||
+        'en'
+      );
+    }
+    return 'en';
+  }, []);
 
-  const pageContext = useMemo(() => {
+  const pageReference = useMemo(() => {
     if (!content) return undefined;
     return {
-      mode: 'page' as const,
       page: {
         uid: content?.UID,
         url: content?.['@id'],
       },
     };
   }, [content]);
+
+  const pageContext = useMemo<ChatContextPayload | undefined>(() => {
+    if (!pageReference) return undefined;
+    return {
+      mode: 'page',
+      page: pageReference.page,
+    };
+  }, [pageReference]);
 
   useEffect(() => {
     const stored = loadLocalConversations();
@@ -80,6 +117,34 @@ const ChatWidgetProvider: React.FC = () => {
   }, [conversation]);
 
   useEffect(() => {
+    if (!preferredLanguage) {
+      setPreferredLanguage(fallbackLanguage);
+    }
+  }, [fallbackLanguage, preferredLanguage]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadTranslations = async () => {
+      try {
+        const translations = await getAiChatTranslations(token);
+        if (!isMounted) return;
+        if (translations.language) {
+          setPreferredLanguage(translations.language);
+        }
+        if (translations.notice) {
+          setLanguageNotice(translations.notice);
+        }
+      } catch (_error) {
+        // Ignore translation errors.
+      }
+    };
+    loadTranslations();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  useEffect(() => {
     if (!capabilities.can_edit && activeTab === 'actions') {
       setActiveTab('chat');
     }
@@ -88,10 +153,11 @@ const ChatWidgetProvider: React.FC = () => {
   useEffect(() => {
     if (!isOpen) return;
     let isMounted = true;
+
     const fetchCapabilities = async () => {
       try {
-        const context = pageContext?.page
-          ? { uid: pageContext.page.uid, url: pageContext.page.url }
+        const context = pageReference?.page
+          ? { uid: pageReference.page.uid, url: pageReference.page.url }
           : undefined;
         const response = await getAiCapabilities(context, token);
         if (isMounted && response) {
@@ -110,7 +176,7 @@ const ChatWidgetProvider: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [isOpen, pageContext?.page?.uid, pageContext?.page?.url, token]);
+  }, [isOpen, pageReference?.page?.uid, pageReference?.page?.url, token]);
 
   const persistConversation = (nextConversation: ChatConversation) => {
     const updatedHistory = saveLocalConversation(nextConversation);
@@ -194,7 +260,10 @@ const ChatWidgetProvider: React.FC = () => {
     updateConversationState(nextConversation, true, previousId);
   };
 
-  const handleSend = async (contentText: string) => {
+  const handleSend = async (
+    contentText: string,
+    contextOverrides?: Partial<ChatContextPayload>,
+  ) => {
     if (isSending) return;
     setError(null);
     const now = new Date().toISOString();
@@ -235,13 +304,27 @@ const ChatWidgetProvider: React.FC = () => {
     };
     updateConversationState(conversationWithAssistant, false);
 
+    const contextPayload: ChatContextPayload = {
+      mode: contextOverrides?.mode || 'page',
+      page: pageReference?.page,
+      query: contextOverrides?.query,
+      selection_text: contextOverrides?.selection_text,
+    };
+
+    const resolvedLanguage = preferredLanguage || fallbackLanguage;
+    const paramsPayload: ChatRequestPayload['params'] = {};
+    if (resolvedLanguage) {
+      paramsPayload.language = resolvedLanguage;
+    }
+
     const payload: ChatRequestPayload = {
       conversation_id: workingConversation.id,
       messages: workingConversation.messages.map((message) => ({
         role: message.role,
         content: message.content,
       })),
-      context: pageContext,
+      context: contextPayload,
+      params: Object.keys(paramsPayload).length ? paramsPayload : undefined,
     };
 
     const canStream = capabilities.features?.includes('streaming');
@@ -361,6 +444,18 @@ const ChatWidgetProvider: React.FC = () => {
     }
   };
 
+  const pageTitle = content?.Title || content?.title || '';
+
+  const handleQuickAction = (action: ChatQuickAction) => {
+    const query =
+      action.mode === 'summarize' ? undefined : pageTitle || action.label;
+
+    handleSend(action.label, {
+      mode: action.mode,
+      query,
+    });
+  };
+
   const handleRegenerate = (assistantMessage: ChatMessage) => {
     if (isSending) return;
     const current = conversationRef.current;
@@ -399,6 +494,8 @@ const ChatWidgetProvider: React.FC = () => {
         showHistory={showHistory}
         history={history}
         pageContext={pageContext}
+        quickActions={QUICK_ACTIONS}
+        onQuickAction={handleQuickAction}
         onActionsApplied={(result) => {
           if (result?.reload) {
             window.location.reload();
@@ -418,7 +515,8 @@ const ChatWidgetProvider: React.FC = () => {
         onRegenerate={handleRegenerate}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
-      />
+        languageNotice={languageNotice}
+        />
       {!isOpen && (
         <LauncherButton
           onClick={() => setIsOpen((value) => !value)}
