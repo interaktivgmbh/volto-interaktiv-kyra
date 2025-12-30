@@ -8,6 +8,7 @@ import {
   getAiChatTranslations,
   postAiChat,
   postAiChatStream,
+  postAiChatUpload,
 } from './api';
 import {
   loadLocalConversations,
@@ -68,6 +69,9 @@ const ChatWidgetProvider: React.FC = () => {
   );
   const [languageNotice, setLanguageNotice] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('');
+  const [attachments, setAttachments] = useState<
+    Array<{ file_id: string; name?: string; text?: string }>
+  >([]);
   const conversationRef = useRef<ChatConversation | null>(null);
   const streamControllerRef = useRef<AbortController | null>(null);
   const fallbackLanguage = useMemo(() => {
@@ -323,7 +327,10 @@ const ChatWidgetProvider: React.FC = () => {
         role: message.role,
         content: message.content,
       })),
-      context: contextPayload,
+      context: {
+        ...contextPayload,
+        uploads: attachments.length ? attachments : undefined,
+      },
       params: Object.keys(paramsPayload).length ? paramsPayload : undefined,
     };
 
@@ -441,6 +448,7 @@ const ChatWidgetProvider: React.FC = () => {
     } finally {
       streamControllerRef.current = null;
       setIsSending(false);
+      setAttachments([]);
     }
   };
 
@@ -479,6 +487,27 @@ const ChatWidgetProvider: React.FC = () => {
     const fresh = createConversation();
     setConversation(fresh);
     setShowHistory(false);
+    setAttachments([]);
+  };
+
+  const handleUpload = async (file: File) => {
+    try {
+      const uploaded = await postAiChatUpload(file, token);
+      setAttachments((prev) => [
+        ...prev,
+        {
+          file_id: uploaded.file_id,
+          name: uploaded.name,
+          text: uploaded.text,
+        },
+      ]);
+    } catch (err: any) {
+      setError(err?.message || 'Upload failed');
+    }
+  };
+
+  const handleRemoveAttachment = (file_id: string) => {
+    setAttachments((prev) => prev.filter((item) => item.file_id !== file_id));
   };
 
   return (
@@ -516,6 +545,9 @@ const ChatWidgetProvider: React.FC = () => {
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
         languageNotice={languageNotice}
+        attachments={attachments}
+        onUploadFile={handleUpload}
+        onRemoveAttachment={handleRemoveAttachment}
         />
       {!isOpen && (
         <LauncherButton

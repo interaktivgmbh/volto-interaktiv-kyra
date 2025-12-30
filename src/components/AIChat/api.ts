@@ -9,6 +9,7 @@ import type {
   AiActionsApplyResponse,
   AiChatTranslations,
 } from './types';
+import type { AiChatUploadResponse } from './types';
 
 const buildApiUrl = (path: string) => {
   const suffix = path.startsWith('/') ? path : `/${path}`;
@@ -146,6 +147,28 @@ export const postAiActionsApply = async (
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || 'AI actions apply request failed');
+  }
+
+  return response.json();
+};
+
+export const postAiChatUpload = async (
+  file: File,
+  token?: string,
+): Promise<AiChatUploadResponse> => {
+  const form = new FormData();
+  form.append('file', file);
+
+  const response = await fetch(buildApiUrl('/@ai-chat-upload'), {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    credentials: 'same-origin',
+    body: form,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'AI chat upload failed');
   }
 
   return response.json();

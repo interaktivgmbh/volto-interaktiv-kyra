@@ -37,6 +37,9 @@ type Props = {
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
   languageNotice?: string;
+  attachments?: Array<{ file_id: string; name?: string }>;
+  onUploadFile?: (file: File) => void;
+  onRemoveAttachment?: (file_id: string) => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -62,6 +65,9 @@ const ChatPanel: React.FC<Props> = ({
   quickActions = [],
   onQuickAction,
   languageNotice,
+  attachments = [],
+  onUploadFile,
+  onRemoveAttachment,
 }) => {
   if (!isOpen) return null;
 
@@ -157,7 +163,14 @@ const ChatPanel: React.FC<Props> = ({
         )}
       </div>
       {activeTab === 'chat' && (
-        <Composer onSend={onSend} disabled={isSending} rows={isDocked ? 5 : 2} />
+        <Composer
+          onSend={onSend}
+          onUpload={onUploadFile}
+          onRemoveAttachment={onRemoveAttachment}
+          attachments={attachments}
+          disabled={isSending}
+          rows={isDocked ? 5 : 2}
+        />
       )}
       <HistoryDrawer
         open={showHistory}

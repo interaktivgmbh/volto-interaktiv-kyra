@@ -62,6 +62,11 @@ export type ChatContextPayload = {
   };
   query?: string;
   selection_text?: string;
+  uploads?: Array<{
+    file_id: string;
+    name?: string;
+    text?: string;
+  }>;
 };
 
 export type ChatQuickAction = {
@@ -109,4 +114,11 @@ export type FeedbackPayload = {
 export type AiChatTranslations = {
   language?: string;
   notice?: string;
+};
+
+export type AiChatUploadResponse = {
+  file_id: string;
+  name: string;
+  has_text?: boolean;
+  text?: string;
 };
