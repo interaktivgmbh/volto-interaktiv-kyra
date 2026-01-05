@@ -19,7 +19,7 @@ export const loadLocalConversations = (): ChatConversation[] => {
   if (!canUseStorage()) return [];
   const data = safeParse(window.localStorage.getItem(STORAGE_KEY));
   if (!Array.isArray(data)) return [];
-  return data.filter(Boolean);
+  return sortConversations(data.filter(Boolean));
 };
 
 export const saveLocalConversation = (
@@ -32,7 +32,7 @@ export const saveLocalConversation = (
     ...existing.filter((item) => item.id !== conversation.id),
   ];
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  return updated;
+  return sortConversations(updated);
 };
 
 export const removeLocalConversation = (conversationId: string) => {
@@ -41,6 +41,18 @@ export const removeLocalConversation = (conversationId: string) => {
   const updated = existing.filter((item) => item.id !== conversationId);
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   return updated;
+};
+
+function sortConversations(conversations: ChatConversation[]) {
+  return [...conversations].sort((a, b) => {
+    const pinnedA = Boolean(a.pinned);
+    const pinnedB = Boolean(b.pinned);
+    if (pinnedA !== pinnedB) {
+      return pinnedB ? 1 : -1;
+    }
+    if (a.updatedAt === b.updatedAt) return 0;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
 };
 
 export type AiChatPanelMode = 'docked' | 'floating';

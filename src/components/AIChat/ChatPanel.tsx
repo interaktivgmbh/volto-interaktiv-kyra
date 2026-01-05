@@ -36,6 +36,10 @@ type Props = {
   onRegenerate?: (message: ChatMessage) => void;
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
+  onDeleteConversation: (conversationId: string) => void;
+  onRenameConversation: (conversationId: string) => void;
+  onPinConversation: (conversationId: string) => void;
+  onArchiveConversation: (conversationId: string) => void;
   languageNotice?: string;
   attachments?: Array<{ file_id: string; name?: string }>;
   onUploadFile?: (file: File) => void;
@@ -59,10 +63,14 @@ const ChatPanel: React.FC<Props> = ({
   onToggleHistory,
   onTabChange,
   onSend,
-  onRegenerate,
-  onSelectConversation,
+    onRegenerate,
+    onSelectConversation,
   onNewConversation,
-  quickActions = [],
+  onDeleteConversation,
+  onRenameConversation,
+  onPinConversation,
+  onArchiveConversation,
+    quickActions = [],
   onQuickAction,
   languageNotice,
   attachments = [],
@@ -111,9 +119,7 @@ const ChatPanel: React.FC<Props> = ({
           </button>
         </div>
       </div>
-      {languageNotice && (
-        <div className="kyra-ai-chat__language-note">{languageNotice}</div>
-      )}
+      {/* Language notice logic kept in backend but not shown in UI */}
       {capabilities.can_edit && (
         <div className="kyra-ai-chat__tabs">
           <button
@@ -179,6 +185,10 @@ const ChatPanel: React.FC<Props> = ({
         onSelect={onSelectConversation}
         onClose={onToggleHistory}
         onNew={onNewConversation}
+        onDelete={onDeleteConversation}
+        onRename={onRenameConversation}
+        onPinToggle={onPinConversation}
+        onArchiveToggle={onArchiveConversation}
       />
     </div>
   );

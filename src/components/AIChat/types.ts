@@ -22,6 +22,8 @@ export type ChatConversation = {
   title: string;
   messages: ChatMessage[];
   updatedAt: string;
+  pinned?: boolean;
+  archived?: boolean;
 };
 
 export type ChatCapabilities = {

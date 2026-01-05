@@ -729,6 +729,11 @@
   font-size: 12px;
   cursor: pointer;
 }
+.kyra-ai-chat__history-archived-toggle.is-active {
+  background: rgba(59, 151, 212, 0.15);
+  border-color: rgba(59, 151, 212, 0.5);
+  color: var(--ai-chat-accent);
+}
 
 .kyra-ai-chat__history-list {
   display: flex;
@@ -744,10 +749,35 @@
   padding: 10px;
   background: #fff;
   cursor: pointer;
+  position: relative;
 }
 
 .kyra-ai-chat__history-item--active {
   border-color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__history-item--archived {
+  opacity: 0.6;
+}
+
+.kyra-ai-chat__history-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kyra-ai-chat__history-pin {
+  color: #f59e0b;
+  font-size: 14px;
+}
+
+.kyra-ai-chat__history-archived {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .kyra-ai-chat__history-title {
@@ -764,6 +794,52 @@
 .kyra-ai-chat__history-empty {
   font-size: 12px;
   color: var(--ai-chat-muted);
+}
+
+.kyra-ai-chat__history-item {
+  position: relative;
+}
+
+.kyra-ai-chat__history-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.kyra-ai-chat__history-delete,
+.kyra-ai-chat__history-rename {
+  border: none;
+  background: transparent;
+  color: var(--ai-chat-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.kyra-ai-chat__history-delete:hover,
+.kyra-ai-chat__history-rename:hover {
+  color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__history-item {
+  position: relative;
+}
+
+.kyra-ai-chat__history-delete {
+  border: none;
+  background: transparent;
+  color: var(--ai-chat-muted);
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.kyra-ai-chat__history-delete:hover {
+  color: var(--ai-chat-accent);
 }
 
 @keyframes ai-chat-float-in {
@@ -798,4 +874,49 @@
   .kyra-ai-chat__panel--docked {
     width: 100vw;
   }
+}
+.kyra-ai-chat__history-menu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.kyra-ai-chat__history-menu-trigger {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: var(--ai-chat-muted);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.kyra-ai-chat__history-menu-panel {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+  z-index: 1200;
+}
+
+.kyra-ai-chat__history-menu-panel button {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 8px 16px;
+  width: 100%;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__history-menu-panel button:hover {
+  background: rgba(59, 151, 212, 0.08);
 }

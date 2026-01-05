@@ -199,6 +199,49 @@ const ChatWidgetProvider: React.FC = () => {
     return newConversation;
   };
 
+  const deleteConversation = (conversationId: string) => {
+    const updatedHistory = removeLocalConversation(conversationId);
+    setHistory(updatedHistory);
+    if (conversation?.id === conversationId) {
+      if (updatedHistory.length > 0) {
+        setConversation(updatedHistory[0]);
+      } else {
+        const next = createConversation();
+        setConversation(next);
+      }
+    }
+  };
+
+  const persistUpdatedConversation = (updated: ChatConversation) => {
+    const updatedHistory = saveLocalConversation(updated);
+    setHistory(updatedHistory);
+    if (conversation?.id === updated.id) {
+      setConversation(updated);
+    }
+  };
+
+  const togglePinConversation = (conversationId: string) => {
+    const target = history.find((item) => item.id === conversationId);
+    if (!target) return;
+    const updated = {
+      ...target,
+      pinned: !Boolean(target.pinned),
+      updatedAt: new Date().toISOString(),
+    };
+    persistUpdatedConversation(updated);
+  };
+
+  const toggleArchiveConversation = (conversationId: string) => {
+    const target = history.find((item) => item.id === conversationId);
+    if (!target) return;
+    const updated = {
+      ...target,
+      archived: !Boolean(target.archived),
+      updatedAt: new Date().toISOString(),
+    };
+    persistUpdatedConversation(updated);
+  };
+
   const updateConversationState = (
     nextConversation: ChatConversation,
     persist = false,
@@ -486,11 +529,31 @@ const ChatWidgetProvider: React.FC = () => {
   const handleNewConversation = () => {
     const fresh = createConversation();
     setConversation(fresh);
-    setShowHistory(false);
-    setAttachments([]);
+        setShowHistory(false);
+        setAttachments([]);
+      };
+
+  const renameConversation = (conversationId: string) => {
+    const target = history.find((item) => item.id === conversationId);
+    if (!target) return;
+    const currentTitle = target.title || 'Untitled';
+    const newTitle = window.prompt('Rename conversation', currentTitle);
+    if (newTitle === null) return;
+    const nextTitle = newTitle.trim() || 'Untitled';
+    if (nextTitle === currentTitle) return;
+    const updated = {
+      ...target,
+      title: nextTitle,
+      updatedAt: new Date().toISOString(),
+    };
+    const updatedHistory = saveLocalConversation(updated);
+    setHistory(updatedHistory);
+    if (conversation?.id === conversationId) {
+      setConversation(updated);
+    }
   };
 
-  const handleUpload = async (file: File) => {
+      const handleUpload = async (file: File) => {
     try {
       const uploaded = await postAiChatUpload(file, token);
       setAttachments((prev) => [
@@ -544,6 +607,10 @@ const ChatWidgetProvider: React.FC = () => {
         onRegenerate={handleRegenerate}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        onDeleteConversation={deleteConversation}
+        onRenameConversation={renameConversation}
+        onPinConversation={togglePinConversation}
+        onArchiveConversation={toggleArchiveConversation}
         languageNotice={languageNotice}
         attachments={attachments}
         onUploadFile={handleUpload}
