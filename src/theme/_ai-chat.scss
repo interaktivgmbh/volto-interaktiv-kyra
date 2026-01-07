@@ -459,23 +459,9 @@
   position: relative;
 }
 
-.kyra-ai-chat__composer-icon-button span {
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--ai-chat-accent);
-  border-radius: 50%;
-  position: relative;
-}
-
-.kyra-ai-chat__composer-icon-button span::after {
-  content: '';
-  position: absolute;
-  width: 2px;
-  height: 12px;
-  background: var(--ai-chat-accent);
-  right: -6px;
-  bottom: -2px;
-  border-radius: 1px;
+.kyra-ai-chat__composer-icon-button svg {
+  width: 24px;
+  height: 24px;
 }
 
 .kyra-ai-chat__composer-icon-button:hover {

@@ -9,6 +9,7 @@ import thumbDownSVG from '../theme/assets/icons/thumb_down.svg';
 import refreshSVG from '../theme/assets/icons/refresh.svg';
 import historySVG from '../theme/assets/icons/history.svg';
 import newchatSVG from '../theme/assets/icons/new-chat.svg';
+import microphoneSVG from '../theme/assets/icons/microphone.svg';
 
 export {
   robotSVG,
@@ -21,5 +22,6 @@ export {
   thumbDownSVG,
   refreshSVG,
   historySVG,
-  newchatSVG
+  newchatSVG,
+  microphoneSVG,
 };

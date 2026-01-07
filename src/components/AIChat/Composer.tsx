@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 
+import { Icon } from '@plone/volto/components';
+import { microphoneSVG } from '../../helpers/icons';
+
 type Props = {
   onSend: (content: string) => void;
   onUpload?: (file: File) => void;
@@ -84,7 +87,7 @@ const Composer: React.FC<Props> = ({
             className="kyra-ai-chat__composer-icon-button"
             aria-label="Record voice"
           >
-            <span />
+            <Icon name={microphoneSVG} size="18px" />
           </button>
           <button
             type="button"
