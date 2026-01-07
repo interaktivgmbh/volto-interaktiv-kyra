@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { Icon } from '@plone/volto/components';
 import { microphoneSVG } from '../../helpers/icons';
@@ -21,12 +21,79 @@ const Composer: React.FC<Props> = ({
   rows = 4,
 }) => {
   const [value, setValue] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const submit = () => {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setValue('');
+  };
+
+  useEffect(() => {
+    const Recognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!Recognition) return;
+    const recognition = new Recognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = navigator.language || 'en-US';
+    recognitionRef.current = recognition;
+    setSpeechSupported(true);
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const transcript = result[0]?.transcript ?? '';
+        if (result.isFinal) {
+          setValue((prev) => {
+            const separator = prev && !prev.endsWith(' ') ? ' ' : '';
+            return `${prev}${separator}${transcript}`.trimEnd();
+          });
+          interimTranscript = '';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      if (interimTranscript) {
+        setValue((prev) => {
+          const base = prev.replace(/[\u00A0]+$/, '');
+          const separator = base && !base.endsWith(' ') ? ' ' : '';
+          return `${base}${separator}${interimTranscript}`;
+        });
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    return () => {
+      recognition.stop();
+    };
+  }, []);
+
+  const handleMicToggle = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition || disabled) return;
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+      return;
+    }
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch (error) {
+      setIsListening(false);
+    }
   };
 
   return (
@@ -84,8 +151,12 @@ const Composer: React.FC<Props> = ({
         <div className="kyra-ai-chat__composer-controls">
           <button
             type="button"
-            className="kyra-ai-chat__composer-icon-button"
-            aria-label="Record voice"
+            className={`kyra-ai-chat__composer-icon-button${
+              isListening ? ' is-listening' : ''
+            }`}
+            aria-label={isListening ? 'Stop recording' : 'Record voice'}
+            disabled={!speechSupported || disabled}
+            onClick={handleMicToggle}
           >
             <Icon name={microphoneSVG} size="18px" />
           </button>
