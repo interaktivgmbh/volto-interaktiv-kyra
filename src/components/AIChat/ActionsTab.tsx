@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { postAiActionsApply, postAiActionsPlan } from './api';
-import type { AiActionPlan, ChatContextPayload } from './types';
+import type { AiActionPlan, ChatContextPayload, TranslationOptions } from './types';
 
 type Props = {
   canEdit: boolean;
@@ -17,6 +17,10 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [useTranslation, setUseTranslation] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState('en');
+  const [translationMode, setTranslationMode] = useState<'single' | 'subtree'>('single');
+  const [overwriteTranslations, setOverwriteTranslations] = useState(false);
 
   if (!canEdit) {
     return (
@@ -31,15 +35,38 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
     : undefined;
 
   const handlePlan = async () => {
-    if (!goal.trim()) return;
+    if (!goal.trim() && !useTranslation) return;
     setError(null);
     setSuccess(null);
     setIsPlanning(true);
+
+    const translation: TranslationOptions | null = useTranslation
+      ? {
+          target_language: targetLanguage,
+          mode: translationMode,
+          overwrite: overwriteTranslations,
+        }
+      : null;
+
     try {
       const response = await postAiActionsPlan({
-        goal: goal.trim(),
+        goal: goal.trim() || 'Translate content',
         page: pagePayload,
-        constraints: { allowlist: ['update_title', 'update_description', 'update_language'] },
+        constraints: {
+          allowlist: [
+            'update_title',
+            'update_description',
+            'update_language',
+            'translate_content',
+            'insert_text_block',
+            'insert_heading_block',
+            'insert_list_block',
+            'insert_quote_block',
+            'insert_image_block',
+            'insert_block',
+          ],
+        },
+        translation,
       });
       setPlan(response);
       setConfirmApply(false);
@@ -55,10 +82,20 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
     setError(null);
     setSuccess(null);
     setIsApplying(true);
+
+    const translation: TranslationOptions | null = useTranslation
+      ? {
+          target_language: targetLanguage,
+          mode: translationMode,
+          overwrite: overwriteTranslations,
+        }
+      : null;
+
     try {
       const result = await postAiActionsApply({
         plan_id: plan.plan_id,
         page: pagePayload,
+        translation,
       });
       setSuccess('Changes applied successfully.');
       setConfirmApply(false);
@@ -83,6 +120,55 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
         onChange={(event) => setGoal(event.target.value)}
         rows={3}
       />
+      <div className="kyra-ai-chat__actions-translation">
+        <div className="kyra-ai-chat__actions-translation-header">
+          <label className="kyra-ai-chat__actions-toggle">
+            <input
+              type="checkbox"
+              checked={useTranslation}
+              onChange={(event) => setUseTranslation(event.target.checked)}
+            />
+            Translate
+          </label>
+          <div className="kyra-ai-chat__actions-translation-grid">
+            <label>
+              Target language
+              <select
+                value={targetLanguage}
+                onChange={(event) => setTargetLanguage(event.target.value)}
+                disabled={!useTranslation}
+              >
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+              </select>
+            </label>
+            <label>
+              Mode
+              <select
+                value={translationMode}
+                onChange={(event) =>
+                  setTranslationMode(event.target.value as 'single' | 'subtree')
+                }
+                disabled={!useTranslation}
+              >
+                <option value="single">Only this page</option>
+                <option value="subtree">Include subtree</option>
+              </select>
+            </label>
+            <label className="kyra-ai-chat__actions-toggle">
+              <input
+                type="checkbox"
+                checked={overwriteTranslations}
+                onChange={(event) => setOverwriteTranslations(event.target.checked)}
+                disabled={!useTranslation}
+              />
+              Overwrite existing translations
+            </label>
+          </div>
+        </div>
+      </div>
       <div className="kyra-ai-chat__actions-controls">
         <button type="button" onClick={handlePlan} disabled={isPlanning}>
           {isPlanning ? 'Planning…' : 'Plan'}
@@ -138,6 +224,19 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 </ul>
               )}
             </div>
+            {plan.translation_report && (
+              <div className="kyra-ai-chat__actions-section">
+                <div className="kyra-ai-chat__actions-title">Translation</div>
+                <div className="kyra-ai-chat__actions-summary">
+                  {plan.translation_report.target_language
+                    ? `→ ${plan.translation_report.target_language} (${plan.translation_report.mode || 'single'})`
+                    : 'Translation plan'}
+                </div>
+                <pre className="kyra-ai-chat__actions-diff">
+                  {JSON.stringify(plan.translation_report, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
           <label className="kyra-ai-chat__actions-confirm">
             <input

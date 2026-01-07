@@ -47,6 +47,16 @@ export type AiActionPlan = {
   plan_id: string;
   actions: AiAction[];
   preview?: AiActionPreview;
+  translation_report?: {
+    created?: number;
+    updated?: number;
+    skipped?: number;
+    failed?: number;
+    details?: Array<Record<string, any>>;
+    source_language?: string;
+    target_language?: string;
+    mode?: string;
+  };
 };
 
 export type AiActionsApplyResponse = {
@@ -54,6 +64,13 @@ export type AiActionsApplyResponse = {
   changed?: string[];
   reload?: boolean;
   content_snapshot?: Record<string, any>;
+  report?: AiActionPlan['translation_report'];
+};
+
+export type TranslationOptions = {
+  target_language: string;
+  mode: 'single' | 'subtree';
+  overwrite?: boolean;
 };
 
 export type ChatContextPayload = {

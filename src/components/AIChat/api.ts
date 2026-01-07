@@ -8,6 +8,7 @@ import type {
   AiActionPlan,
   AiActionsApplyResponse,
   AiChatTranslations,
+  TranslationOptions,
 } from './types';
 import type { AiChatUploadResponse } from './types';
 
@@ -105,6 +106,7 @@ export const postAiActionsPlan = async (
     goal: string;
     page?: { uid?: string; url?: string };
     constraints?: Record<string, any>;
+    translation?: TranslationOptions | null;
   },
   token?: string,
 ): Promise<AiActionPlan> => {
@@ -131,6 +133,7 @@ export const postAiActionsApply = async (
     plan_id?: string;
     actions?: any[];
     page?: { uid?: string; url?: string };
+    translation?: TranslationOptions | null;
   },
   token?: string,
 ): Promise<AiActionsApplyResponse> => {
