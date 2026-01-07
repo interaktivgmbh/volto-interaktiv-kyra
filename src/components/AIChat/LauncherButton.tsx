@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { Icon } from '@plone/volto/components';
+import { robotSVG } from '../../helpers/icons';
+
 type Props = {
   onClick: () => void;
   isOpen: boolean;
@@ -15,7 +18,7 @@ const LauncherButton: React.FC<Props> = ({ onClick, isOpen }) => {
       onClick={onClick}
       aria-label={isOpen ? 'Close Kyra AI chat' : 'Open Kyra AI chat'}
     >
-      AI
+      <Icon name={robotSVG} size="18px" />
     </button>
   );
 };

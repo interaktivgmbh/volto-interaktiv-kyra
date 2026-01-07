@@ -35,6 +35,12 @@
   justify-content: center;
 }
 
+.kyra-ai-chat__launcher svg,
+.kyra-ai-chat__launcher .icon svg {
+  width: 34px !important;
+  height: 34px !important;
+}
+
 .kyra-ai-chat__launcher:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 42px rgba(48, 125, 176, 0.38);
