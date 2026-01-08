@@ -36,11 +36,33 @@ const DEFAULT_CAPABILITIES: ChatCapabilities = {
 const generateId = () =>
   `chat_${Math.random().toString(36).slice(2, 10)}`;
 
-const buildTitle = (content: string) => {
-  const trimmed = content.trim().replace(/\s+/g, ' ');
-  if (!trimmed) return 'New chat';
-  if (trimmed.length <= 60) return trimmed;
-  return `${trimmed.slice(0, 57)}...`;
+const buildTitle = (content: string, lang?: string) => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  const defaultTitle = isDe ? 'Neuer Chat' : 'New chat';
+  const trimmed = content.trim();
+  if (!trimmed) return defaultTitle;
+
+  // Prefer the first sentence or first line
+  const firstSegment = trimmed.split(/[\n\r.!?]/)[0] || trimmed;
+  const tokens = firstSegment
+    .replace(/["“”‚‘’]+/g, '')
+    .trim()
+    .split(/\s+/);
+
+  const stopwords = isDe
+    ? ['bitte', 'aktualisiere', 'ändere', 'ersetze', 'setze', 'mache', 'füge', 'entferne', 'schreibe', 'erstelle', 'übersetze', 'zusammenfassen', 'fasse']
+    : ['please', 'update', 'change', 'set', 'make', 'add', 'remove', 'write', 'create', 'replace', 'translate', 'summarize', 'summarise'];
+
+  const filtered = tokens.filter(
+    (tok) => tok && !stopwords.includes(tok.toLowerCase()),
+  );
+
+  const selected = (filtered.length ? filtered : tokens).slice(0, 6).join(' ');
+  const title = selected.trim().replace(/\s+/g, ' ');
+  if (!title) return defaultTitle;
+  const capped = title.charAt(0).toUpperCase() + title.slice(1);
+  if (capped.length <= 60) return capped;
+  return `${capped.slice(0, 57)}...`;
 };
 
 const getQuickActions = (lang?: string): ChatQuickAction[] => {
@@ -136,6 +158,11 @@ const ChatWidgetProvider: React.FC = () => {
     [preferredLanguage],
   );
 
+  const defaultChatTitle = useMemo(() => {
+    const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+    return isDe ? 'Neuer Chat' : 'New chat';
+  }, [preferredLanguage]);
+
   useEffect(() => {
     const stored = loadLocalConversations(userKey);
     setHistory(stored);
@@ -219,7 +246,9 @@ const ChatWidgetProvider: React.FC = () => {
     const now = new Date().toISOString();
     const newConversation: ChatConversation = {
       id: generateId(),
-      title: firstMessage ? buildTitle(firstMessage.content) : 'New chat',
+      title: firstMessage
+        ? buildTitle(firstMessage.content, preferredLanguage)
+        : defaultChatTitle,
       messages: firstMessage ? [firstMessage] : [],
       updatedAt: now,
     };
@@ -354,9 +383,17 @@ const ChatWidgetProvider: React.FC = () => {
       workingConversation = createConversation();
     }
 
+    const isDefaultTitle =
+      !workingConversation.title ||
+      workingConversation.title.toLowerCase() === 'new chat' ||
+      workingConversation.title.toLowerCase() === 'neuer chat' ||
+      workingConversation.title === defaultChatTitle;
+
     workingConversation = {
       ...workingConversation,
-      title: workingConversation.title || buildTitle(contentText),
+      title: isDefaultTitle
+        ? buildTitle(contentText, preferredLanguage)
+        : workingConversation.title,
       messages: [...workingConversation.messages, userMessage],
       updatedAt: now,
     };
