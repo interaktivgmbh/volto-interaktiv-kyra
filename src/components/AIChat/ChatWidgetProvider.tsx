@@ -50,7 +50,8 @@ const QUICK_ACTIONS: ChatQuickAction[] = [
 ];
 
 const ChatWidgetProvider: React.FC = () => {
-  const token = useSelector((state: any) => state.userSession?.token);
+  const userSession = useSelector((state: any) => state.userSession);
+  const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -100,6 +101,18 @@ const ChatWidgetProvider: React.FC = () => {
     };
   }, [content]);
 
+  const userKey = useMemo(() => {
+    if (token) {
+      const username =
+        userSession?.login?.username ||
+        userSession?.user?.id ||
+        userSession?.user?.username;
+      if (username) return `user:${username}`;
+      return `token:${String(token).slice(0, 8)}`;
+    }
+    return 'anon';
+  }, [token, userSession]);
+
   const pageContext = useMemo<ChatContextPayload | undefined>(() => {
     if (!pageReference) return undefined;
     return {
@@ -109,12 +122,12 @@ const ChatWidgetProvider: React.FC = () => {
   }, [pageReference]);
 
   useEffect(() => {
-    const stored = loadLocalConversations();
+    const stored = loadLocalConversations(userKey);
     setHistory(stored);
     if (stored.length > 0) {
       setConversation(stored[0]);
     }
-  }, []);
+  }, [userKey]);
 
   useEffect(() => {
     conversationRef.current = conversation;
@@ -183,7 +196,7 @@ const ChatWidgetProvider: React.FC = () => {
   }, [isOpen, pageReference?.page?.uid, pageReference?.page?.url, token]);
 
   const persistConversation = (nextConversation: ChatConversation) => {
-    const updatedHistory = saveLocalConversation(nextConversation);
+    const updatedHistory = saveLocalConversation(nextConversation, userKey);
     setHistory(updatedHistory);
   };
 
@@ -200,7 +213,7 @@ const ChatWidgetProvider: React.FC = () => {
   };
 
   const deleteConversation = (conversationId: string) => {
-    const updatedHistory = removeLocalConversation(conversationId);
+    const updatedHistory = removeLocalConversation(conversationId, userKey);
     setHistory(updatedHistory);
     if (conversation?.id === conversationId) {
       if (updatedHistory.length > 0) {
@@ -213,7 +226,7 @@ const ChatWidgetProvider: React.FC = () => {
   };
 
   const persistUpdatedConversation = (updated: ChatConversation) => {
-    const updatedHistory = saveLocalConversation(updated);
+    const updatedHistory = saveLocalConversation(updated, userKey);
     setHistory(updatedHistory);
     if (conversation?.id === updated.id) {
       setConversation(updated);
@@ -250,10 +263,10 @@ const ChatWidgetProvider: React.FC = () => {
     conversationRef.current = nextConversation;
     setConversation(nextConversation);
     if (!persist) return;
-    const updatedHistory = saveLocalConversation(nextConversation);
+    const updatedHistory = saveLocalConversation(nextConversation, userKey);
     setHistory(updatedHistory);
     if (previousId && previousId !== nextConversation.id) {
-      const cleaned = removeLocalConversation(previousId);
+      const cleaned = removeLocalConversation(previousId, userKey);
       setHistory(cleaned);
     }
   };
@@ -586,7 +599,7 @@ const ChatWidgetProvider: React.FC = () => {
         showHistory={showHistory}
         history={history}
         pageContext={pageContext}
-        quickActions={QUICK_ACTIONS}
+      quickActions={QUICK_ACTIONS}
         onQuickAction={handleQuickAction}
         onActionsApplied={(result) => {
           if (result?.reload) {

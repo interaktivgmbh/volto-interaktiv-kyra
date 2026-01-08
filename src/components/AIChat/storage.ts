@@ -15,31 +15,40 @@ const safeParse = (value: string | null) => {
   }
 };
 
-export const loadLocalConversations = (): ChatConversation[] => {
+const keyForUser = (userKey?: string | null) =>
+  userKey ? `${STORAGE_KEY}.${userKey}` : `${STORAGE_KEY}.anon`;
+
+export const loadLocalConversations = (
+  userKey?: string | null,
+): ChatConversation[] => {
   if (!canUseStorage()) return [];
-  const data = safeParse(window.localStorage.getItem(STORAGE_KEY));
+  const data = safeParse(window.localStorage.getItem(keyForUser(userKey)));
   if (!Array.isArray(data)) return [];
   return sortConversations(data.filter(Boolean));
 };
 
 export const saveLocalConversation = (
   conversation: ChatConversation,
+  userKey?: string | null,
 ): ChatConversation[] => {
   if (!canUseStorage()) return [];
-  const existing = loadLocalConversations();
+  const existing = loadLocalConversations(userKey);
   const updated = [
     conversation,
     ...existing.filter((item) => item.id !== conversation.id),
   ];
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  window.localStorage.setItem(keyForUser(userKey), JSON.stringify(updated));
   return sortConversations(updated);
 };
 
-export const removeLocalConversation = (conversationId: string) => {
+export const removeLocalConversation = (
+  conversationId: string,
+  userKey?: string | null,
+) => {
   if (!canUseStorage()) return [];
-  const existing = loadLocalConversations();
+  const existing = loadLocalConversations(userKey);
   const updated = existing.filter((item) => item.id !== conversationId);
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  window.localStorage.setItem(keyForUser(userKey), JSON.stringify(updated));
   return updated;
 };
 
