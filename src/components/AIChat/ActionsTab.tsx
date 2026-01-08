@@ -7,9 +7,72 @@ type Props = {
   canEdit: boolean;
   pageContext?: ChatContextPayload;
   onApplied?: (result: { reload?: boolean }) => void;
+  uiLanguage?: string;
 };
 
-const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
+const getLabels = (lang?: string) => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  if (isDe) {
+    return {
+      eyebrow: 'Actions',
+      title: 'Plan & anwenden',
+      hint: 'Beschreibe deine Änderung. Kyra AI erstellt einen Plan mit Vorschau.',
+      promptLabel: 'Was soll passieren?',
+      promptPlaceholder:
+        'z. B. Titel auf „Quarterly Report“ setzen und Beschreibung verbessern.',
+      translate: 'Übersetzen',
+      translateHint: 'Optional: Inhalt in eine Zielsprache kopieren.',
+      targetLabel: 'Zielsprache',
+      modeLabel: 'Modus',
+      modeSingle: 'Nur diese Seite',
+      modeSubtree: 'Mit Unterseiten',
+      overwrite: 'Bestehende Übersetzungen überschreiben',
+      plan: 'Plan',
+      planning: 'Planung…',
+      confirm: 'Ich bestätige die vorgeschlagenen Änderungen',
+      apply: 'Übernehmen',
+      applying: 'Übernehme…',
+      planPreview: 'Plan-Vorschau',
+      noSummary: 'Keine Zusammenfassung vorhanden.',
+      actionsTitle: 'Actions',
+      noActions: 'Noch keine Änderungen vorgeschlagen.',
+      translationTitle: 'Übersetzung',
+      translationLabel: (tl: string, mode?: string) =>
+        `→ ${tl}${mode ? ` (${mode})` : ''}`,
+      translationPlan: 'Translation plan',
+    };
+  }
+  return {
+    eyebrow: 'Actions',
+    title: 'Plan & apply',
+    hint: 'Describe the change. Kyra AI will propose a plan and preview.',
+    promptLabel: 'What should happen?',
+    promptPlaceholder:
+      'e.g. Set the title to “Quarterly Report” and improve the description.',
+    translate: 'Translate',
+    translateHint: 'Optionally copy content to a target language.',
+    targetLabel: 'Target language',
+    modeLabel: 'Mode',
+    modeSingle: 'Only this page',
+    modeSubtree: 'Include subtree',
+    overwrite: 'Overwrite existing translations',
+    plan: 'Plan',
+    planning: 'Planning…',
+    confirm: 'I confirm the proposed changes',
+    apply: 'Apply',
+    applying: 'Applying…',
+    planPreview: 'Plan preview',
+    noSummary: 'No summary provided.',
+    actionsTitle: 'Actions',
+    noActions: 'No changes proposed yet.',
+    translationTitle: 'Translation',
+    translationLabel: (tl: string, mode?: string) =>
+        `→ ${tl}${mode ? ` (${mode})` : ''}`,
+    translationPlan: 'Translation plan',
+  };
+};
+
+const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLanguage }) => {
   const [goal, setGoal] = useState('');
   const [plan, setPlan] = useState<AiActionPlan | null>(null);
   const [confirmApply, setConfirmApply] = useState(false);
@@ -21,6 +84,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
   const [targetLanguage, setTargetLanguage] = useState('en');
   const [translationMode, setTranslationMode] = useState<'single' | 'subtree'>('single');
   const [overwriteTranslations, setOverwriteTranslations] = useState(false);
+  const t = getLabels(uiLanguage);
 
   if (!canEdit) {
     return (
@@ -113,10 +177,10 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
       <div className="kyra-ai-chat__actions-card">
         <div className="kyra-ai-chat__actions-card-header">
           <div>
-            <div className="kyra-ai-chat__eyebrow">Actions</div>
-            <div className="kyra-ai-chat__title">Plan &amp; apply</div>
+            <div className="kyra-ai-chat__eyebrow">{t.eyebrow}</div>
+            <div className="kyra-ai-chat__title">{t.title}</div>
             <div className="kyra-ai-chat__hint">
-              Beschreibe deine Änderung. Kyra AI erstellt einen Plan mit Vorschau.
+              {t.hint}
             </div>
           </div>
           <div className="kyra-ai-chat__badges">
@@ -125,10 +189,10 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
         </div>
 
         <label className="kyra-ai-chat__field">
-          <span>Was soll passieren?</span>
+          <span>{t.promptLabel}</span>
           <textarea
             className="kyra-ai-chat__actions-input"
-            placeholder='z. B. Titel auf „Quarterly Report“ setzen und Beschreibung verbessern.'
+            placeholder={t.promptPlaceholder}
             value={goal}
             onChange={(event) => setGoal(event.target.value)}
             rows={3}
@@ -143,15 +207,15 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 checked={useTranslation}
                 onChange={(event) => setUseTranslation(event.target.checked)}
               />
-              Übersetzen
+              {t.translate}
             </label>
             <span className="kyra-ai-chat__hint">
-              Optional: Inhalt in eine Zielsprache kopieren.
+              {t.translateHint}
             </span>
           </div>
           <div className="kyra-ai-chat__actions-translation-grid">
             <label className="kyra-ai-chat__field">
-              <span>Zielsprache</span>
+              <span>{t.targetLabel}</span>
               <select
                 value={targetLanguage}
                 onChange={(event) => setTargetLanguage(event.target.value)}
@@ -164,7 +228,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
               </select>
             </label>
             <label className="kyra-ai-chat__field">
-              <span>Modus</span>
+              <span>{t.modeLabel}</span>
               <select
                 value={translationMode}
                 onChange={(event) =>
@@ -172,8 +236,8 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 }
                 disabled={!useTranslation}
               >
-                <option value="single">Nur diese Seite</option>
-                <option value="subtree">Mit Unterseiten</option>
+                <option value="single">{t.modeSingle}</option>
+                <option value="subtree">{t.modeSubtree}</option>
               </select>
             </label>
             <label className="kyra-ai-chat__actions-toggle kyra-ai-chat__actions-toggle--inline">
@@ -183,7 +247,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 onChange={(event) => setOverwriteTranslations(event.target.checked)}
                 disabled={!useTranslation}
               />
-              Bestehende Übersetzungen überschreiben
+              {t.overwrite}
             </label>
           </div>
         </div>
@@ -195,7 +259,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
             onClick={handlePlan}
             disabled={isPlanning}
           >
-            {isPlanning ? 'Planung…' : 'Plan'}
+            {isPlanning ? t.planning : t.plan}
           </button>
           <label className="kyra-ai-chat__actions-toggle kyra-ai-chat__actions-toggle--inline">
             <input
@@ -204,7 +268,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
               onChange={(event) => setConfirmApply(event.target.checked)}
               disabled={!plan}
             />
-            Ich bestätige die vorgeschlagenen Änderungen
+            {t.confirm}
           </label>
           <button
             type="button"
@@ -212,7 +276,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
             onClick={handleApply}
             disabled={!plan || !confirmApply || isApplying}
           >
-            {isApplying ? 'Übernehme…' : 'Apply'}
+            {isApplying ? t.applying : t.apply}
           </button>
         </div>
       </div>
@@ -222,9 +286,9 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
         <div className="kyra-ai-chat__actions-plan">
           <div className="kyra-ai-chat__actions-plan-inner">
             <div className="kyra-ai-chat__actions-section">
-              <div className="kyra-ai-chat__actions-title">Plan preview</div>
+              <div className="kyra-ai-chat__actions-title">{t.planPreview}</div>
               <div className="kyra-ai-chat__actions-summary">
-                {plan.preview?.summary || 'No summary provided.'}
+                {plan.preview?.summary || t.noSummary}
               </div>
               {plan.preview?.diff && (
                 <pre className="kyra-ai-chat__actions-diff">
@@ -241,10 +305,10 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 )}
             </div>
             <div className="kyra-ai-chat__actions-section">
-              <div className="kyra-ai-chat__actions-title">Actions</div>
+              <div className="kyra-ai-chat__actions-title">{t.actionsTitle}</div>
               {plan.actions.length === 0 ? (
                 <div className="kyra-ai-chat__actions-empty">
-                  No changes proposed yet.
+                  {t.noActions}
                 </div>
               ) : (
                 <ul className="kyra-ai-chat__actions-list">
@@ -261,11 +325,14 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
             </div>
             {plan.translation_report && (
               <div className="kyra-ai-chat__actions-section">
-                <div className="kyra-ai-chat__actions-title">Translation</div>
+                <div className="kyra-ai-chat__actions-title">{t.translationTitle}</div>
                 <div className="kyra-ai-chat__actions-summary">
                   {plan.translation_report.target_language
-                    ? `→ ${plan.translation_report.target_language} (${plan.translation_report.mode || 'single'})`
-                    : 'Translation plan'}
+                    ? t.translationLabel(
+                        plan.translation_report.target_language,
+                        plan.translation_report.mode || 'single',
+                      )
+                    : t.translationPlan}
                 </div>
                 <pre className="kyra-ai-chat__actions-diff">
                   {JSON.stringify(plan.translation_report, null, 2)}

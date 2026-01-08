@@ -14,6 +14,36 @@ import type {
 import { Icon } from '@plone/volto/components';
 import { historySVG, newchatSVG } from '../../helpers/icons';
 
+const getChatLabels = (lang?: string) => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  if (isDe) {
+    return {
+      title: 'Kyra AI',
+      editorSubtitle: 'Editor-Modus',
+      visitorSubtitle: 'Visitor-Modus',
+      chatTab: 'Chat',
+      actionsTab: 'Actions',
+      newChat: 'Neuer Chat',
+      history: 'Historie',
+      float: 'Float',
+      dock: 'Dock',
+      close: 'Schließen',
+    };
+  }
+  return {
+    title: 'Kyra AI',
+    editorSubtitle: 'Editor mode',
+    visitorSubtitle: 'Visitor mode',
+    chatTab: 'Chat',
+    actionsTab: 'Actions',
+    newChat: 'Start new chat',
+    history: 'History',
+    float: 'Float',
+    dock: 'Dock',
+    close: 'Close',
+  };
+};
+
 type Props = {
   isOpen: boolean;
   isDocked: boolean;
@@ -40,6 +70,7 @@ type Props = {
   onRenameConversation: (conversationId: string) => void;
   onPinConversation: (conversationId: string) => void;
   onArchiveConversation: (conversationId: string) => void;
+  uiLanguage?: string;
   languageNotice?: string;
   attachments?: Array<{ file_id: string; name?: string }>;
   onUploadFile?: (file: File) => void;
@@ -70,7 +101,8 @@ const ChatPanel: React.FC<Props> = ({
   onRenameConversation,
   onPinConversation,
   onArchiveConversation,
-    quickActions = [],
+  uiLanguage,
+  quickActions = [],
   onQuickAction,
   languageNotice,
   attachments = [],
@@ -78,6 +110,7 @@ const ChatPanel: React.FC<Props> = ({
   onRemoveAttachment,
 }) => {
   if (!isOpen) return null;
+  const t = getChatLabels(uiLanguage);
 
   return (
     <div
@@ -87,9 +120,9 @@ const ChatPanel: React.FC<Props> = ({
     >
       <div className="kyra-ai-chat__header">
         <div className="kyra-ai-chat__title">
-          <div>Kyra AI</div>
+          <div>{t.title}</div>
           <div className="kyra-ai-chat__subtitle">
-            {capabilities.can_edit ? 'Editor mode' : 'Visitor mode'}
+            {capabilities.can_edit ? t.editorSubtitle : t.visitorSubtitle}
           </div>
         </div>
         <div className="kyra-ai-chat__header-actions">
@@ -97,8 +130,8 @@ const ChatPanel: React.FC<Props> = ({
             type="button"
             className="kyra-ai-chat__header-icon-button"
             onClick={onNewConversation}
-            aria-label="Start new chat"
-            title="Start new chat"
+            aria-label={t.newChat}
+            title={t.newChat}
           >
             <Icon name={newchatSVG} size="18px" />
           </button>
@@ -106,16 +139,16 @@ const ChatPanel: React.FC<Props> = ({
             type="button"
             className="kyra-ai-chat__header-icon-button kyra-ai-chat__header-icon-button--history"
             onClick={onToggleHistory}
-            aria-label="History"
-            title="History"
+            aria-label={t.history}
+            title={t.history}
           >
             <Icon name={historySVG} size="18px" />
           </button>
           <button type="button" onClick={onToggleDock}>
-            {isDocked ? 'Float' : 'Dock'}
+            {isDocked ? t.float : t.dock}
           </button>
           <button type="button" onClick={onClose}>
-            Close
+            {t.close}
           </button>
         </div>
       </div>
@@ -127,14 +160,14 @@ const ChatPanel: React.FC<Props> = ({
             className={activeTab === 'chat' ? 'is-active' : ''}
             onClick={() => onTabChange('chat')}
           >
-            Chat
+            {t.chatTab}
           </button>
           <button
             type="button"
             className={activeTab === 'actions' ? 'is-active' : ''}
             onClick={() => onTabChange('actions')}
           >
-            Actions
+            {t.actionsTab}
           </button>
         </div>
       )}
@@ -157,6 +190,7 @@ const ChatPanel: React.FC<Props> = ({
             ) : null}
             <MessageList
               messages={conversation?.messages || []}
+              uiLanguage={uiLanguage}
               onRegenerate={onRegenerate}
             />
           </>
@@ -164,6 +198,7 @@ const ChatPanel: React.FC<Props> = ({
           <ActionsTab
             canEdit={capabilities.can_edit}
             pageContext={pageContext}
+            uiLanguage={uiLanguage}
             onApplied={onActionsApplied}
           />
         )}
@@ -176,6 +211,7 @@ const ChatPanel: React.FC<Props> = ({
           attachments={attachments}
           disabled={isSending}
           rows={isDocked ? 5 : 2}
+          uiLanguage={uiLanguage}
         />
       )}
       <HistoryDrawer
@@ -189,6 +225,7 @@ const ChatPanel: React.FC<Props> = ({
         onRename={onRenameConversation}
         onPinToggle={onPinConversation}
         onArchiveToggle={onArchiveConversation}
+        uiLanguage={uiLanguage}
       />
     </div>
   );

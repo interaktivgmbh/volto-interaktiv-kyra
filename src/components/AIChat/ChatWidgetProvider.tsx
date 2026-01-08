@@ -43,11 +43,21 @@ const buildTitle = (content: string) => {
   return `${trimmed.slice(0, 57)}...`;
 };
 
-const QUICK_ACTIONS: ChatQuickAction[] = [
-  { label: 'Summarize this page', mode: 'summarize' },
-  { label: 'Find related content', mode: 'related' },
-  { label: 'Search the site', mode: 'search' },
-];
+const getQuickActions = (lang?: string): ChatQuickAction[] => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  if (isDe) {
+    return [
+      { label: 'Seite zusammenfassen', mode: 'summarize' },
+      { label: 'Verwandte Inhalte finden', mode: 'related' },
+      { label: 'Website durchsuchen', mode: 'search' },
+    ];
+  }
+  return [
+    { label: 'Summarize this page', mode: 'summarize' },
+    { label: 'Find related content', mode: 'related' },
+    { label: 'Search the site', mode: 'search' },
+  ];
+};
 
 const ChatWidgetProvider: React.FC = () => {
   const userSession = useSelector((state: any) => state.userSession);
@@ -120,6 +130,11 @@ const ChatWidgetProvider: React.FC = () => {
       page: pageReference.page,
     };
   }, [pageReference]);
+
+  const quickActions = useMemo(
+    () => getQuickActions(preferredLanguage),
+    [preferredLanguage],
+  );
 
   useEffect(() => {
     const stored = loadLocalConversations(userKey);
@@ -599,7 +614,7 @@ const ChatWidgetProvider: React.FC = () => {
         showHistory={showHistory}
         history={history}
         pageContext={pageContext}
-      quickActions={QUICK_ACTIONS}
+        quickActions={quickActions}
         onQuickAction={handleQuickAction}
         onActionsApplied={(result) => {
           if (result?.reload) {
@@ -624,6 +639,7 @@ const ChatWidgetProvider: React.FC = () => {
         onRenameConversation={renameConversation}
         onPinConversation={togglePinConversation}
         onArchiveConversation={toggleArchiveConversation}
+        uiLanguage={preferredLanguage}
         languageNotice={languageNotice}
         attachments={attachments}
         onUploadFile={handleUpload}

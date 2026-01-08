@@ -10,6 +10,29 @@ type Props = {
   onRemoveAttachment?: (file_id: string) => void;
   disabled?: boolean;
   rows?: number;
+  uiLanguage?: string;
+};
+
+const getComposerLabels = (lang?: string) => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  if (isDe) {
+    return {
+      placeholder: 'Frage Kyra AI…',
+      upload: 'Datei hochladen',
+      send: 'Senden',
+      micStart: 'Sprachaufnahme starten',
+      micStop: 'Sprachaufnahme beenden',
+      removeFile: 'Datei entfernen',
+    };
+  }
+  return {
+    placeholder: 'Ask Kyra AI...',
+    upload: 'Upload file',
+    send: 'Send',
+    micStart: 'Record voice',
+    micStop: 'Stop recording',
+    removeFile: 'Remove file',
+  };
 };
 
 const Composer: React.FC<Props> = ({
@@ -19,11 +42,13 @@ const Composer: React.FC<Props> = ({
   onRemoveAttachment,
   disabled,
   rows = 4,
+  uiLanguage,
 }) => {
   const [value, setValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const t = getComposerLabels(uiLanguage);
 
   const submit = () => {
     const trimmed = value.trim();
@@ -107,7 +132,7 @@ const Composer: React.FC<Props> = ({
             submit();
           }
         }}
-        placeholder="Ask Kyra AI..."
+        placeholder={t.placeholder}
         rows={rows}
         disabled={disabled}
         style={{
@@ -123,7 +148,7 @@ const Composer: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => onRemoveAttachment(file.file_id)}
-                  aria-label="Remove file"
+                  aria-label={t.removeFile}
                 >
                   ×
                 </button>
@@ -134,7 +159,7 @@ const Composer: React.FC<Props> = ({
       ) : null}
       <div className="kyra-ai-chat__composer-footer">
         <label className="kyra-ai-chat__composer-action">
-          Upload file
+          {t.upload}
           <input
             type="file"
             hidden
@@ -154,7 +179,7 @@ const Composer: React.FC<Props> = ({
             className={`kyra-ai-chat__composer-icon-button${
               isListening ? ' is-listening' : ''
             }`}
-            aria-label={isListening ? 'Stop recording' : 'Record voice'}
+            aria-label={isListening ? t.micStop : t.micStart}
             disabled={!speechSupported || disabled}
             onClick={handleMicToggle}
           >
@@ -166,7 +191,7 @@ const Composer: React.FC<Props> = ({
             onClick={submit}
             disabled={disabled || value.trim().length === 0}
           >
-            Send
+            {t.send}
           </button>
         </div>
       </div>

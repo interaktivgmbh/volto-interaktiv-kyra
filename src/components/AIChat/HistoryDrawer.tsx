@@ -13,6 +13,49 @@ type Props = {
   onArchiveToggle: (conversationId: string) => void;
   onClose: () => void;
   onNew: () => void;
+  uiLanguage?: string;
+};
+
+const getHistoryLabels = (lang?: string) => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  if (isDe) {
+    return {
+      recent: 'Letzte Chats',
+      archived: 'Archivierte Chats',
+      newChat: 'Neuer Chat',
+      toggleArchived: 'Archiv',
+      close: 'Schließen',
+      empty: 'Keine Unterhaltungen.',
+      emptyArchived: 'Keine archivierten Unterhaltungen.',
+      untitled: 'Ohne Titel',
+      archivedTag: 'archiviert',
+      actionsLabel: 'Chat-Aktionen',
+      rename: 'Chat umbenennen',
+      pin: 'Chat anpinnen',
+      unpin: 'Chat lösen',
+      archive: 'Archivieren',
+      unarchive: 'Aus Archiv holen',
+      delete: 'Löschen',
+    };
+  }
+  return {
+    recent: 'Recent chats',
+    archived: 'Archived chats',
+    newChat: 'New',
+    toggleArchived: 'Archived',
+    close: 'Close',
+    empty: 'No conversations yet.',
+    emptyArchived: 'No archived conversations yet.',
+    untitled: 'Untitled',
+    archivedTag: 'archived',
+    actionsLabel: 'Conversation actions',
+    rename: 'Rename chat',
+    pin: 'Pin chat',
+    unpin: 'Unpin chat',
+    archive: 'Archive chat',
+    unarchive: 'Unarchive chat',
+    delete: 'Delete chat',
+  };
 };
 
 const HistoryDrawer: React.FC<Props> = ({
@@ -26,6 +69,7 @@ const HistoryDrawer: React.FC<Props> = ({
   onArchiveToggle,
   onClose,
   onNew,
+  uiLanguage,
 }) => {
   const [menuOpen, setMenuOpen] = React.useState<string | null>(null);
   const [showArchived, setShowArchived] = React.useState(false);
@@ -36,6 +80,7 @@ const HistoryDrawer: React.FC<Props> = ({
       ),
     [conversations, showArchived],
   );
+  const t = getHistoryLabels(uiLanguage);
 
   const handleMenu = (conversationId: string) => {
     setMenuOpen((current) => (current === conversationId ? null : conversationId));
@@ -48,10 +93,10 @@ const HistoryDrawer: React.FC<Props> = ({
       }`}
     >
       <div className="kyra-ai-chat__history-header">
-        <div>{showArchived ? 'Archived chats' : 'Recent chats'}</div>
+        <div>{showArchived ? t.archived : t.recent}</div>
         <div className="kyra-ai-chat__history-controls">
           <button type="button" onClick={onNew}>
-            New
+            {t.newChat}
           </button>
           <button
             type="button"
@@ -60,19 +105,17 @@ const HistoryDrawer: React.FC<Props> = ({
               showArchived ? ' is-active' : ''
             }`}
           >
-            Archived
+            {t.toggleArchived}
           </button>
           <button type="button" onClick={onClose}>
-            Close
+            {t.close}
           </button>
         </div>
       </div>
       <div className="kyra-ai-chat__history-list">
         {filteredConversations.length === 0 && (
           <div className="kyra-ai-chat__history-empty">
-            {showArchived
-              ? 'No archived conversations yet.'
-              : 'No conversations yet.'}
+            {showArchived ? t.emptyArchived : t.empty}
           </div>
         )}
         {filteredConversations.map((conversation) => {
@@ -100,10 +143,10 @@ const HistoryDrawer: React.FC<Props> = ({
               }}
             >
               <div className="kyra-ai-chat__history-title">
-                {conversation.title || 'Untitled'}
+                {conversation.title || t.untitled}
                 {isPinned && <span className="kyra-ai-chat__history-pin">★</span>}
                 {isArchived && (
-                  <span className="kyra-ai-chat__history-archived">archived</span>
+                  <span className="kyra-ai-chat__history-archived">{t.archivedTag}</span>
                 )}
               </div>
               <div className="kyra-ai-chat__history-meta">
@@ -117,7 +160,7 @@ const HistoryDrawer: React.FC<Props> = ({
                     event.stopPropagation();
                     handleMenu(conversation.id);
                   }}
-                  aria-label="Conversation actions"
+                  aria-label={t.actionsLabel}
                 >
                   ⋮
                 </button>
@@ -130,7 +173,7 @@ const HistoryDrawer: React.FC<Props> = ({
                         setMenuOpen(null);
                       }}
                     >
-                      Rename chat
+                      {t.rename}
                     </button>
                     <button
                       type="button"
@@ -139,7 +182,7 @@ const HistoryDrawer: React.FC<Props> = ({
                         setMenuOpen(null);
                       }}
                     >
-                      {isPinned ? 'Unpin chat' : 'Pin chat'}
+                      {isPinned ? t.unpin : t.pin}
                     </button>
                     <button
                       type="button"
@@ -148,7 +191,7 @@ const HistoryDrawer: React.FC<Props> = ({
                         setMenuOpen(null);
                       }}
                     >
-                      {isArchived ? 'Unarchive chat' : 'Archive chat'}
+                      {isArchived ? t.unarchive : t.archive}
                     </button>
                     <button
                       type="button"
@@ -157,7 +200,7 @@ const HistoryDrawer: React.FC<Props> = ({
                         setMenuOpen(null);
                       }}
                     >
-                      Delete chat
+                      {t.delete}
                     </button>
                   </div>
                 )}

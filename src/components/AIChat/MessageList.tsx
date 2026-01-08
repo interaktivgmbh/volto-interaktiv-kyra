@@ -5,6 +5,31 @@ import type {ChatMessage} from './types';
 type Props = {
   messages: ChatMessage[];
   onRegenerate?: (message: ChatMessage) => void;
+  uiLanguage?: string;
+};
+
+const getMessageLabels = (lang?: string) => {
+  const isDe = (lang || '').toLowerCase().startsWith('de');
+  if (isDe) {
+    return {
+      copy: 'Kopieren',
+      copied: 'Kopiert',
+      runAgain: 'Erneut ausführen',
+      helpful: 'Hilfreich',
+      notHelpful: 'Nicht hilfreich',
+      sources: 'Quellen',
+      error: 'Fehler',
+    };
+  }
+  return {
+    copy: 'Copy',
+    copied: 'Copied',
+    runAgain: 'Run again',
+    helpful: 'Mark helpful',
+    notHelpful: 'Mark not helpful',
+    sources: 'Sources',
+    error: 'Error',
+  };
 };
 
 const stripHtml = (value: string) => value.replace(/<[^>]+>/g, '').trim();
@@ -73,9 +98,10 @@ const IconCheck = () => (
   </svg>
 );
 
-const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
+const MessageList: React.FC<Props> = ({ messages, onRegenerate, uiLanguage }) => {
   const rendered = useMemo(() => messages, [messages]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const t = getMessageLabels(uiLanguage);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -105,7 +131,7 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
         const isError = message.status === 'error';
         const displayContent =
           stripHtml(message.content || '') ||
-          (isStreaming ? '...' : isError ? 'Error' : '');
+          (isStreaming ? '...' : isError ? t.error : '');
         return (
           <div
             key={message.id}
@@ -126,8 +152,8 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
                     copiedId === message.id ? ' is-active' : ''
                   }`}
                   onClick={() => handleCopy(message.id, displayContent)}
-                  aria-label="Copy message"
-                  title={copiedId === message.id ? 'Copied' : 'Copy'}
+                  aria-label={t.copy}
+                  title={copiedId === message.id ? t.copied : t.copy}
                 >
                   {copiedId === message.id ? <IconCheck /> : <IconCopy />}
                 </button>
@@ -135,8 +161,8 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
                   <button
                     type="button"
                     className="kyra-ai-chat__icon-button"
-                    aria-label="Regenerate"
-                    title="Run again"
+                    aria-label={t.runAgain}
+                    title={t.runAgain}
                     onClick={() => onRegenerate(message)}
                   >
                     <IconRefresh />
@@ -147,8 +173,8 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
                   className={`kyra-ai-chat__icon-button${
                     feedback[message.id] === 'up' ? ' is-active' : ''
                   }`}
-                  aria-label="Thumb up"
-                  title="Mark helpful"
+                  aria-label={t.helpful}
+                  title={t.helpful}
                   onClick={() => handleFeedback(message.id, 'up')}
                 >
                   <IconThumbUp />
@@ -158,8 +184,8 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
                   className={`kyra-ai-chat__icon-button${
                     feedback[message.id] === 'down' ? ' is-active' : ''
                   }`}
-                  aria-label="Thumb down"
-                  title="Mark not helpful"
+                  aria-label={t.notHelpful}
+                  title={t.notHelpful}
                   onClick={() => handleFeedback(message.id, 'down')}
                 >
                   <IconThumbDown />
@@ -168,7 +194,7 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate }) => {
             )}
             {isAssistant && message.citations && message.citations.length > 0 && (
               <details className="kyra-ai-chat__citations">
-                <summary>Sources</summary>
+                <summary>{t.sources}</summary>
                 <ul>
                   {message.citations.map((citation) => (
                     <li key={citation.source_id}>
