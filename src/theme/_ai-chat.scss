@@ -548,6 +548,36 @@
   color: var(--ai-chat-muted);
 }
 
+.kyra-ai-chat__actions-scroll {
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+}
+
+.kyra-ai-chat__panel--docked .kyra-ai-chat__actions-scroll {
+  max-height: calc(100vh - 200px);
+}
+
+.kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__actions-scroll {
+  max-height: calc(520px - 160px);
+}
+
+.kyra-ai-chat__actions-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kyra-ai-chat__actions-scroll::-webkit-scrollbar-track {
+  background: rgba(237, 242, 247, 0.8);
+  border-radius: 999px;
+}
+
+.kyra-ai-chat__actions-scroll::-webkit-scrollbar-thumb {
+  background: rgba(59, 151, 212, 0.6);
+  border-radius: 999px;
+}
+
 .kyra-ai-chat__actions-placeholder {
   margin-top: 12px;
   padding: 10px;
@@ -564,20 +594,21 @@
   font-size: 13px;
   margin-top: 10px;
   resize: vertical;
+  background: #fff;
 }
 
 .kyra-ai-chat__actions-translation {
-  margin-top: 12px;
-  padding: 10px;
-  border-radius: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid var(--ai-chat-border);
-  background: rgba(48, 125, 176, 0.06);
+  background: linear-gradient(135deg, rgba(48, 125, 176, 0.06), rgba(59, 151, 212, 0.05));
 }
 
 .kyra-ai-chat__actions-translation-header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .kyra-ai-chat__actions-translation-grid {
@@ -588,18 +619,10 @@
 
 .kyra-ai-chat__actions-controls {
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.kyra-ai-chat__actions-controls button {
-  border: 1px solid var(--ai-chat-border);
-  background: #fff;
-  border-radius: 10px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
+  gap: 12px;
+  margin-top: 14px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .kyra-ai-chat__success {
@@ -746,6 +769,115 @@
   gap: 8px;
   font-size: 12px;
   color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__actions-card {
+  background: #fff;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kyra-ai-chat__actions-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.kyra-ai-chat__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ai-chat-accent-strong);
+}
+
+.kyra-ai-chat__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__hint {
+  font-size: 12px;
+  color: var(--ai-chat-muted);
+}
+
+.kyra-ai-chat__badges {
+  display: flex;
+  gap: 6px;
+}
+
+.kyra-ai-chat__badge {
+  background: rgba(48, 125, 176, 0.12);
+  color: var(--ai-chat-accent-strong);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kyra-ai-chat__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__field select,
+.kyra-ai-chat__actions-input {
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.kyra-ai-chat__actions-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ai-chat-text);
+  font-weight: 600;
+}
+
+.kyra-ai-chat__actions-toggle--inline {
+  margin: 0;
+}
+
+.kyra-ai-chat__button {
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.kyra-ai-chat__button--primary {
+  background: linear-gradient(135deg, var(--ai-chat-accent) 0%, var(--ai-chat-accent-strong) 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(48, 125, 176, 0.28);
+}
+
+.kyra-ai-chat__button--ghost {
+  background: #fff;
+  color: var(--ai-chat-text);
+  border-color: var(--ai-chat-border);
+}
+
+.kyra-ai-chat__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .kyra-ai-chat__history {

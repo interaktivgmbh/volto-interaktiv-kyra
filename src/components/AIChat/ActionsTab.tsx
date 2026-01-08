@@ -109,30 +109,49 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
 
   return (
     <div className="kyra-ai-chat__actions">
-      <p>
-        Describe the change you want. Kyra AI will propose a plan and preview
-        before applying any edits.
-      </p>
-      <textarea
-        className="kyra-ai-chat__actions-input"
-        placeholder="e.g. Update the title to “Quarterly Report” and improve the description."
-        value={goal}
-        onChange={(event) => setGoal(event.target.value)}
-        rows={3}
-      />
-      <div className="kyra-ai-chat__actions-translation">
-        <div className="kyra-ai-chat__actions-translation-header">
-          <label className="kyra-ai-chat__actions-toggle">
-            <input
-              type="checkbox"
-              checked={useTranslation}
-              onChange={(event) => setUseTranslation(event.target.checked)}
-            />
-            Translate
-          </label>
+      <div className="kyra-ai-chat__actions-scroll">
+      <div className="kyra-ai-chat__actions-card">
+        <div className="kyra-ai-chat__actions-card-header">
+          <div>
+            <div className="kyra-ai-chat__eyebrow">Actions</div>
+            <div className="kyra-ai-chat__title">Plan &amp; apply</div>
+            <div className="kyra-ai-chat__hint">
+              Beschreibe deine Änderung. Kyra AI erstellt einen Plan mit Vorschau.
+            </div>
+          </div>
+          <div className="kyra-ai-chat__badges">
+            <span className="kyra-ai-chat__badge">Editor</span>
+          </div>
+        </div>
+
+        <label className="kyra-ai-chat__field">
+          <span>Was soll passieren?</span>
+          <textarea
+            className="kyra-ai-chat__actions-input"
+            placeholder='z. B. Titel auf „Quarterly Report“ setzen und Beschreibung verbessern.'
+            value={goal}
+            onChange={(event) => setGoal(event.target.value)}
+            rows={3}
+          />
+        </label>
+
+        <div className="kyra-ai-chat__actions-translation">
+          <div className="kyra-ai-chat__actions-translation-header">
+            <label className="kyra-ai-chat__actions-toggle">
+              <input
+                type="checkbox"
+                checked={useTranslation}
+                onChange={(event) => setUseTranslation(event.target.checked)}
+              />
+              Übersetzen
+            </label>
+            <span className="kyra-ai-chat__hint">
+              Optional: Inhalt in eine Zielsprache kopieren.
+            </span>
+          </div>
           <div className="kyra-ai-chat__actions-translation-grid">
-            <label>
-              Target language
+            <label className="kyra-ai-chat__field">
+              <span>Zielsprache</span>
               <select
                 value={targetLanguage}
                 onChange={(event) => setTargetLanguage(event.target.value)}
@@ -144,8 +163,8 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 <option value="es">Español</option>
               </select>
             </label>
-            <label>
-              Mode
+            <label className="kyra-ai-chat__field">
+              <span>Modus</span>
               <select
                 value={translationMode}
                 onChange={(event) =>
@@ -153,33 +172,49 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
                 }
                 disabled={!useTranslation}
               >
-                <option value="single">Only this page</option>
-                <option value="subtree">Include subtree</option>
+                <option value="single">Nur diese Seite</option>
+                <option value="subtree">Mit Unterseiten</option>
               </select>
             </label>
-            <label className="kyra-ai-chat__actions-toggle">
+            <label className="kyra-ai-chat__actions-toggle kyra-ai-chat__actions-toggle--inline">
               <input
                 type="checkbox"
                 checked={overwriteTranslations}
                 onChange={(event) => setOverwriteTranslations(event.target.checked)}
                 disabled={!useTranslation}
               />
-              Overwrite existing translations
+              Bestehende Übersetzungen überschreiben
             </label>
           </div>
         </div>
-      </div>
-      <div className="kyra-ai-chat__actions-controls">
-        <button type="button" onClick={handlePlan} disabled={isPlanning}>
-          {isPlanning ? 'Planning…' : 'Plan'}
-        </button>
-        <button
-          type="button"
-          onClick={handleApply}
-          disabled={!plan || !confirmApply || isApplying}
-        >
-          {isApplying ? 'Applying…' : 'Apply'}
-        </button>
+
+        <div className="kyra-ai-chat__actions-controls">
+          <button
+            type="button"
+            className="kyra-ai-chat__button kyra-ai-chat__button--ghost"
+            onClick={handlePlan}
+            disabled={isPlanning}
+          >
+            {isPlanning ? 'Planung…' : 'Plan'}
+          </button>
+          <label className="kyra-ai-chat__actions-toggle kyra-ai-chat__actions-toggle--inline">
+            <input
+              type="checkbox"
+              checked={confirmApply}
+              onChange={(event) => setConfirmApply(event.target.checked)}
+              disabled={!plan}
+            />
+            Ich bestätige die vorgeschlagenen Änderungen
+          </label>
+          <button
+            type="button"
+            className="kyra-ai-chat__button kyra-ai-chat__button--primary"
+            onClick={handleApply}
+            disabled={!plan || !confirmApply || isApplying}
+          >
+            {isApplying ? 'Übernehme…' : 'Apply'}
+          </button>
+        </div>
       </div>
       {error && <div className="kyra-ai-chat__error">{error}</div>}
       {success && <div className="kyra-ai-chat__success">{success}</div>}
@@ -248,6 +283,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied }) => {
           </label>
         </div>
       )}
+      </div>
     </div>
   );
 };
