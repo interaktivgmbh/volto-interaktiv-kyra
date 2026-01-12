@@ -48,6 +48,8 @@ const Composer: React.FC<Props> = ({
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const interimRef = useRef('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const t = getComposerLabels(uiLanguage);
 
   const submit = () => {
@@ -55,6 +57,18 @@ const Composer: React.FC<Props> = ({
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setValue('');
+    // stop recording when sending
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      recognition.stop();
+      setIsListening(false);
+      interimRef.current = '';
+    }
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files || !onUpload) return;
+    Array.from(files).forEach((file) => onUpload(file));
   };
 
   useEffect(() => {
@@ -62,7 +76,7 @@ const Composer: React.FC<Props> = ({
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!Recognition) return;
     const recognition = new Recognition();
-    recognition.continuous = true;
+    recognition.continuous = false; // stop after a final result
     recognition.interimResults = true;
     recognition.lang = navigator.language || 'en-US';
     recognitionRef.current = recognition;
@@ -73,17 +87,19 @@ const Composer: React.FC<Props> = ({
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const result = event.results[i];
         const transcript = result[0]?.transcript ?? '';
+        if (!transcript) continue;
         if (result.isFinal) {
           setValue((prev) => {
             const separator = prev && !prev.endsWith(' ') ? ' ' : '';
             return `${prev}${separator}${transcript}`.trimEnd();
           });
-          interimTranscript = '';
+          interimRef.current = '';
         } else {
           interimTranscript += transcript;
         }
       }
       if (interimTranscript) {
+        interimRef.current = interimTranscript;
         setValue((prev) => {
           const base = prev.replace(/[\u00A0]+$/, '');
           const separator = base && !base.endsWith(' ') ? ' ' : '';
@@ -98,6 +114,7 @@ const Composer: React.FC<Props> = ({
 
     recognition.onend = () => {
       setIsListening(false);
+      interimRef.current = '';
     };
 
     return () => {
@@ -111,6 +128,7 @@ const Composer: React.FC<Props> = ({
     if (isListening) {
       recognition.stop();
       setIsListening(false);
+      interimRef.current = '';
       return;
     }
     try {
@@ -119,6 +137,30 @@ const Composer: React.FC<Props> = ({
     } catch (error) {
       setIsListening(false);
     }
+  };
+
+  const dropZoneHandlers = {
+    onDragEnter: (event: React.DragEvent<HTMLLabelElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDragOver(true);
+    },
+    onDragOver: (event: React.DragEvent<HTMLLabelElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDragOver(true);
+    },
+    onDragLeave: (event: React.DragEvent<HTMLLabelElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDragOver(false);
+    },
+    onDrop: (event: React.DragEvent<HTMLLabelElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDragOver(false);
+      handleFiles(event.dataTransfer?.files || null);
+    },
   };
 
   return (
@@ -158,18 +200,19 @@ const Composer: React.FC<Props> = ({
         </div>
       ) : null}
       <div className="kyra-ai-chat__composer-footer">
-        <label className="kyra-ai-chat__composer-action">
-          {t.upload}
+        <label
+          className={`kyra-ai-chat__composer-action${isDragOver ? ' is-dragover' : ''}`}
+          {...dropZoneHandlers}
+        >
+          {isDragOver ? 'Drop files here' : t.upload}
           <input
             type="file"
             hidden
+            multiple
             disabled={disabled}
             onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file && onUpload) {
-                onUpload(file);
-                event.target.value = '';
-              }
+              handleFiles(event.target.files);
+              event.target.value = '';
             }}
           />
         </label>
