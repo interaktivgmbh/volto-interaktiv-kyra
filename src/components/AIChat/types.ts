@@ -79,6 +79,7 @@ export type ChatContextPayload = {
     uid?: string;
     url?: string;
   };
+  page_content?: string;
   query?: string;
   selection_text?: string;
   uploads?: Array<{

@@ -309,8 +309,47 @@
 
 .kyra-ai-chat__message-content {
   white-space: pre-wrap;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  font-weight: 400 !important;
+}
+
+.kyra-ai-chat__message-content--markdown {
+  white-space: normal;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  font-weight: 400 !important;
+
+  p, li, a, span {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    font-weight: 400 !important;
+  }
+
+  p {
+    margin: 0 0 0.4em;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  strong {
+    font-weight: 600 !important;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  ul, ol {
+    margin: 0.2em 0 0.4em;
+    padding-left: 1.3em;
+  }
+
+  li {
+    margin-bottom: 0.1em;
+  }
 }
 
 .kyra-ai-chat__message-actions-row {
@@ -377,18 +416,56 @@
 
 .kyra-ai-chat__citations {
   border-left: 2px solid var(--ai-chat-border);
-  padding-left: 10px;
-  font-size: 12px;
+  margin-top: 6px;
+  padding: 4px 0 4px 10px;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
   color: var(--ai-chat-muted);
-}
 
-.kyra-ai-chat__citations summary {
-  cursor: pointer;
-  font-weight: 600;
+  summary, a, li, p, span {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    font-weight: 400 !important;
+  }
+
+  summary {
+    cursor: pointer;
+    font-weight: 600 !important;
+    padding: 2px 0;
+  }
+
+  ul {
+    margin: 4px 0 0 !important;
+    padding-left: 0 !important;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  li {
+    padding: 4px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  a {
+    color: var(--ai-chat-accent-strong);
+    text-decoration: none;
+    word-break: break-word;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .kyra-ai-chat__citation-snippet {
-  margin-top: 4px;
+  margin-top: 2px;
+  font-size: 11px !important;
+  color: var(--ai-chat-muted);
+  opacity: 0.85;
 }
 
 .kyra-ai-chat__composer {

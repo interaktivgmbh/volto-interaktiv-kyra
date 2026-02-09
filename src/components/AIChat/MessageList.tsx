@@ -34,6 +34,104 @@ const getMessageLabels = (lang?: string) => {
 
 const stripHtml = (value: string) => value.replace(/<[^>]+>/g, '').trim();
 
+/**
+ * Lightweight markdown-to-HTML converter for chat messages.
+ * Supports: headings (##), bold (**), italic (*), unordered lists (-),
+ * ordered lists (1.), and paragraphs.
+ */
+const renderMarkdown = (text: string): string => {
+  if (!text) return '';
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const lines = escaped.split('\n');
+  const htmlParts: string[] = [];
+  let inList: 'ul' | 'ol' | null = null;
+  let paragraph: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraph.length > 0) {
+      htmlParts.push(`<p>${paragraph.join(' ')}</p>`);
+      paragraph = [];
+    }
+  };
+
+  const closeList = () => {
+    if (inList) {
+      htmlParts.push(inList === 'ul' ? '</ul>' : '</ol>');
+      inList = null;
+    }
+  };
+
+  const inlineFormat = (line: string): string => {
+    // Bold: **text**
+    line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *text* (but not inside bold)
+    line = line.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+    return line;
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    // Empty line: flush paragraph
+    if (!line) {
+      flushParagraph();
+      closeList();
+      continue;
+    }
+
+    // Headings: ## Text or ### Text
+    const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
+    if (headingMatch) {
+      flushParagraph();
+      closeList();
+      const level = headingMatch[1].length;
+      // Use h3/h4 to keep headings smaller in chat context
+      const tag = `h${Math.min(level + 1, 5)}`;
+      htmlParts.push(`<${tag}>${inlineFormat(headingMatch[2])}</${tag}>`);
+      continue;
+    }
+
+    // Unordered list: - item or * item
+    const ulMatch = line.match(/^[-*]\s+(.+)$/);
+    if (ulMatch) {
+      flushParagraph();
+      if (inList !== 'ul') {
+        closeList();
+        htmlParts.push('<ul>');
+        inList = 'ul';
+      }
+      htmlParts.push(`<li>${inlineFormat(ulMatch[1])}</li>`);
+      continue;
+    }
+
+    // Ordered list: 1. item
+    const olMatch = line.match(/^\d+\.\s+(.+)$/);
+    if (olMatch) {
+      flushParagraph();
+      if (inList !== 'ol') {
+        closeList();
+        htmlParts.push('<ol>');
+        inList = 'ol';
+      }
+      htmlParts.push(`<li>${inlineFormat(olMatch[1])}</li>`);
+      continue;
+    }
+
+    // Regular text line: accumulate into paragraph
+    closeList();
+    paragraph.push(inlineFormat(line));
+  }
+
+  flushParagraph();
+  closeList();
+
+  return htmlParts.join('');
+};
+
 const copyToClipboard = async (text: string) => {
   if (!text) return;
   try {
@@ -129,9 +227,10 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate, uiLanguage }) =>
         const isAssistant = message.role === 'assistant';
         const isStreaming = message.status === 'streaming';
         const isError = message.status === 'error';
-        const displayContent =
+        const rawContent =
           stripHtml(message.content || '') ||
           (isStreaming ? '...' : isError ? t.error : '');
+        const useMarkdown = isAssistant && !isStreaming && !isError;
         return (
           <div
             key={message.id}
@@ -140,9 +239,16 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate, uiLanguage }) =>
             }`}
           >
             <div className="kyra-ai-chat__message-bubble">
-              <div className="kyra-ai-chat__message-content">
-                {displayContent}
-              </div>
+              {useMarkdown ? (
+                <div
+                  className="kyra-ai-chat__message-content kyra-ai-chat__message-content--markdown"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
+                />
+              ) : (
+                <div className="kyra-ai-chat__message-content">
+                  {rawContent}
+                </div>
+              )}
             </div>
             {isAssistant && !isStreaming && (
               <div className="kyra-ai-chat__message-actions-row">
@@ -151,7 +257,7 @@ const MessageList: React.FC<Props> = ({ messages, onRegenerate, uiLanguage }) =>
                   className={`kyra-ai-chat__icon-button${
                     copiedId === message.id ? ' is-active' : ''
                   }`}
-                  onClick={() => handleCopy(message.id, displayContent)}
+                  onClick={() => handleCopy(message.id, rawContent)}
                   aria-label={t.copy}
                   title={copiedId === message.id ? t.copied : t.copy}
                 >

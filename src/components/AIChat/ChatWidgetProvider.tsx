@@ -10,6 +10,7 @@ import {
   postAiChatStream,
   postAiChatUpload,
 } from './api';
+import { extractPageContent } from './extractPageContent';
 import {
   loadLocalConversations,
   removeLocalConversation,
@@ -132,6 +133,11 @@ const ChatWidgetProvider: React.FC = () => {
       },
     };
   }, [content]);
+
+  const pageContentText = useMemo(
+    () => extractPageContent(content),
+    [content],
+  );
 
   const userKey = useMemo(() => {
     if (token) {
@@ -419,6 +425,7 @@ const ChatWidgetProvider: React.FC = () => {
     const contextPayload: ChatContextPayload = {
       mode: contextOverrides?.mode || 'page',
       page: pageReference?.page,
+      page_content: pageContentText || undefined,
       query: contextOverrides?.query,
       selection_text: contextOverrides?.selection_text,
     };
