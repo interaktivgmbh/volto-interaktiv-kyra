@@ -63,8 +63,10 @@ type Props = {
   onToggleSettings: () => void;
   customIcon: string | null;
   customIconColor: string;
-  onIconChange: (dataUrl: string | null) => void;
-  onIconColorChange: (color: string) => void;
+  accentColor: string | null;
+  chatName: string | null;
+  onSaveSettings: (draft: import('./SettingsDrawer').SettingsDraft) => void;
+  onClearHistory: () => void;
   onClose: () => void;
   onToggleDock: () => void;
   onToggleHistory: () => void;
@@ -101,8 +103,10 @@ const ChatPanel: React.FC<Props> = ({
   onToggleSettings,
   customIcon,
   customIconColor,
-  onIconChange,
-  onIconColorChange,
+  accentColor,
+  chatName,
+  onSaveSettings,
+  onClearHistory,
   onActionsApplied,
   onClose,
   onToggleDock,
@@ -135,7 +139,7 @@ const ChatPanel: React.FC<Props> = ({
     >
       <div className="kyra-ai-chat__header">
         <div className="kyra-ai-chat__title">
-          <div>{t.title}</div>
+          <div>{chatName || t.title}</div>
           <div className="kyra-ai-chat__subtitle">
             {capabilities.can_edit ? t.editorSubtitle : t.visitorSubtitle}
           </div>
@@ -254,10 +258,13 @@ const ChatPanel: React.FC<Props> = ({
       <SettingsDrawer
         open={showSettings}
         onClose={onToggleSettings}
-        onIconChange={onIconChange}
-        onIconColorChange={onIconColorChange}
+        onSave={onSaveSettings}
+        onClearHistory={onClearHistory}
         currentCustomIcon={customIcon}
         currentIconColor={customIconColor}
+        currentAccentColor={accentColor}
+        currentChatName={chatName}
+        historyCount={history.length}
         uiLanguage={uiLanguage}
       />
     </div>

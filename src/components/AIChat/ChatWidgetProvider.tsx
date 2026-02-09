@@ -21,6 +21,11 @@ import {
   saveCustomIcon,
   loadCustomIconColor,
   saveCustomIconColor,
+  loadAccentColor,
+  saveAccentColor,
+  loadChatName,
+  saveChatName,
+  clearAllConversations,
 } from './storage';
 import type {
   ChatCapabilities,
@@ -100,6 +105,8 @@ const ChatWidgetProvider: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [customIcon, setCustomIcon] = useState<string | null>(() => loadCustomIcon());
   const [customIconColor, setCustomIconColor] = useState<string>(() => loadCustomIconColor());
+  const [accentColor, setAccentColor] = useState<string | null>(() => loadAccentColor());
+  const [chatName, setChatName] = useState<string | null>(() => loadChatName());
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capabilities, setCapabilities] =
@@ -652,18 +659,46 @@ const ChatWidgetProvider: React.FC = () => {
     setAttachments((prev) => prev.filter((item) => item.file_id !== file_id));
   };
 
-  const handleIconChange = (dataUrl: string | null) => {
-    saveCustomIcon(dataUrl);
-    setCustomIcon(dataUrl);
+  const handleSaveSettings = (draft: {
+    customIcon: string | null;
+    iconColor: string;
+    accentColor: string | null;
+    chatName: string | null;
+  }) => {
+    saveCustomIcon(draft.customIcon);
+    setCustomIcon(draft.customIcon);
+    saveCustomIconColor(draft.iconColor);
+    setCustomIconColor(draft.iconColor);
+    saveAccentColor(draft.accentColor);
+    setAccentColor(draft.accentColor);
+    saveChatName(draft.chatName);
+    setChatName(draft.chatName);
   };
 
-  const handleIconColorChange = (color: string) => {
-    saveCustomIconColor(color);
-    setCustomIconColor(color);
+  const handleClearHistory = () => {
+    clearAllConversations(userKey);
+    setHistory([]);
+    const fresh = createConversation();
+    setConversation(fresh);
   };
+
+  const darkenColor = (hex: string, amount: number): string => {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = Math.max(0, (num >> 16) - amount);
+    const g = Math.max(0, ((num >> 8) & 0x00ff) - amount);
+    const b = Math.max(0, (num & 0x0000ff) - amount);
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  };
+
+  const accentStyles = accentColor
+    ? {
+        '--ai-chat-accent': accentColor,
+        '--ai-chat-accent-strong': darkenColor(accentColor, 30),
+      } as React.CSSProperties
+    : undefined;
 
   return (
-    <div className="kyra-ai-chat">
+    <div className="kyra-ai-chat" style={accentStyles}>
       <ChatPanel
         isOpen={isOpen}
         isDocked={isDocked}
@@ -677,8 +712,10 @@ const ChatWidgetProvider: React.FC = () => {
         onToggleSettings={() => setShowSettings((value) => !value)}
         customIcon={customIcon}
         customIconColor={customIconColor}
-        onIconChange={handleIconChange}
-        onIconColorChange={handleIconColorChange}
+        accentColor={accentColor}
+        chatName={chatName}
+        onSaveSettings={handleSaveSettings}
+        onClearHistory={handleClearHistory}
         history={history}
         pageContext={pageContext}
         quickActions={quickActions}

@@ -104,3 +104,39 @@ export const saveCustomIconColor = (color: string) => {
   if (!canUseStorage()) return;
   window.localStorage.setItem(CUSTOM_ICON_COLOR_KEY, color);
 };
+
+const ACCENT_COLOR_KEY = 'kyra.aiChat.accentColor';
+const CHAT_NAME_KEY = 'kyra.aiChat.chatName';
+
+export const loadAccentColor = (): string | null => {
+  if (!canUseStorage()) return null;
+  return window.localStorage.getItem(ACCENT_COLOR_KEY) || null;
+};
+
+export const saveAccentColor = (color: string | null) => {
+  if (!canUseStorage()) return;
+  if (color) {
+    window.localStorage.setItem(ACCENT_COLOR_KEY, color);
+  } else {
+    window.localStorage.removeItem(ACCENT_COLOR_KEY);
+  }
+};
+
+export const loadChatName = (): string | null => {
+  if (!canUseStorage()) return null;
+  return window.localStorage.getItem(CHAT_NAME_KEY) || null;
+};
+
+export const saveChatName = (name: string | null) => {
+  if (!canUseStorage()) return;
+  if (name) {
+    window.localStorage.setItem(CHAT_NAME_KEY, name);
+  } else {
+    window.localStorage.removeItem(CHAT_NAME_KEY);
+  }
+};
+
+export const clearAllConversations = (userKey?: string | null) => {
+  if (!canUseStorage()) return;
+  window.localStorage.removeItem(keyForUser(userKey));
+};
