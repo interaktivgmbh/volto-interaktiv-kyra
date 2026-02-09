@@ -4,6 +4,7 @@ import ActionsTab from './ActionsTab';
 import Composer from './Composer';
 import HistoryDrawer from './HistoryDrawer';
 import MessageList from './MessageList';
+import SettingsDrawer from './SettingsDrawer';
 import type {
   ChatCapabilities,
   ChatContextPayload,
@@ -12,7 +13,7 @@ import type {
   ChatQuickAction,
 } from './types';
 import { Icon } from '@plone/volto/components';
-import { historySVG, newchatSVG } from '../../helpers/icons';
+import { historySVG, newchatSVG, settingsSVG } from '../../helpers/icons';
 
 const getChatLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
@@ -25,6 +26,7 @@ const getChatLabels = (lang?: string) => {
       actionsTab: 'Actions',
       newChat: 'Neuer Chat',
       history: 'Historie',
+      settings: 'Einstellungen',
       float: 'Float',
       dock: 'Dock',
       close: 'Schließen',
@@ -38,6 +40,7 @@ const getChatLabels = (lang?: string) => {
     actionsTab: 'Actions',
     newChat: 'Start new chat',
     history: 'History',
+    settings: 'Settings',
     float: 'Float',
     dock: 'Dock',
     close: 'Close',
@@ -56,6 +59,12 @@ type Props = {
   history: ChatConversation[];
   pageContext?: ChatContextPayload;
   onActionsApplied?: (result: { reload?: boolean }) => void;
+  showSettings: boolean;
+  onToggleSettings: () => void;
+  customIcon: string | null;
+  customIconColor: string;
+  onIconChange: (dataUrl: string | null) => void;
+  onIconColorChange: (color: string) => void;
   onClose: () => void;
   onToggleDock: () => void;
   onToggleHistory: () => void;
@@ -88,6 +97,12 @@ const ChatPanel: React.FC<Props> = ({
   showHistory,
   history,
   pageContext,
+  showSettings,
+  onToggleSettings,
+  customIcon,
+  customIconColor,
+  onIconChange,
+  onIconColorChange,
   onActionsApplied,
   onClose,
   onToggleDock,
@@ -143,6 +158,15 @@ const ChatPanel: React.FC<Props> = ({
             title={t.history}
           >
             <Icon name={historySVG} size="18px" />
+          </button>
+          <button
+            type="button"
+            className="kyra-ai-chat__header-icon-button kyra-ai-chat__header-icon-button--settings"
+            onClick={onToggleSettings}
+            aria-label={t.settings}
+            title={t.settings}
+          >
+            <Icon name={settingsSVG} size="18px" />
           </button>
           <button type="button" onClick={onToggleDock}>
             {isDocked ? t.float : t.dock}
@@ -225,6 +249,15 @@ const ChatPanel: React.FC<Props> = ({
         onRename={onRenameConversation}
         onPinToggle={onPinConversation}
         onArchiveToggle={onArchiveConversation}
+        uiLanguage={uiLanguage}
+      />
+      <SettingsDrawer
+        open={showSettings}
+        onClose={onToggleSettings}
+        onIconChange={onIconChange}
+        onIconColorChange={onIconColorChange}
+        currentCustomIcon={customIcon}
+        currentIconColor={customIconColor}
         uiLanguage={uiLanguage}
       />
     </div>

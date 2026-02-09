@@ -17,6 +17,10 @@ import {
   saveLocalConversation,
   loadPanelMode,
   savePanelMode,
+  loadCustomIcon,
+  saveCustomIcon,
+  loadCustomIconColor,
+  saveCustomIconColor,
 } from './storage';
 import type {
   ChatCapabilities,
@@ -93,6 +97,9 @@ const ChatWidgetProvider: React.FC = () => {
   );
   const [activeTab, setActiveTab] = useState<'chat' | 'actions'>('chat');
   const [showHistory, setShowHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [customIcon, setCustomIcon] = useState<string | null>(() => loadCustomIcon());
+  const [customIconColor, setCustomIconColor] = useState<string>(() => loadCustomIconColor());
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capabilities, setCapabilities] =
@@ -645,6 +652,16 @@ const ChatWidgetProvider: React.FC = () => {
     setAttachments((prev) => prev.filter((item) => item.file_id !== file_id));
   };
 
+  const handleIconChange = (dataUrl: string | null) => {
+    saveCustomIcon(dataUrl);
+    setCustomIcon(dataUrl);
+  };
+
+  const handleIconColorChange = (color: string) => {
+    saveCustomIconColor(color);
+    setCustomIconColor(color);
+  };
+
   return (
     <div className="kyra-ai-chat">
       <ChatPanel
@@ -656,6 +673,12 @@ const ChatWidgetProvider: React.FC = () => {
         conversation={conversation}
         capabilities={capabilities}
         showHistory={showHistory}
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings((value) => !value)}
+        customIcon={customIcon}
+        customIconColor={customIconColor}
+        onIconChange={handleIconChange}
+        onIconColorChange={handleIconColorChange}
         history={history}
         pageContext={pageContext}
         quickActions={quickActions}
@@ -693,6 +716,8 @@ const ChatWidgetProvider: React.FC = () => {
         <LauncherButton
           onClick={() => setIsOpen((value) => !value)}
           isOpen={isOpen}
+          customIcon={customIcon}
+          customIconColor={customIconColor}
         />
       )}
     </div>

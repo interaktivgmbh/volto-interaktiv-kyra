@@ -6,9 +6,46 @@ import { robotSVG } from '../../helpers/icons';
 type Props = {
   onClick: () => void;
   isOpen: boolean;
+  customIcon?: string | null;
+  customIconColor?: string;
 };
 
-const LauncherButton: React.FC<Props> = ({ onClick, isOpen }) => {
+const isSvgDataUrl = (url: string) =>
+  url.startsWith('data:image/svg');
+
+const LauncherButton: React.FC<Props> = ({
+  onClick,
+  isOpen,
+  customIcon,
+  customIconColor = '#ffffff',
+}) => {
+  const renderIcon = () => {
+    if (!customIcon) {
+      return <Icon name={robotSVG} size="18px" />;
+    }
+
+    if (isSvgDataUrl(customIcon)) {
+      return (
+        <span
+          className="kyra-ai-chat__launcher-custom-icon kyra-ai-chat__launcher-custom-icon--svg"
+          style={{
+            WebkitMaskImage: `url(${customIcon})`,
+            maskImage: `url(${customIcon})`,
+            backgroundColor: customIconColor,
+          }}
+        />
+      );
+    }
+
+    return (
+      <img
+        src={customIcon}
+        alt="Kyra AI"
+        className="kyra-ai-chat__launcher-custom-icon"
+      />
+    );
+  };
+
   return (
     <button
       type="button"
@@ -18,7 +55,7 @@ const LauncherButton: React.FC<Props> = ({ onClick, isOpen }) => {
       onClick={onClick}
       aria-label={isOpen ? 'Close Kyra AI chat' : 'Open Kyra AI chat'}
     >
-      <Icon name={robotSVG} size="18px" />
+      {renderIcon()}
     </button>
   );
 };
