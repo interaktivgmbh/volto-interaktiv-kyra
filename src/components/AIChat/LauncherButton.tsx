@@ -8,6 +8,7 @@ type Props = {
   isOpen: boolean;
   customIcon?: string | null;
   customIconColor?: string;
+  badgeCount?: number;
 };
 
 const isSvgDataUrl = (url: string) =>
@@ -18,6 +19,7 @@ const LauncherButton: React.FC<Props> = ({
   isOpen,
   customIcon,
   customIconColor = '#ffffff',
+  badgeCount = 0,
 }) => {
   const renderIcon = () => {
     if (!customIcon) {
@@ -56,6 +58,9 @@ const LauncherButton: React.FC<Props> = ({
       aria-label={isOpen ? 'Close Kyra AI chat' : 'Open Kyra AI chat'}
     >
       {renderIcon()}
+      {badgeCount > 0 && (
+        <span className="kyra-ai-chat__launcher-badge">{badgeCount}</span>
+      )}
     </button>
   );
 };

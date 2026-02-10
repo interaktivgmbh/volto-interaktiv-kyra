@@ -9,6 +9,7 @@ import type {
   AiActionsApplyResponse,
   AiChatTranslations,
   TranslationOptions,
+  TranslationStatus,
 } from './types';
 import type { AiChatUploadResponse } from './types';
 
@@ -332,6 +333,27 @@ export const postAiChatStream = async (
 
   await consumeEventStream(response.body, handlers, signal);
   return { fallback: false };
+};
+
+export const getTranslationStatus = async (
+  pageUrl: string,
+  token?: string,
+): Promise<TranslationStatus> => {
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const response = await fetch(buildApiUrl(`${path}/@ai-translation-status`), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { source_language: '', source_modified: '', translations: [], outdated_count: 0 };
+  }
+
+  return response.json();
 };
 
 export const getAiChatTranslations = async (

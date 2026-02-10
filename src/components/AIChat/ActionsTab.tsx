@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 
 import { postAiActionsApply, postAiActionsPlan } from './api';
-import type { AiActionPlan, ChatContextPayload, TranslationOptions } from './types';
+import type { AiActionPlan, ChatContextPayload, TranslationOptions, TranslationStatus } from './types';
 
 type Props = {
   canEdit: boolean;
   pageContext?: ChatContextPayload;
   onApplied?: (result: { reload?: boolean }) => void;
   uiLanguage?: string;
+  translationStatus?: TranslationStatus | null;
+  onRefetchTranslationStatus?: () => Promise<void>;
 };
 
 const getLabels = (lang?: string) => {
@@ -40,6 +42,11 @@ const getLabels = (lang?: string) => {
       translationLabel: (tl: string, mode?: string) =>
         `→ ${tl}${mode ? ` (${mode})` : ''}`,
       translationPlan: 'Translation plan',
+      syncTitle: 'Veraltete Übersetzungen',
+      syncHint: 'Folgende Übersetzungen sind nicht mehr aktuell:',
+      syncButton: 'Synchronisieren',
+      syncing: 'Synchronisiere…',
+      syncLastModified: 'Letzte Änderung',
     };
   }
   return {
@@ -48,7 +55,7 @@ const getLabels = (lang?: string) => {
     hint: 'Describe the change. Kyra AI will propose a plan and preview.',
     promptLabel: 'What should happen?',
     promptPlaceholder:
-      'e.g. Set the title to “Quarterly Report” and improve the description.',
+      'e.g. Set the title to "Quarterly Report" and improve the description.',
     translate: 'Translate',
     translateHint: 'Optionally copy content to a target language.',
     targetLabel: 'Target language',
@@ -69,10 +76,25 @@ const getLabels = (lang?: string) => {
     translationLabel: (tl: string, mode?: string) =>
         `→ ${tl}${mode ? ` (${mode})` : ''}`,
     translationPlan: 'Translation plan',
+    syncTitle: 'Outdated translations',
+    syncHint: 'The following translations are out of date:',
+    syncButton: 'Sync now',
+    syncing: 'Syncing…',
+    syncLastModified: 'Last modified',
   };
 };
 
-const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLanguage }) => {
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'Français',
+  es: 'Español',
+  it: 'Italiano',
+  nl: 'Nederlands',
+  pt: 'Português',
+};
+
+const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLanguage, translationStatus, onRefetchTranslationStatus }) => {
   const [goal, setGoal] = useState('');
   const [plan, setPlan] = useState<AiActionPlan | null>(null);
   const [confirmApply, setConfirmApply] = useState(false);
@@ -84,6 +106,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
   const [targetLanguage, setTargetLanguage] = useState('en');
   const [translationMode, setTranslationMode] = useState<'single' | 'subtree'>('single');
   const [overwriteTranslations, setOverwriteTranslations] = useState(false);
+  const [syncingLang, setSyncingLang] = useState<string | null>(null);
   const t = getLabels(uiLanguage);
 
   if (!canEdit) {
@@ -172,6 +195,53 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
     }
   };
 
+  const handleSync = async (lang: string) => {
+    setSyncingLang(lang);
+    setError(null);
+    setSuccess(null);
+
+    const translation: TranslationOptions = {
+      target_language: lang,
+      mode: 'single',
+      overwrite: true,
+    };
+
+    try {
+      const planResponse = await postAiActionsPlan({
+        goal: 'Translate content',
+        page: pagePayload,
+        constraints: { allowlist: ['translate_content'] },
+        translation,
+      });
+      await postAiActionsApply({
+        plan_id: planResponse.plan_id,
+        actions: planResponse.actions,
+        page: pagePayload,
+        translation,
+      });
+      setSuccess(
+        uiLanguage?.startsWith('de')
+          ? `Übersetzung nach ${LANGUAGE_NAMES[lang] || lang} synchronisiert.`
+          : `Translation to ${LANGUAGE_NAMES[lang] || lang} synced successfully.`,
+      );
+      // Re-fetch status so badge updates immediately
+      await onRefetchTranslationStatus?.();
+      onApplied?.({ reload: false });
+    } catch (_error) {
+      setError(
+        uiLanguage?.startsWith('de')
+          ? 'Synchronisation fehlgeschlagen.'
+          : 'Sync failed. Please try again.',
+      );
+    } finally {
+      setSyncingLang(null);
+    }
+  };
+
+  const outdatedTranslations = (translationStatus?.translations || []).filter(
+    (item) => item.is_outdated,
+  );
+
   return (
     <div className="kyra-ai-chat__actions">
       <div className="kyra-ai-chat__actions-scroll">
@@ -252,6 +322,38 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
             </label>
           </div>
         </div>
+
+        {outdatedTranslations.length > 0 && (
+          <div className="kyra-ai-chat__sync-card">
+            <div className="kyra-ai-chat__sync-title">{t.syncTitle}</div>
+            <div className="kyra-ai-chat__hint">{t.syncHint}</div>
+            <div className="kyra-ai-chat__sync-list">
+              {outdatedTranslations.map((item) => (
+                <div key={item.language} className="kyra-ai-chat__sync-item">
+                  <div className="kyra-ai-chat__sync-item-info">
+                    <span className="kyra-ai-chat__sync-badge" />
+                    <strong>{LANGUAGE_NAMES[item.language] || item.language}</strong>
+                    {item.title && <span> — &ldquo;{item.title}&rdquo;</span>}
+                    <div className="kyra-ai-chat__sync-modified">
+                      {t.syncLastModified}: {new Date(item.modified).toLocaleDateString(
+                        uiLanguage?.startsWith('de') ? 'de-DE' : 'en-US',
+                        { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' },
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="kyra-ai-chat__button kyra-ai-chat__button--primary kyra-ai-chat__button--small"
+                    onClick={() => handleSync(item.language)}
+                    disabled={syncingLang !== null}
+                  >
+                    {syncingLang === item.language ? t.syncing : t.syncButton}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="kyra-ai-chat__actions-controls">
           <button

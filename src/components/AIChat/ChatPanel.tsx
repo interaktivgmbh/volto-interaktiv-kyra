@@ -11,6 +11,7 @@ import type {
   ChatConversation,
   ChatMessage,
   ChatQuickAction,
+  TranslationStatus,
 } from './types';
 import { Icon } from '@plone/volto/components';
 import { historySVG, newchatSVG, settingsSVG } from '../../helpers/icons';
@@ -59,6 +60,8 @@ type Props = {
   history: ChatConversation[];
   pageContext?: ChatContextPayload;
   onActionsApplied?: (result: { reload?: boolean }) => void;
+  translationStatus?: TranslationStatus | null;
+  onRefetchTranslationStatus?: () => Promise<void>;
   showSettings: boolean;
   onToggleSettings: () => void;
   customIcon: string | null;
@@ -108,6 +111,8 @@ const ChatPanel: React.FC<Props> = ({
   onSaveSettings,
   onClearHistory,
   onActionsApplied,
+  translationStatus,
+  onRefetchTranslationStatus,
   onClose,
   onToggleDock,
   onToggleHistory,
@@ -228,6 +233,8 @@ const ChatPanel: React.FC<Props> = ({
             pageContext={pageContext}
             uiLanguage={uiLanguage}
             onApplied={onActionsApplied}
+            translationStatus={translationStatus}
+            onRefetchTranslationStatus={onRefetchTranslationStatus}
           />
         )}
       </div>

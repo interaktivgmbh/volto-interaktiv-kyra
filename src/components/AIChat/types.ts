@@ -142,3 +142,18 @@ export type AiChatUploadResponse = {
   has_text?: boolean;
   text?: string;
 };
+
+export type TranslationStatusItem = {
+  language: string;
+  title: string;
+  url: string;
+  modified: string;
+  is_outdated: boolean;
+};
+
+export type TranslationStatus = {
+  source_language: string;
+  source_modified: string;
+  translations: TranslationStatusItem[];
+  outdated_count: number;
+};

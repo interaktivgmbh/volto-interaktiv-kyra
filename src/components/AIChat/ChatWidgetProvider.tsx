@@ -6,6 +6,7 @@ import LauncherButton from './LauncherButton';
 import {
   getAiCapabilities,
   getAiChatTranslations,
+  getTranslationStatus,
   postAiChat,
   postAiChatStream,
   postAiChatUpload,
@@ -35,6 +36,7 @@ import type {
   ChatResponsePayload,
   ChatContextPayload,
   ChatQuickAction,
+  TranslationStatus,
 } from './types';
 
 const DEFAULT_CAPABILITIES: ChatCapabilities = {
@@ -120,6 +122,7 @@ const ChatWidgetProvider: React.FC = () => {
   const [attachments, setAttachments] = useState<
     Array<{ file_id: string; name?: string; text?: string }>
   >([]);
+  const [translationStatus, setTranslationStatus] = useState<TranslationStatus | null>(null);
   const conversationRef = useRef<ChatConversation | null>(null);
   const streamControllerRef = useRef<AbortController | null>(null);
   const fallbackLanguage = useMemo(() => {
@@ -256,6 +259,39 @@ const ChatWidgetProvider: React.FC = () => {
       isMounted = false;
     };
   }, [isOpen, pageReference?.page?.uid, pageReference?.page?.url, token]);
+
+  const refetchTranslationStatus = async () => {
+    const pageUrl = content?.['@id'];
+    if (!pageUrl || !token) {
+      setTranslationStatus(null);
+      return;
+    }
+    try {
+      const status = await getTranslationStatus(pageUrl, token);
+      setTranslationStatus(status);
+    } catch (_error) {
+      setTranslationStatus(null);
+    }
+  };
+
+  useEffect(() => {
+    const pageUrl = content?.['@id'];
+    if (!pageUrl || !token) {
+      setTranslationStatus(null);
+      return;
+    }
+    let isMounted = true;
+    const fetchStatus = async () => {
+      try {
+        const status = await getTranslationStatus(pageUrl, token);
+        if (isMounted) setTranslationStatus(status);
+      } catch (_error) {
+        if (isMounted) setTranslationStatus(null);
+      }
+    };
+    fetchStatus();
+    return () => { isMounted = false; };
+  }, [content?.['@id'], token]);
 
   const persistConversation = (nextConversation: ChatConversation) => {
     const updatedHistory = saveLocalConversation(nextConversation, userKey);
@@ -720,6 +756,8 @@ const ChatWidgetProvider: React.FC = () => {
         pageContext={pageContext}
         quickActions={quickActions}
         onQuickAction={handleQuickAction}
+        translationStatus={translationStatus}
+        onRefetchTranslationStatus={refetchTranslationStatus}
         onActionsApplied={(result) => {
           if (result?.reload) {
             window.location.reload();
@@ -755,6 +793,7 @@ const ChatWidgetProvider: React.FC = () => {
           isOpen={isOpen}
           customIcon={customIcon}
           customIconColor={customIconColor}
+          badgeCount={translationStatus?.outdated_count || 0}
         />
       )}
     </div>
