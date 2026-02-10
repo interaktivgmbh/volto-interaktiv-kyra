@@ -158,6 +158,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
     try {
       const result = await postAiActionsApply({
         plan_id: plan.plan_id,
+        actions: plan.actions,
         page: pagePayload,
         translation,
       });
