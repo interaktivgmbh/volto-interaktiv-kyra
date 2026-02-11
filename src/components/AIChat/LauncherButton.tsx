@@ -1,53 +1,16 @@
 import React from 'react';
 
-import { Icon } from '@plone/volto/components';
-import { robotSVG } from '../../helpers/icons';
-
 type Props = {
   onClick: () => void;
   isOpen: boolean;
-  customIcon?: string | null;
-  customIconColor?: string;
   badgeCount?: number;
 };
-
-const isSvgDataUrl = (url: string) =>
-  url.startsWith('data:image/svg');
 
 const LauncherButton: React.FC<Props> = ({
   onClick,
   isOpen,
-  customIcon,
-  customIconColor = '#ffffff',
   badgeCount = 0,
 }) => {
-  const renderIcon = () => {
-    if (!customIcon) {
-      return <Icon name={robotSVG} size="18px" />;
-    }
-
-    if (isSvgDataUrl(customIcon)) {
-      return (
-        <span
-          className="kyra-ai-chat__launcher-custom-icon kyra-ai-chat__launcher-custom-icon--svg"
-          style={{
-            WebkitMaskImage: `url(${customIcon})`,
-            maskImage: `url(${customIcon})`,
-            backgroundColor: customIconColor,
-          }}
-        />
-      );
-    }
-
-    return (
-      <img
-        src={customIcon}
-        alt="Kyra AI"
-        className="kyra-ai-chat__launcher-custom-icon"
-      />
-    );
-  };
-
   return (
     <button
       type="button"
@@ -55,9 +18,16 @@ const LauncherButton: React.FC<Props> = ({
         isOpen ? ' kyra-ai-chat__launcher--open' : ''
       }`}
       onClick={onClick}
-      aria-label={isOpen ? 'Close Kyra AI chat' : 'Open Kyra AI chat'}
+      aria-label={isOpen ? 'Close translation panel' : 'Open translation panel'}
     >
-      {renderIcon()}
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 8l6 6" />
+        <path d="M4 14l6-6 2-3" />
+        <path d="M2 5h12" />
+        <path d="M7 2h1" />
+        <path d="M22 22l-5-10-5 10" />
+        <path d="M14 18h6" />
+      </svg>
       {badgeCount > 0 && (
         <span className="kyra-ai-chat__launcher-badge">{badgeCount}</span>
       )}
