@@ -39,7 +39,7 @@
     "@eeacms/volto-block-divider"
   ],
   "dependencies": {
-    "@kitconcept/volto-button-block": "^3.0.3 da",
+    "@kitconcept/volto-button-block": "^3.0.3",
     "@kitconcept/volto-carousel-block": "^1.1.0",
     "@kitconcept/volto-heading-block": "^2.4.0",
     "@kitconcept/volto-highlight-block": "^4.2.0",
