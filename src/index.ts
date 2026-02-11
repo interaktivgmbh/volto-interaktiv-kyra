@@ -20,10 +20,6 @@ const KyraPromptLoader: React.FC = () => {
 
 export default function applyConfig(config) {
 
-  config.settings.isMultilingual = true;
-  config.settings.supportedLanguages = ['en', 'de'];
-  config.settings.defaultLanguage = 'de';
-
   config.settings.controlPanelsIcons = {
     ...config.settings.controlPanelsIcons,
     'ai-prompt-manager': chatSVG,
