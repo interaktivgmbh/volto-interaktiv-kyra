@@ -66,11 +66,6 @@
   mask-position: center;
 }
 
-.kyra-ai-chat__launcher:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 42px rgba(48, 125, 176, 0.38);
-}
-
 .kyra-ai-chat__launcher--open {
   background: linear-gradient(135deg, var(--ai-chat-accent-strong) 0%, var(--ai-chat-accent) 100%);
 }
