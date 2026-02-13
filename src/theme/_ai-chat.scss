@@ -1442,6 +1442,18 @@
   }
 }
 
+// Dock-Modus: Seiteninhalt einrücken wie Volto Edit-Sidebar
+body.has-ai-panel-docked {
+  margin-right: 515px !important;
+  overflow-x: hidden !important;
+  transition: margin-right 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045);
+
+  .full-width,
+  .has--fullwidth--true {
+    width: calc(100vw - 515px) !important;
+  }
+}
+
 @media (max-width: 720px) {
   .kyra-ai-chat__panel {
     width: calc(100vw - 24px);

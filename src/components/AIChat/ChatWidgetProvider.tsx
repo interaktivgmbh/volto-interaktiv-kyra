@@ -41,6 +41,18 @@ const ChatWidgetProvider: React.FC = () => {
 
   const uiLanguage = 'de';
 
+  // Dock-Modus: Seiteninhalt einrücken wie Volto Edit-Sidebar
+  useEffect(() => {
+    if (isOpen && isDocked) {
+      document.body.classList.add('has-ai-panel-docked');
+    } else {
+      document.body.classList.remove('has-ai-panel-docked');
+    }
+    return () => {
+      document.body.classList.remove('has-ai-panel-docked');
+    };
+  }, [isOpen, isDocked]);
+
   const pageReference = useMemo(() => {
     if (!content) return undefined;
     return {
