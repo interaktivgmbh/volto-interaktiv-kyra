@@ -30,31 +30,22 @@ const LauncherButton: React.FC<Props> = ({
       {customIcon ? (
         isSvgDataUrl(customIcon) ? (
           <span
-            className="kyra-ai-chat__launcher-custom-icon"
+            className="kyra-ai-chat__launcher-custom-icon kyra-ai-chat__launcher-custom-icon--svg"
             style={{
               WebkitMaskImage: `url(${customIcon})`,
               maskImage: `url(${customIcon})`,
               backgroundColor: customIconColor || '#ffffff',
-              width: 18,
-              height: 18,
-              display: 'block',
-              WebkitMaskSize: 'contain',
-              maskSize: 'contain',
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat',
-              WebkitMaskPosition: 'center',
-              maskPosition: 'center',
             }}
           />
         ) : (
           <img
             src={customIcon}
             alt=""
-            style={{ width: 18, height: 18, objectFit: 'contain' }}
+            className="kyra-ai-chat__launcher-custom-icon"
           />
         )
       ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 8l6 6" />
           <path d="M4 14l6-6 2-3" />
           <path d="M2 5h12" />

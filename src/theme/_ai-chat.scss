@@ -23,9 +23,10 @@
   right: 32px;
   bottom: 32px;
   z-index: 1400;
-  width: 54px;
-  height: 54px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
+  padding: 0 !important;
   border: 1px solid var(--ai-chat-border);
   background: linear-gradient(135deg, var(--ai-chat-accent) 0%, var(--ai-chat-accent-strong) 100%);
   color: #ffffff;
@@ -38,12 +39,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
+  overflow: visible;
 
-.kyra-ai-chat__launcher svg,
-.kyra-ai-chat__launcher .icon svg {
-  width: 30px !important;
-  height: 30px !important;
+  svg {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    flex-shrink: 0;
+  }
 }
 
 .kyra-ai-chat__launcher-custom-icon {

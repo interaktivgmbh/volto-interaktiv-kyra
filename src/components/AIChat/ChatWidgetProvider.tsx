@@ -165,7 +165,7 @@ const ChatWidgetProvider: React.FC = () => {
             window.location.reload();
           }
         }}
-        onClose={() => { setIsOpen(false); setIsDocked(false); setShowSettings(false); }}
+        onClose={() => { setIsOpen(false); setShowSettings(false); }}
         onToggleDock={() => setIsDocked((v) => !v)}
         uiLanguage={uiLanguage}
         showSettings={showSettings}
