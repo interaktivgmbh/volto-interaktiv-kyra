@@ -4,6 +4,16 @@ import { useSelector } from 'react-redux';
 import ChatPanel from './ChatPanel';
 import LauncherButton from './LauncherButton';
 import { getAiCapabilities, getTranslationStatus } from './api';
+import {
+  loadCustomIcon,
+  saveCustomIcon,
+  loadCustomIconColor,
+  saveCustomIconColor,
+  loadAccentColor,
+  saveAccentColor,
+  loadChatName,
+  saveChatName,
+} from './storage';
 import type { ChatCapabilities, ChatContextPayload, TranslationStatus } from './types';
 
 const DEFAULT_CAPABILITIES: ChatCapabilities = {
@@ -18,21 +28,18 @@ const ChatWidgetProvider: React.FC = () => {
   const content = useSelector((state: any) => state.content?.data);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isDocked, setIsDocked] = useState(false);
+  const [isDocked, setIsDocked] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
   const [capabilities, setCapabilities] =
     useState<ChatCapabilities>(DEFAULT_CAPABILITIES);
   const [translationStatus, setTranslationStatus] = useState<TranslationStatus | null>(null);
 
-  const uiLanguage = useMemo(() => {
-    if (typeof document !== 'undefined') {
-      const docLang = document.documentElement?.lang;
-      if (docLang) return docLang;
-    }
-    if (typeof navigator !== 'undefined') {
-      return navigator.language || 'en';
-    }
-    return 'en';
-  }, []);
+  const [customIcon, setCustomIcon] = useState<string | null>(() => loadCustomIcon());
+  const [customIconColor, setCustomIconColor] = useState<string>(() => loadCustomIconColor());
+  const [accentColor, setAccentColor] = useState<string | null>(() => loadAccentColor());
+  const [chatName, setChatName] = useState<string | null>(() => loadChatName());
+
+  const uiLanguage = 'de';
 
   const pageReference = useMemo(() => {
     if (!content) return undefined;
@@ -113,8 +120,39 @@ const ChatWidgetProvider: React.FC = () => {
     return () => { isMounted = false; };
   }, [content?.['@id'], token]);
 
+  const handleSaveSettings = (draft: {
+    customIcon: string | null;
+    iconColor: string;
+    accentColor: string | null;
+    chatName: string | null;
+  }) => {
+    saveCustomIcon(draft.customIcon);
+    setCustomIcon(draft.customIcon);
+    saveCustomIconColor(draft.iconColor);
+    setCustomIconColor(draft.iconColor);
+    saveAccentColor(draft.accentColor);
+    setAccentColor(draft.accentColor);
+    saveChatName(draft.chatName);
+    setChatName(draft.chatName);
+  };
+
+  const darkenColor = (hex: string, amount: number): string => {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = Math.max(0, (num >> 16) - amount);
+    const g = Math.max(0, ((num >> 8) & 0x00ff) - amount);
+    const b = Math.max(0, (num & 0x0000ff) - amount);
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  };
+
+  const accentStyles = accentColor
+    ? {
+        '--ai-chat-accent': accentColor,
+        '--ai-chat-accent-strong': darkenColor(accentColor, 30),
+      } as React.CSSProperties
+    : undefined;
+
   return (
-    <div className="kyra-ai-chat">
+    <div className="kyra-ai-chat" style={accentStyles}>
       <ChatPanel
         isOpen={isOpen}
         isDocked={isDocked}
@@ -127,14 +165,23 @@ const ChatWidgetProvider: React.FC = () => {
             window.location.reload();
           }
         }}
-        onClose={() => { setIsOpen(false); setIsDocked(false); }}
+        onClose={() => { setIsOpen(false); setIsDocked(false); setShowSettings(false); }}
         onToggleDock={() => setIsDocked((v) => !v)}
         uiLanguage={uiLanguage}
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings((v) => !v)}
+        customIcon={customIcon}
+        customIconColor={customIconColor}
+        accentColor={accentColor}
+        chatName={chatName}
+        onSaveSettings={handleSaveSettings}
       />
       {!isOpen && (
         <LauncherButton
           onClick={() => setIsOpen((value) => !value)}
           isOpen={isOpen}
+          customIcon={customIcon}
+          customIconColor={customIconColor}
           badgeCount={translationStatus?.outdated_count || 0}
         />
       )}

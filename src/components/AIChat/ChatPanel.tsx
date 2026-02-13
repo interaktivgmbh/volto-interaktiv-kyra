@@ -1,6 +1,10 @@
 import React from 'react';
 
+import { Icon } from '@plone/volto/components';
+import { settingsSVG } from '../../helpers/icons';
 import ActionsTab from './ActionsTab';
+import SettingsDrawer from './SettingsDrawer';
+import type { SettingsDraft } from './SettingsDrawer';
 import type { ChatCapabilities, ChatContextPayload, TranslationStatus } from './types';
 
 const getLabels = (lang?: string) => {
@@ -11,6 +15,7 @@ const getLabels = (lang?: string) => {
       close: 'Schließen',
       dock: 'Andocken',
       undock: 'Abdocken',
+      settings: 'Einstellungen',
     };
   }
   return {
@@ -18,6 +23,7 @@ const getLabels = (lang?: string) => {
     close: 'Close',
     dock: 'Dock',
     undock: 'Undock',
+    settings: 'Settings',
   };
 };
 
@@ -32,6 +38,13 @@ type Props = {
   onClose: () => void;
   onToggleDock: () => void;
   uiLanguage?: string;
+  showSettings: boolean;
+  onToggleSettings: () => void;
+  customIcon: string | null;
+  customIconColor: string;
+  accentColor: string | null;
+  chatName: string | null;
+  onSaveSettings: (draft: SettingsDraft) => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -45,6 +58,13 @@ const ChatPanel: React.FC<Props> = ({
   onClose,
   onToggleDock,
   uiLanguage,
+  showSettings,
+  onToggleSettings,
+  customIcon,
+  customIconColor,
+  accentColor,
+  chatName,
+  onSaveSettings,
 }) => {
   if (!isOpen) return null;
   const t = getLabels(uiLanguage);
@@ -53,9 +73,12 @@ const ChatPanel: React.FC<Props> = ({
     <div className={`kyra-ai-chat__panel${isDocked ? ' kyra-ai-chat__panel--docked' : ''}`}>
       <div className="kyra-ai-chat__header">
         <div className="kyra-ai-chat__title">
-          <div>{t.title}</div>
+          <div>{chatName || t.title}</div>
         </div>
         <div className="kyra-ai-chat__header-actions">
+          <button type="button" onClick={onToggleSettings} title={t.settings}>
+            <Icon name={settingsSVG} size="14px" />
+          </button>
           <button type="button" onClick={onToggleDock} title={isDocked ? t.undock : t.dock}>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {isDocked ? (
@@ -86,6 +109,16 @@ const ChatPanel: React.FC<Props> = ({
           onRefetchTranslationStatus={onRefetchTranslationStatus}
         />
       </div>
+      <SettingsDrawer
+        open={showSettings}
+        onClose={onToggleSettings}
+        onSave={onSaveSettings}
+        currentCustomIcon={customIcon}
+        currentIconColor={customIconColor}
+        currentAccentColor={accentColor}
+        currentChatName={chatName}
+        uiLanguage={uiLanguage}
+      />
     </div>
   );
 };
