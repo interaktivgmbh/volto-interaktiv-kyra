@@ -18,6 +18,7 @@ const ChatWidgetProvider: React.FC = () => {
   const content = useSelector((state: any) => state.content?.data);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isDocked, setIsDocked] = useState(false);
   const [capabilities, setCapabilities] =
     useState<ChatCapabilities>(DEFAULT_CAPABILITIES);
   const [translationStatus, setTranslationStatus] = useState<TranslationStatus | null>(null);
@@ -116,6 +117,7 @@ const ChatWidgetProvider: React.FC = () => {
     <div className="kyra-ai-chat">
       <ChatPanel
         isOpen={isOpen}
+        isDocked={isDocked}
         capabilities={capabilities}
         pageContext={pageContext}
         translationStatus={translationStatus}
@@ -125,7 +127,8 @@ const ChatWidgetProvider: React.FC = () => {
             window.location.reload();
           }
         }}
-        onClose={() => setIsOpen(false)}
+        onClose={() => { setIsOpen(false); setIsDocked(false); }}
+        onToggleDock={() => setIsDocked((v) => !v)}
         uiLanguage={uiLanguage}
       />
       {!isOpen && (
