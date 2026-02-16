@@ -34,6 +34,7 @@
   font-weight: 700;
   letter-spacing: 0.2px;
   cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: center;
@@ -63,6 +64,29 @@
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
+}
+
+@property --outline-progress {
+  syntax: '<percentage>';
+  initial-value: 0%;
+  inherits: false;
+}
+
+.kyra-ai-chat__launcher::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(from -90deg, #FFFFFF var(--outline-progress), transparent 0);
+  -webkit-mask: radial-gradient(circle farthest-side, transparent calc(100% - 5.5px), #000 calc(100% - 4.5px));
+  mask: radial-gradient(circle farthest-side, transparent calc(100% - 5.5px), #000 calc(100% - 4.5px));
+  --outline-progress: 0%;
+  transition: --outline-progress 0.5s ease-out;
+  pointer-events: none;
+}
+
+.kyra-ai-chat__launcher:hover::after {
+  --outline-progress: 100%;
 }
 
 .kyra-ai-chat__launcher--open {
@@ -609,9 +633,9 @@
 
 .kyra-ai-chat__composer-chip {
   background: linear-gradient(
-    135deg,
-    rgba(59, 151, 212, 0.15),
-    rgba(59, 151, 212, 0.22)
+                  135deg,
+                  rgba(59, 151, 212, 0.15),
+                  rgba(59, 151, 212, 0.22)
   );
   border: 1px solid rgba(59, 151, 212, 0.4);
   border-radius: 12px;
@@ -1035,6 +1059,7 @@
   font-size: 12px;
   cursor: pointer;
 }
+
 .kyra-ai-chat__history-archived-toggle.is-active {
   background: rgba(59, 151, 212, 0.15);
   border-color: rgba(59, 151, 212, 0.5);
@@ -1464,6 +1489,7 @@ body.has-ai-panel-docked {
     width: 100vw;
   }
 }
+
 .kyra-ai-chat__history-menu {
   position: absolute;
   top: 8px;
