@@ -20,8 +20,8 @@
 
 .kyra-ai-chat__launcher {
   position: fixed;
-  right: 32px;
-  bottom: 32px;
+  right: 40px;
+  bottom: 110px;
   z-index: 1400;
   width: 64px;
   height: 64px;
@@ -33,7 +33,6 @@
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.2px;
-  box-shadow: 0 12px 28px rgba(48, 125, 176, 0.32);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
