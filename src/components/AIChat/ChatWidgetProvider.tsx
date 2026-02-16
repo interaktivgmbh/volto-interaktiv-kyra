@@ -188,7 +188,7 @@ const ChatWidgetProvider: React.FC = () => {
         chatName={chatName}
         onSaveSettings={handleSaveSettings}
       />
-      {!isOpen && (
+      {!isOpen && token && (
         <LauncherButton
           onClick={() => setIsOpen((value) => !value)}
           isOpen={isOpen}
