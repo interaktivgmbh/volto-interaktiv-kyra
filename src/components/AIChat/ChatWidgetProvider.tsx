@@ -769,6 +769,7 @@ const ChatWidgetProvider: React.FC = () => {
     mode: 'single' | 'subtree',
     overwrite: boolean,
     customLabels?: { running: string; success: string },
+    incremental?: boolean,
   ) => {
     const t = getTranslationLabels(preferredLanguage);
     const now = new Date().toISOString();
@@ -796,6 +797,7 @@ const ChatWidgetProvider: React.FC = () => {
       target_language: targetLang,
       mode,
       overwrite,
+      ...(incremental ? { incremental: true } : {}),
     };
 
     const pagePayload = pageReference?.page || undefined;
@@ -967,7 +969,7 @@ const ChatWidgetProvider: React.FC = () => {
       await executeTranslationViaMessages(actionValue, 'single', true, {
         running: t.syncRunning(langName),
         success: t.syncSuccess(langName),
-      });
+      }, true);
     } else if (actionType === 'cancel') {
       const cancelMessage: ChatMessage = {
         id: generateId(),

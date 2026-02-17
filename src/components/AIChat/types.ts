@@ -80,6 +80,7 @@ export type TranslationOptions = {
   target_language: string;
   mode: 'single' | 'subtree';
   overwrite?: boolean;
+  incremental?: boolean;
 };
 
 export type ChatContextPayload = {
