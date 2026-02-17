@@ -154,7 +154,7 @@
 
 .kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body {
   scrollbar-width: thin;
-  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.9);
+  scrollbar-color: var(--ai-chat-accent) rgba(237, 242, 247, 0.9);
 }
 
 .kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body::-webkit-scrollbar {
@@ -167,7 +167,7 @@
 }
 
 .kyra-ai-chat__panel:not(.kyra-ai-chat__panel--docked) .kyra-ai-chat__body::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.6);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
@@ -210,8 +210,8 @@
 }
 
 .kyra-ai-chat__header-actions button {
-  border: 1px solid var(--ai-chat-border);
-  background: #fff7ec;
+  border: 0 solid var(--ai-chat-border);
+  background: #e8e8e8;
   font-size: 12px;
   padding: 6px 8px;
   border-radius: 8px;
@@ -228,13 +228,13 @@
   justify-content: center;
   font-size: 20px;
   font-weight: 700;
-  background: rgba(59, 151, 212, 0.15);
-  border-color: rgba(48, 125, 176, 0.3);
-  color: var(--ai-chat-accent-strong);
+  background: transparent;
+  border-color: transparent;
+  color: #000;
 }
 
 .kyra-ai-chat__header-icon-button:hover {
-  background: rgba(59, 151, 212, 0.25);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .kyra-ai-chat__header-icon-button img {
@@ -314,7 +314,7 @@
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(48, 125, 176, 0.6) rgba(255, 255, 255, 0.8);
+  scrollbar-color: var(--ai-chat-accent) rgba(255, 255, 255, 0.8);
   scroll-behavior: smooth;
 }
 
@@ -328,7 +328,7 @@
 }
 
 .kyra-ai-chat__messages::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.7);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
@@ -590,9 +590,9 @@
 .kyra-ai-chat__composer-icon-button {
   width: 46px;
   height: 46px;
-  border-radius: 50%;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: #fff;
+  border-radius: 25%;
+  border: 0 solid rgba(148, 163, 184, 0.4);
+  background: #e8e8e8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -694,7 +694,7 @@
   overflow-y: auto;
   padding-right: 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+  scrollbar-color: var(--ai-chat-accent) rgba(237, 242, 247, 0.8);
 }
 
 .kyra-ai-chat__panel--docked .kyra-ai-chat__actions-scroll {
@@ -715,7 +715,7 @@
 }
 
 .kyra-ai-chat__actions-scroll::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.6);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
@@ -807,7 +807,7 @@
 }
 
 .kyra-ai-chat__actions-plan-inner::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.6);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
@@ -815,7 +815,7 @@
 .kyra-ai-chat__actions-diff,
 .kyra-ai-chat__actions-steps,
 .kyra-ai-chat__actions-list {
-  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+  scrollbar-color: var(--ai-chat-accent) rgba(237, 242, 247, 0.8);
   scrollbar-width: thin;
 }
 
@@ -839,12 +839,12 @@
 .kyra-ai-chat__actions-diff::-webkit-scrollbar-thumb,
 .kyra-ai-chat__actions-steps::-webkit-scrollbar-thumb,
 .kyra-ai-chat__actions-list::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.6);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
 .kyra-ai-chat__actions-input {
-  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+  scrollbar-color: var(--ai-chat-accent) rgba(237, 242, 247, 0.8);
   scrollbar-width: thin;
 }
 
@@ -859,7 +859,7 @@
 }
 
 .kyra-ai-chat__actions-input::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.6);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
@@ -1302,7 +1302,7 @@
   padding-top: 16px;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(59, 151, 212, 0.6) rgba(237, 242, 247, 0.8);
+  scrollbar-color: var(--ai-chat-accent) rgba(237, 242, 247, 0.8);
 }
 
 .kyra-ai-chat__settings-scroll::-webkit-scrollbar {
@@ -1315,7 +1315,7 @@
 }
 
 .kyra-ai-chat__settings-scroll::-webkit-scrollbar-thumb {
-  background: rgba(59, 151, 212, 0.6);
+  background: var(--ai-chat-accent);
   border-radius: 999px;
 }
 
@@ -1600,4 +1600,308 @@ body.has-ai-panel-docked {
   padding: 4px 10px !important;
   font-size: 11px !important;
   white-space: nowrap;
+}
+
+/* ── Header dropdown menu ── */
+.kyra-ai-chat__header-menu {
+  position: relative;
+}
+
+.kyra-ai-chat__header-menu-panel {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  padding: 6px 0;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  z-index: 1300;
+}
+
+.kyra-ai-chat__header-menu-panel button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--ai-chat-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.kyra-ai-chat__header-menu-panel button:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__header-menu-panel button .icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.kyra-ai-chat__header-menu-panel button .icon svg path {
+  fill: none !important;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* ── Suggestions ── */
+.kyra-ai-chat__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.kyra-ai-chat__suggestions-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ai-chat-text);
+  padding-bottom: 4px;
+}
+
+.kyra-ai-chat__suggestions-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--ai-chat-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.kyra-ai-chat__suggestions-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__suggestions-item strong {
+  font-weight: 500;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__suggestions-icon {
+  flex-shrink: 0;
+  color: var(--ai-chat-text);
+}
+
+/* ── Message thinking/streaming state ── */
+.kyra-ai-chat__message-thinking {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ai-chat-muted);
+}
+
+.kyra-ai-chat__message-thinking-label {
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--ai-chat-muted);
+}
+
+.kyra-ai-chat__message-thinking-content {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--ai-chat-muted);
+}
+
+/* ── Action button below AI response ── */
+.kyra-ai-chat__message-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ai-chat-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  align-self: flex-start;
+}
+
+.kyra-ai-chat__message-action-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__message-action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Composer row layout ── */
+.kyra-ai-chat__composer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Plus-button dropdown menu ── */
+.kyra-ai-chat__composer-plus-menu {
+  position: relative;
+}
+
+.kyra-ai-chat__composer-plus-panel {
+  position: absolute;
+  bottom: 42px;
+  left: 0;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  padding: 8px 2px;
+  min-width: 300px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  z-index: 1300;
+  overflow: hidden;
+}
+
+.kyra-ai-chat__composer-plus-panel button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 2px;
+  width: calc(100% - 4px);
+  padding: 8px 8px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--ai-chat-text);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+}
+
+.kyra-ai-chat__composer-plus-panel button:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__composer-plus-arrow {
+  margin-left: auto;
+  color: var(--ai-chat-muted);
+  flex-shrink: 0;
+}
+
+.kyra-ai-chat__composer-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  line-height: 1;
+}
+
+/* ── Send button ── */
+.kyra-ai-chat__composer-send {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ai-chat-text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.kyra-ai-chat__composer-send:hover {
+  opacity: 0.8;
+}
+
+.kyra-ai-chat__composer-send:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.kyra-ai-chat__composer-send svg {
+  stroke: #fff;
+}
+
+/* ── Wizard action buttons inside messages ── */
+.kyra-ai-chat__message-wizard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 90%;
+}
+
+.kyra-ai-chat__message-wizard-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ai-chat-text);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  text-align: left;
+}
+
+.kyra-ai-chat__message-wizard-btn:hover {
+  background: rgba(59, 151, 212, 0.06);
+  border-color: rgba(59, 151, 212, 0.4);
+}
+
+.kyra-ai-chat__message-wizard-btn:active {
+  transform: scale(0.98);
+}
+
+.kyra-ai-chat__message-wizard-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.kyra-ai-chat__message-wizard-btn--primary {
+  background: linear-gradient(135deg, var(--ai-chat-accent) 0%, var(--ai-chat-accent-strong) 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(48, 125, 176, 0.25);
+}
+
+.kyra-ai-chat__message-wizard-btn--primary:hover {
+  opacity: 0.9;
+  background: linear-gradient(135deg, var(--ai-chat-accent) 0%, var(--ai-chat-accent-strong) 100%);
+}
+
+.kyra-ai-chat__message-wizard-btn--ghost {
+  background: transparent;
+  border-color: var(--ai-chat-border);
+  color: var(--ai-chat-muted);
+  font-weight: 500;
+}
+
+.kyra-ai-chat__message-wizard-btn--ghost:hover {
+  background: rgba(0, 0, 0, 0.04);
 }

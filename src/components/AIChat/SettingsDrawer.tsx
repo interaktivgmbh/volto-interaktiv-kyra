@@ -7,10 +7,12 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onSave: (draft: SettingsDraft) => void;
+  onClearHistory?: () => void;
   currentCustomIcon: string | null;
   currentIconColor: string;
   currentAccentColor: string | null;
   currentChatName: string | null;
+  historyCount?: number;
   uiLanguage?: string;
 };
 
@@ -64,6 +66,9 @@ const getLabels = (lang?: string) => {
       nameSection: 'App-Name',
       nameHint: 'Eigener Name statt "Volto AI Assistant".',
       namePlaceholder: 'Volto AI Assistant',
+      clearHistory: 'Chat-Verlauf löschen',
+      clearHistoryHint: 'Alle gespeicherten Unterhaltungen entfernen.',
+      clearHistoryConfirm: 'Verlauf löschen',
     };
   }
   return {
@@ -81,6 +86,9 @@ const getLabels = (lang?: string) => {
     nameSection: 'App Name',
     nameHint: 'Custom name instead of "Volto AI Assistant".',
     namePlaceholder: 'Volto AI Assistant',
+    clearHistory: 'Clear chat history',
+    clearHistoryHint: 'Remove all saved conversations.',
+    clearHistoryConfirm: 'Clear history',
   };
 };
 
@@ -88,10 +96,12 @@ const SettingsDrawer: React.FC<Props> = ({
   open,
   onClose,
   onSave,
+  onClearHistory,
   currentCustomIcon,
   currentIconColor,
   currentAccentColor,
   currentChatName,
+  historyCount = 0,
   uiLanguage,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -313,6 +323,25 @@ const SettingsDrawer: React.FC<Props> = ({
             </div>
           )}
         </div>
+
+        {/* Clear History */}
+        {onClearHistory && historyCount > 0 && (
+          <div className="kyra-ai-chat__settings-section">
+            <div className="kyra-ai-chat__settings-section-title">
+              {t.clearHistory}
+            </div>
+            <div className="kyra-ai-chat__settings-hint">
+              {t.clearHistoryHint} ({historyCount})
+            </div>
+            <button
+              type="button"
+              className="kyra-ai-chat__button kyra-ai-chat__button--ghost"
+              onClick={onClearHistory}
+            >
+              {t.clearHistoryConfirm}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
