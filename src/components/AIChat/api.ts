@@ -356,6 +356,71 @@ export const getTranslationStatus = async (
   return response.json();
 };
 
+export type TagMappings = Record<string, Record<string, string>>;
+
+export const getTagMappings = async (
+  token?: string,
+): Promise<{ mappings: TagMappings }> => {
+  const response = await fetch(buildApiUrl('/@ai-tag-mappings'), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { mappings: {} };
+  }
+
+  return response.json();
+};
+
+export const postTagMapping = async (
+  payload: { tag: string; language: string; translated: string },
+  token?: string,
+): Promise<{ result: string; mappings: TagMappings }> => {
+  const response = await fetch(buildApiUrl('/@ai-tag-mappings'), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Tag mapping save failed');
+  }
+
+  return response.json();
+};
+
+export const deleteTagMapping = async (
+  payload: { tag: string; language?: string },
+  token?: string,
+): Promise<{ result: string; mappings: TagMappings }> => {
+  const response = await fetch(buildApiUrl('/@ai-tag-mappings'), {
+    method: 'DELETE',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Tag mapping delete failed');
+  }
+
+  return response.json();
+};
+
 export const getAiChatTranslations = async (
   token?: string,
 ): Promise<AiChatTranslations> => {

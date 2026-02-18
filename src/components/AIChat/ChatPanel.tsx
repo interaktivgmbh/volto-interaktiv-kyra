@@ -4,6 +4,7 @@ import Composer from './Composer';
 import HistoryDrawer from './HistoryDrawer';
 import MessageList from './MessageList';
 import SettingsDrawer from './SettingsDrawer';
+import TagMappingsPanel from './TagMappingsPanel';
 import type {
   ChatCapabilities,
   ChatConversation,
@@ -23,6 +24,7 @@ const getChatLabels = (lang?: string) => {
       settings: 'Einstellungen',
       menu: 'Men\u00fc',
       close: 'Schlie\u00dfen',
+      tagMappings: 'Schlagwort-Mappings',
     };
   }
   return {
@@ -34,6 +36,7 @@ const getChatLabels = (lang?: string) => {
     settings: 'Settings',
     menu: 'Menu',
     close: 'Close',
+    tagMappings: 'Tag Mappings',
   };
 };
 
@@ -101,6 +104,7 @@ const ChatPanel: React.FC<Props> = ({
   uiLanguage,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showTagMappings, setShowTagMappings] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,6 +161,21 @@ const ChatPanel: React.FC<Props> = ({
                   <Icon name={settingsSVG} size="14px" />
                   <span>{t.settings}</span>
                 </button>
+                {capabilities.can_edit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTagMappings(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                      <line x1="7" y1="7" x2="7.01" y2="7" />
+                    </svg>
+                    <span>{t.tagMappings}</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -230,6 +249,11 @@ const ChatPanel: React.FC<Props> = ({
         currentAccentColor={accentColor}
         currentChatName={chatName}
         historyCount={history.length}
+        uiLanguage={uiLanguage}
+      />
+      <TagMappingsPanel
+        open={showTagMappings}
+        onClose={() => setShowTagMappings(false)}
         uiLanguage={uiLanguage}
       />
     </div>

@@ -2050,3 +2050,91 @@ body.has-ai-panel-docked {
 .kyra-ai-chat__message-wizard-btn--ghost:hover {
   background: rgba(0, 0, 0, 0.04);
 }
+
+/* Tag Mappings Panel */
+.kyra-ai-chat__tag-mappings-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kyra-ai-chat__tag-mappings-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--ai-chat-border);
+}
+
+.kyra-ai-chat__tag-mappings-row:last-child {
+  border-bottom: none;
+}
+
+.kyra-ai-chat__tag-mappings-row--header {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--ai-chat-muted);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.kyra-ai-chat__tag-mappings-delete {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ai-chat-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.kyra-ai-chat__tag-mappings-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.kyra-ai-chat__tag-mappings-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.kyra-ai-chat__tag-mappings-form .kyra-ai-chat__settings-input {
+  flex: 1;
+  min-width: 80px;
+}
+
+.kyra-ai-chat__tag-mappings-select {
+  max-width: 100px;
+  flex: 0 0 auto !important;
+}
+
+.kyra-ai-chat__tag-mappings-form .kyra-ai-chat__button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.kyra-ai-chat__tag-mappings-empty {
+  text-align: center;
+  color: var(--ai-chat-muted);
+  font-size: 13px;
+  padding: 16px;
+}
+
+.kyra-ai-chat__tag-mappings-loading {
+  text-align: center;
+  color: var(--ai-chat-muted);
+  font-size: 13px;
+  padding: 16px;
+}
