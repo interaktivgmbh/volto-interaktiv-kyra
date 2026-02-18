@@ -157,13 +157,11 @@ const MessageList: React.FC<Props> = ({ messages, onAction, uiLanguage }) => {
             {isAssistant && isStreaming && (
               <div className="kyra-ai-chat__message-thinking">
                 <span className="kyra-ai-chat__message-thinking-label">
-                  {t.thinking}
+                  <span className="kyra-ai-chat__thinking-dots">
+                    <span /><span /><span />
+                  </span>
+                  {rawContent || t.thinking}
                 </span>
-                {rawContent && (
-                  <div className="kyra-ai-chat__message-thinking-content">
-                    {rawContent}
-                  </div>
-                )}
               </div>
             )}
             {/* Final answer */}
