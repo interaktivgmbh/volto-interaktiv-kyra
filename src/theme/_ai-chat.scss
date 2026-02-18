@@ -1048,22 +1048,38 @@
 
 .kyra-ai-chat__history-controls {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
 .kyra-ai-chat__history-controls button {
-  border: 1px solid var(--ai-chat-border);
-  background: #fff;
-  border-radius: 8px;
-  padding: 6px 8px;
+  border: 0;
+  background: #e8e8e8;
   font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-.kyra-ai-chat__history-archived-toggle.is-active {
-  background: rgba(59, 151, 212, 0.15);
-  border-color: rgba(59, 151, 212, 0.5);
-  color: var(--ai-chat-accent);
+.kyra-ai-chat__history-controls .kyra-ai-chat__header-icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 25%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8e8e8;
+  border: 0;
+  color: #000;
+}
+
+.kyra-ai-chat__history-controls .kyra-ai-chat__header-icon-button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.kyra-ai-chat__history-header-menu {
+  position: relative;
 }
 
 .kyra-ai-chat__history-list {
@@ -1156,6 +1172,104 @@
 
 .kyra-ai-chat__history-item {
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.kyra-ai-chat__history-item--selected {
+  border-color: var(--ai-chat-accent);
+  background: rgba(59, 151, 212, 0.06);
+}
+
+.kyra-ai-chat__history-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.kyra-ai-chat__history-checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 5px;
+  border: 2px solid var(--ai-chat-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.kyra-ai-chat__history-checkbox--checked {
+  background: var(--ai-chat-accent);
+  border-color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__history-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ai-chat-border);
+  font-size: 12px;
+}
+
+.kyra-ai-chat__history-bulk-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ai-chat-muted);
+}
+
+.kyra-ai-chat__history-bulk-toggle {
+  border: 1px solid var(--ai-chat-border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.kyra-ai-chat__history-bulk-toggle:hover {
+  border-color: var(--ai-chat-accent);
+  color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__history-bulk-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.kyra-ai-chat__history-bulk-actions button {
+  border: 1px solid var(--ai-chat-border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kyra-ai-chat__history-bulk-actions button:hover {
+  border-color: var(--ai-chat-accent);
+  color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__history-bulk-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.kyra-ai-chat__history-bulk-delete {
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.kyra-ai-chat__history-bulk-delete:hover {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.06) !important;
+  color: #ef4444 !important;
 }
 
 .kyra-ai-chat__history-delete {

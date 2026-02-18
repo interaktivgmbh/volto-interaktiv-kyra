@@ -139,6 +139,7 @@ const buildTitle = (content: string, lang?: string) => {
 };
 
 const ChatWidgetProvider: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const userSession = useSelector((state: any) => state.userSession);
   const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
@@ -209,6 +210,10 @@ const ChatWidgetProvider: React.FC = () => {
     const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
     return isDe ? 'Neuer Chat' : 'New chat';
   }, [preferredLanguage]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const stored = loadLocalConversations(userKey);
@@ -1021,6 +1026,9 @@ const ChatWidgetProvider: React.FC = () => {
         '--ai-chat-accent-strong': darkenColor(accentColor, 30),
       } as React.CSSProperties
     : undefined;
+
+  // Don't render during SSR — avoids settings flash on hydration
+  if (!mounted) return null;
 
   return (
     <div className="kyra-ai-chat" style={accentStyles}>
