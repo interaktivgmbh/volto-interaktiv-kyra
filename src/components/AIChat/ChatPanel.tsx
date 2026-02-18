@@ -5,6 +5,7 @@ import HistoryDrawer from './HistoryDrawer';
 import MessageList from './MessageList';
 import SettingsDrawer from './SettingsDrawer';
 import TagMappingsPanel from './TagMappingsPanel';
+import GlossaryPanel from './GlossaryPanel';
 import type {
   ChatCapabilities,
   ChatConversation,
@@ -25,6 +26,7 @@ const getChatLabels = (lang?: string) => {
       menu: 'Men\u00fc',
       close: 'Schlie\u00dfen',
       tagMappings: 'Schlagwort-Mappings',
+      glossary: 'DeepL Glossar',
     };
   }
   return {
@@ -37,6 +39,7 @@ const getChatLabels = (lang?: string) => {
     menu: 'Menu',
     close: 'Close',
     tagMappings: 'Tag Mappings',
+    glossary: 'DeepL Glossary',
   };
 };
 
@@ -105,6 +108,7 @@ const ChatPanel: React.FC<Props> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -174,6 +178,21 @@ const ChatPanel: React.FC<Props> = ({
                       <line x1="7" y1="7" x2="7.01" y2="7" />
                     </svg>
                     <span>{t.tagMappings}</span>
+                  </button>
+                )}
+                {capabilities.can_edit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowGlossary(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                    <span>{t.glossary}</span>
                   </button>
                 )}
               </div>
@@ -254,6 +273,11 @@ const ChatPanel: React.FC<Props> = ({
       <TagMappingsPanel
         open={showTagMappings}
         onClose={() => setShowTagMappings(false)}
+        uiLanguage={uiLanguage}
+      />
+      <GlossaryPanel
+        open={showGlossary}
+        onClose={() => setShowGlossary(false)}
         uiLanguage={uiLanguage}
       />
     </div>

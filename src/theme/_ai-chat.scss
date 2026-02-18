@@ -2138,3 +2138,95 @@ body.has-ai-panel-docked {
   font-size: 13px;
   padding: 16px;
 }
+
+/* Glossary Panel */
+.kyra-ai-chat__glossary-row {
+  grid-template-columns: 1fr 1fr 32px;
+}
+
+.kyra-ai-chat__glossary-pair-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kyra-ai-chat__glossary-pair-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 16px;
+  background: var(--ai-chat-bg-alt);
+  color: var(--ai-chat-text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kyra-ai-chat__glossary-pair-btn:hover {
+  border-color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__glossary-pair-btn--active {
+  background: var(--ai-chat-accent);
+  color: #fff;
+  border-color: var(--ai-chat-accent);
+}
+
+.kyra-ai-chat__glossary-sync-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: var(--ai-chat-muted);
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: var(--ai-chat-accent);
+    border-color: var(--ai-chat-accent);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  &--syncing svg {
+    animation: kyra-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes kyra-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.kyra-ai-chat__glossary-csv {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ai-chat-border);
+
+  .kyra-ai-chat__button--secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    background: var(--ai-chat-bg);
+    color: var(--ai-chat-text);
+    border-color: var(--ai-chat-border);
+
+    &:hover {
+      border-color: var(--ai-chat-accent);
+      color: var(--ai-chat-accent);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}

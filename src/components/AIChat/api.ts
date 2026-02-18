@@ -440,3 +440,97 @@ export const getAiChatTranslations = async (
 
   return response.json();
 };
+
+// ---------------------------------------------------------------------------
+// DeepL Glossary
+// ---------------------------------------------------------------------------
+
+export type GlossaryEntries = Record<string, string>;
+
+export const getGlossaryEntries = async (
+  sourceLang: string,
+  targetLang: string,
+  token?: string,
+): Promise<{ source_lang: string; target_lang: string; entries: GlossaryEntries; glossary_id: string }> => {
+  const params = new URLSearchParams({ source: sourceLang, target: targetLang });
+  const response = await fetch(buildApiUrl(`/@ai-glossary?${params}`), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { source_lang: sourceLang, target_lang: targetLang, entries: {}, glossary_id: '' };
+  }
+
+  return response.json();
+};
+
+export const postGlossaryEntry = async (
+  payload: { source_term: string; target_term: string; source_lang: string; target_lang: string },
+  token?: string,
+): Promise<{ result: string; entries: GlossaryEntries; glossary_id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-glossary'), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Glossary entry save failed');
+  }
+
+  return response.json();
+};
+
+export const deleteGlossaryEntry = async (
+  payload: { source_term: string; source_lang: string; target_lang: string },
+  token?: string,
+): Promise<{ result: string; entries: GlossaryEntries; glossary_id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-glossary'), {
+    method: 'DELETE',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Glossary entry delete failed');
+  }
+
+  return response.json();
+};
+
+export const importGlossaryCsv = async (
+  payload: { csv_data: string; source_lang: string; target_lang: string },
+  token?: string,
+): Promise<{ result: string; entries: GlossaryEntries; glossary_id: string; imported: number }> => {
+  const response = await fetch(buildApiUrl('/@ai-glossary'), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'CSV import failed');
+  }
+
+  return response.json();
+};
