@@ -15,7 +15,7 @@ const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
     return {
-      title: 'Gespeicherte Prompts',
+      title: 'Promptmanager',
       close: 'Schlie\u00dfen',
       name: 'Name',
       description: 'Beschreibung',
@@ -43,7 +43,7 @@ const getLabels = (lang?: string) => {
     };
   }
   return {
-    title: 'Saved Prompts',
+    title: 'Prompt Manager',
     close: 'Close',
     name: 'Name',
     description: 'Description',

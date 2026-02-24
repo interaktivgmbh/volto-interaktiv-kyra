@@ -7,6 +7,7 @@ import SettingsDrawer from './SettingsDrawer';
 import TagMappingsPanel from './TagMappingsPanel';
 import GlossaryPanel from './GlossaryPanel';
 import PromptsPanel from './PromptsPanel';
+import PromptPicker from './PromptPicker';
 import type {
   ChatCapabilities,
   ChatConversation,
@@ -28,7 +29,7 @@ const getChatLabels = (lang?: string) => {
       close: 'Schlie\u00dfen',
       tagMappings: 'Schlagwort-Mappings',
       glossary: 'DeepL Glossar',
-      prompts: 'Gespeicherte Prompts',
+      prompts: 'Promptmanager',
     };
   }
   return {
@@ -42,7 +43,7 @@ const getChatLabels = (lang?: string) => {
     close: 'Close',
     tagMappings: 'Tag Mappings',
     glossary: 'DeepL Glossary',
-    prompts: 'Saved Prompts',
+    prompts: 'Prompt Manager',
   };
 };
 
@@ -117,6 +118,7 @@ const ChatPanel: React.FC<Props> = ({
   const [showTagMappings, setShowTagMappings] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
+  const [showPromptPicker, setShowPromptPicker] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -258,16 +260,25 @@ const ChatPanel: React.FC<Props> = ({
       </div>
       <div className="kyra-ai-chat__body">
         {error && <div className="kyra-ai-chat__error">{error}</div>}
-        <MessageList
-          messages={conversation?.messages || []}
-          uiLanguage={uiLanguage}
-          onAction={onWizardAction}
-        />
+        {showPromptPicker ? (
+          <PromptPicker
+            open={showPromptPicker}
+            onClose={() => setShowPromptPicker(false)}
+            onApplyPrompt={onApplyPrompt}
+            uiLanguage={uiLanguage}
+          />
+        ) : (
+          <MessageList
+            messages={conversation?.messages || []}
+            uiLanguage={uiLanguage}
+            onAction={onWizardAction}
+          />
+        )}
       </div>
       <Composer
         onTranslateClick={onStartTranslation}
         onSyncClick={onStartSync}
-        onPromptsClick={() => setShowPrompts(true)}
+        onPromptsClick={() => setShowPromptPicker(true)}
         outdatedCount={outdatedCount}
         disabled={isSending}
         uiLanguage={uiLanguage}
