@@ -168,3 +168,14 @@ export type TranslationStatus = {
   translations: TranslationStatusItem[];
   outdated_count: number;
 };
+
+export type Prompt = {
+  id: string;
+  name: string;
+  description: string;
+  text: string;
+  categories: string[];
+  actionType: 'replace' | 'append';
+  created: string;
+  updated: string;
+};

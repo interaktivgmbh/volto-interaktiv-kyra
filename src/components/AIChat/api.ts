@@ -10,6 +10,7 @@ import type {
   AiChatTranslations,
   TranslationOptions,
   TranslationStatus,
+  Prompt,
 } from './types';
 import type { AiChatUploadResponse } from './types';
 
@@ -530,6 +531,192 @@ export const importGlossaryCsv = async (
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || 'CSV import failed');
+  }
+
+  return response.json();
+};
+
+// ---------------------------------------------------------------------------
+// Prompt Files
+// ---------------------------------------------------------------------------
+
+export const getPromptFiles = async (
+  promptId: string,
+  token?: string,
+): Promise<{ files: any[] }> => {
+  const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}`), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { files: [] };
+  }
+
+  return response.json();
+};
+
+export const getPromptFile = async (
+  promptId: string,
+  fileId: string,
+  token?: string,
+): Promise<any> => {
+  const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}/${fileId}`), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to load file');
+  }
+
+  return response.json();
+};
+
+export const uploadPromptFiles = async (
+  promptId: string,
+  files: File[],
+  token?: string,
+): Promise<any[]> => {
+  const results: any[] = [];
+
+  for (const file of files) {
+    const form = new FormData();
+    form.append('file', file);
+
+    const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}`), {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: 'same-origin',
+      body: form,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'File upload failed');
+    }
+
+    const result = await response.json();
+    results.push(result);
+  }
+
+  return results;
+};
+
+export const deletePromptFile = async (
+  promptId: string,
+  fileId: string,
+  token?: string,
+): Promise<{ result: string; id: string }> => {
+  const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}/${fileId}`), {
+    method: 'DELETE',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'File deletion failed');
+  }
+
+  return response.json();
+};
+
+// ---------------------------------------------------------------------------
+// Prompts
+// ---------------------------------------------------------------------------
+
+export const getPrompts = async (
+  token?: string,
+): Promise<{ prompts: Prompt[] }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { prompts: [] };
+  }
+
+  return response.json();
+};
+
+export const createPrompt = async (
+  payload: { name: string; text: string; description?: string; categories?: string[]; actionType?: string },
+  token?: string,
+): Promise<{ result: string; prompt: Prompt }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Prompt creation failed');
+  }
+
+  return response.json();
+};
+
+export const updatePrompt = async (
+  payload: { id: string; name?: string; text?: string; description?: string; categories?: string[]; actionType?: string },
+  token?: string,
+): Promise<{ result: string; prompt: Prompt }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'PATCH',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Prompt update failed');
+  }
+
+  return response.json();
+};
+
+export const deletePrompt = async (
+  payload: { id: string },
+  token?: string,
+): Promise<{ result: string; id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'DELETE',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Prompt deletion failed');
   }
 
   return response.json();

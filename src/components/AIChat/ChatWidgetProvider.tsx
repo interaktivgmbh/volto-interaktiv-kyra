@@ -1005,6 +1005,11 @@ const ChatWidgetProvider: React.FC = () => {
     setChatName(draft.chatName);
   };
 
+  const handleApplyPrompt = (promptText: string) => {
+    if (!promptText.trim()) return;
+    handleSend(promptText);
+  };
+
   const handleClearHistory = () => {
     clearAllConversations(userKey);
     setHistory([]);
@@ -1053,6 +1058,8 @@ const ChatWidgetProvider: React.FC = () => {
         onToggleHistory={() => setShowHistory((value) => !value)}
         onStartTranslation={startTranslationWizard}
         onStartSync={startSyncWizard}
+        onPromptsClick={() => {}}
+        onApplyPrompt={handleApplyPrompt}
         onWizardAction={handleWizardAction}
         outdatedCount={translationStatus?.outdated_count || 0}
 
