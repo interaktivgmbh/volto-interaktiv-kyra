@@ -10,6 +10,9 @@ type Props = {
   outdatedCount?: number;
   disabled?: boolean;
   uiLanguage?: string;
+  contextMode?: 'page' | 'site' | 'selection';
+  contextLabel?: string | null;
+  onDismissContext?: () => void;
 };
 
 const getComposerLabels = (lang?: string) => {
@@ -35,6 +38,9 @@ const Composer: React.FC<Props> = ({
   outdatedCount = 0,
   disabled,
   uiLanguage,
+  contextMode,
+  contextLabel,
+  onDismissContext,
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const plusMenuRef = useRef<HTMLDivElement>(null);
@@ -53,6 +59,37 @@ const Composer: React.FC<Props> = ({
 
   return (
     <div className="kyra-ai-chat__composer">
+      {contextLabel && (
+        <div className="kyra-ai-chat__composer-context">
+          <span
+            className={`kyra-ai-chat__context-tag${
+              contextMode === 'selection'
+                ? ' kyra-ai-chat__context-tag--selection'
+                : ''
+            }`}
+          >
+            <button
+              type="button"
+              onClick={onDismissContext}
+              aria-label="Remove context"
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <span>{contextLabel}</span>
+          </span>
+        </div>
+      )}
       <div className="kyra-ai-chat__composer-row">
         <div className="kyra-ai-chat__composer-plus-menu" ref={plusMenuRef}>
           <button

@@ -79,6 +79,9 @@ type Props = {
   onPinConversation: (conversationId: string) => void;
   onArchiveConversation: (conversationId: string) => void;
   uiLanguage?: string;
+  contextMode: 'page' | 'site' | 'selection';
+  contextLabel: string | null;
+  onDismissContext: () => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -113,6 +116,9 @@ const ChatPanel: React.FC<Props> = ({
   onPinConversation,
   onArchiveConversation,
   uiLanguage,
+  contextMode,
+  contextLabel,
+  onDismissContext,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -282,6 +288,9 @@ const ChatPanel: React.FC<Props> = ({
         outdatedCount={outdatedCount}
         disabled={isSending}
         uiLanguage={uiLanguage}
+        contextMode={contextMode}
+        contextLabel={contextLabel}
+        onDismissContext={onDismissContext}
       />
       <HistoryDrawer
         open={showHistory}

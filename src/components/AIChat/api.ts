@@ -721,3 +721,126 @@ export const deletePrompt = async (
 
   return response.json();
 };
+
+// ---------------------------------------------------------------------------
+// Replace selected text in page blocks
+// ---------------------------------------------------------------------------
+
+function extractSlateText(nodes: any[]): string {
+  return nodes
+    .map((node) => {
+      if (typeof node.text === 'string') return node.text;
+      if (node.children) return extractSlateText(node.children);
+      return '';
+    })
+    .join('');
+}
+
+function replaceInSlateNodes(
+  nodes: any[],
+  original: string,
+  replacement: string,
+): { result: any[]; replaced: boolean } {
+  const fullText = extractSlateText(nodes);
+  const idx = fullText.indexOf(original);
+  if (idx === -1) return { result: nodes, replaced: false };
+
+  const cloned: any[] = JSON.parse(JSON.stringify(nodes));
+
+  type Leaf = { node: any; start: number; end: number };
+  const leaves: Leaf[] = [];
+  let pos = 0;
+
+  const walk = (list: any[]) => {
+    for (const n of list) {
+      if (typeof n.text === 'string') {
+        leaves.push({ node: n, start: pos, end: pos + n.text.length });
+        pos += n.text.length;
+      } else if (n.children) {
+        walk(n.children);
+      }
+    }
+  };
+  walk(cloned);
+
+  const matchEnd = idx + original.length;
+  let inserted = false;
+
+  for (const leaf of leaves) {
+    if (leaf.end <= idx || leaf.start >= matchEnd) continue;
+
+    const before =
+      leaf.start < idx ? leaf.node.text.substring(0, idx - leaf.start) : '';
+    const after =
+      leaf.end > matchEnd
+        ? leaf.node.text.substring(matchEnd - leaf.start)
+        : '';
+
+    if (!inserted) {
+      leaf.node.text = before + replacement + after;
+      inserted = true;
+    } else {
+      leaf.node.text = after;
+    }
+  }
+
+  return { result: cloned, replaced: true };
+}
+
+/**
+ * Fetches the page content and computes updated blocks with the text replaced.
+ * Returns { blocks } ready to be PATCHed via Volto's updateContent action.
+ */
+export const computeBlocksWithReplacement = async (
+  pageUrl: string,
+  originalText: string,
+  newText: string,
+  token?: string,
+): Promise<{ blocks: Record<string, any> }> => {
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const getResponse = await fetch(buildApiUrl(path), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!getResponse.ok) throw new Error('Failed to fetch page content');
+  const pageData = await getResponse.json();
+
+  const blocks = pageData.blocks;
+  const blocksLayout = pageData.blocks_layout;
+  if (!blocks || !blocksLayout?.items) throw new Error('No blocks found');
+
+  // Strip HTML tags from the replacement text (gateway may wrap in <p>, <br>, etc.)
+  const cleanText = newText.replace(/<[^>]+>/g, '').trim();
+
+  const updatedBlocks = { ...blocks };
+  let modified = false;
+
+  for (const blockId of blocksLayout.items) {
+    const block = blocks[blockId];
+    if (!block) continue;
+
+    const blockType = block['@type'];
+    if (blockType !== 'slate' && blockType !== 'text') continue;
+    if (!block.value) continue;
+
+    const { result, replaced } = replaceInSlateNodes(
+      block.value,
+      originalText,
+      cleanText,
+    );
+    if (replaced) {
+      updatedBlocks[blockId] = { ...block, value: result };
+      modified = true;
+      break;
+    }
+  }
+
+  if (!modified) throw new Error('Original text not found in page blocks');
+
+  return { blocks: updatedBlocks };
+};

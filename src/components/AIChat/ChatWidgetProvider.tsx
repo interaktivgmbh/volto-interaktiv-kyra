@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 import ChatPanel from './ChatPanel';
 import LauncherButton from './LauncherButton';
@@ -11,7 +11,9 @@ import {
   postAiChatStream,
   postAiActionsPlan,
   postAiActionsApply,
+  computeBlocksWithReplacement,
 } from './api';
+import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
 import { extractPageContent } from './extractPageContent';
 import {
   loadLocalConversations,
@@ -140,6 +142,7 @@ const buildTitle = (content: string, lang?: string) => {
 
 const ChatWidgetProvider: React.FC = () => {
   const [mounted, setMounted] = useState(false);
+  const dispatch = useDispatch();
   const userSession = useSelector((state: any) => state.userSession);
   const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
@@ -162,6 +165,11 @@ const ChatWidgetProvider: React.FC = () => {
   );
   const [preferredLanguage, setPreferredLanguage] = useState('');
   const [translationStatus, setTranslationStatus] = useState<TranslationStatus | null>(null);
+  const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
+  const [selectionText, setSelectionText] = useState('');
+  const contextModeRef = useRef<'page' | 'site' | 'selection'>('page');
+  const selectionTextRef = useRef('');
+  const manualSiteModeRef = useRef(false);
   const conversationRef = useRef<ChatConversation | null>(null);
   const streamControllerRef = useRef<AbortController | null>(null);
   const fallbackLanguage = useMemo(() => {
@@ -311,6 +319,75 @@ const ChatWidgetProvider: React.FC = () => {
     return () => { isMounted = false; };
   }, [content?.['@id'], token]);
 
+  // Helper to update context mode + ref together
+  const updateContextMode = (mode: 'page' | 'site' | 'selection') => {
+    contextModeRef.current = mode;
+    setContextMode(mode);
+  };
+  const updateSelectionText = (text: string) => {
+    selectionTextRef.current = text;
+    setSelectionText(text);
+  };
+
+  // Reset context mode when navigating to a different page
+  useEffect(() => {
+    updateContextMode('page');
+    manualSiteModeRef.current = false;
+    updateSelectionText('');
+  }, [content?.UID]);
+
+  // Listen for text selection on the page (outside chat)
+  useEffect(() => {
+    const handleSelection = () => {
+      const sel = window.getSelection();
+      const text = sel?.toString()?.trim() || '';
+      if (text.length > 5) {
+        // Check selection is not inside the chat panel
+        const anchor = sel?.anchorNode;
+        if (anchor) {
+          const el = anchor.nodeType === Node.ELEMENT_NODE
+            ? (anchor as Element)
+            : anchor.parentElement;
+          if (el?.closest('.kyra-ai-chat')) return;
+        }
+        updateContextMode('selection');
+        updateSelectionText(text);
+      } else if (contextModeRef.current === 'selection') {
+        // Selection cleared — but if the user clicked into the chat panel
+        // to type or use a prompt, preserve the selection context
+        const activeEl = document.activeElement;
+        const inChat = activeEl?.closest('.kyra-ai-chat');
+        if (inChat) return;
+        // Selection cleared by clicking outside chat — revert
+        updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
+        updateSelectionText('');
+      }
+    };
+    document.addEventListener('selectionchange', handleSelection);
+    return () => document.removeEventListener('selectionchange', handleSelection);
+  }, []);
+
+  const handleDismissContext = () => {
+    if (contextMode === 'page') {
+      updateContextMode('site');
+      manualSiteModeRef.current = true;
+    } else if (contextMode === 'selection') {
+      updateContextMode('page');
+      manualSiteModeRef.current = false;
+      updateSelectionText('');
+      window.getSelection()?.removeAllRanges();
+    }
+  };
+
+  const contextLabel = useMemo(() => {
+    if (contextMode === 'site') return null;
+    if (contextMode === 'selection') {
+      const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+      return isDe ? 'Ausgew\u00e4hlter Text' : 'Selected text';
+    }
+    return content?.title || content?.Title || null;
+  }, [contextMode, content?.title, content?.Title, preferredLanguage]);
+
   const persistConversation = (nextConversation: ChatConversation) => {
     const updatedHistory = saveLocalConversation(nextConversation, userKey);
     setHistory(updatedHistory);
@@ -415,6 +492,8 @@ const ChatWidgetProvider: React.FC = () => {
       citations?: ChatMessage['citations'];
       status?: ChatMessage['status'];
       conversationId?: string;
+      actions?: ChatMessage['actions'];
+      wizardMeta?: ChatMessage['wizardMeta'];
     },
     previousId?: string,
   ) => {
@@ -427,6 +506,8 @@ const ChatWidgetProvider: React.FC = () => {
         content: data.content ?? message.content,
         citations: data.citations ?? message.citations,
         status: data.status ?? 'done',
+        ...(data.actions ? { actions: data.actions } : {}),
+        ...(data.wizardMeta ? { wizardMeta: data.wizardMeta } : {}),
       };
     });
     const nextConversation = {
@@ -490,12 +571,27 @@ const ChatWidgetProvider: React.FC = () => {
     };
     updateConversationState(conversationWithAssistant, false);
 
+    // Read from refs to survive selection-clear during click events
+    const activeMode = contextOverrides?.mode || contextModeRef.current;
+    const activeSelection = selectionTextRef.current;
     const contextPayload: ChatContextPayload = {
       mode: contextOverrides?.mode || 'page',
-      page: pageReference?.page,
-      page_content: pageContentText || undefined,
+      ...(activeMode === 'site'
+        ? {}
+        : activeMode === 'selection'
+        ? {
+            page: pageReference?.page,
+            page_content: activeSelection,
+            selection_text: activeSelection,
+          }
+        : {
+            page: pageReference?.page,
+            page_content: pageContentText || undefined,
+          }),
       query: contextOverrides?.query,
-      selection_text: contextOverrides?.selection_text,
+      ...(contextOverrides?.selection_text
+        ? { selection_text: contextOverrides.selection_text }
+        : {}),
     };
 
     const resolvedLanguage = preferredLanguage || fallbackLanguage;
@@ -513,6 +609,34 @@ const ChatWidgetProvider: React.FC = () => {
       context: contextPayload,
       params: Object.keys(paramsPayload).length ? paramsPayload : undefined,
     };
+
+    // Capture selection info for "apply to page" action
+    const isSelectionRequest = activeMode === 'selection' && activeSelection.length > 5;
+    const originalSelectionText = isSelectionRequest ? activeSelection : '';
+
+    const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+    const selectionActions: ChatMessageAction[] | undefined = isSelectionRequest
+      ? [
+          {
+            label: isDe ? 'Auf Seite anwenden' : 'Apply to page',
+            value: 'apply_selection:apply',
+            variant: 'primary',
+          },
+          {
+            label: isDe ? 'Verwerfen' : 'Dismiss',
+            value: 'apply_selection:dismiss',
+            variant: 'ghost',
+          },
+        ]
+      : undefined;
+    const selectionMeta = isSelectionRequest
+      ? {
+          step: 'apply_selection',
+          originalText: originalSelectionText,
+          pageUid: content?.UID,
+          pageUrl: content?.['@id'],
+        }
+      : undefined;
 
     const canStream = capabilities.features?.includes('streaming');
 
@@ -536,6 +660,8 @@ const ChatWidgetProvider: React.FC = () => {
           citations: response.citations || [],
           status: 'done',
           conversationId: response.conversation_id,
+          actions: selectionActions,
+          wizardMeta: selectionMeta,
         },
         previousId,
       );
@@ -575,6 +701,8 @@ const ChatWidgetProvider: React.FC = () => {
                 citations: data?.citations,
                 status: 'done',
                 conversationId: data?.conversation_id,
+                actions: selectionActions,
+                wizardMeta: selectionMeta,
               },
               previousId,
             );
@@ -870,6 +998,11 @@ const ChatWidgetProvider: React.FC = () => {
       userLabel = actionValue === 'yes' ? t.overwriteYes : t.overwriteNo;
     } else if (actionType === 'sync') {
       userLabel = t.syncButton(LANGUAGE_NAMES[actionValue] || actionValue);
+    } else if (actionType === 'apply_selection') {
+      const isDe2 = (preferredLanguage || '').toLowerCase().startsWith('de');
+      userLabel = actionValue === 'apply'
+        ? (isDe2 ? 'Auf Seite anwenden' : 'Apply to page')
+        : (isDe2 ? 'Verwerfen' : 'Dismiss');
     } else if (actionType === 'cancel') {
       userLabel = t.cancel;
     }
@@ -975,6 +1108,79 @@ const ChatWidgetProvider: React.FC = () => {
         running: t.syncRunning(langName),
         success: t.syncSuccess(langName),
       }, true);
+    } else if (actionType === 'apply_selection') {
+      const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+
+      if (actionValue === 'dismiss') {
+        const nextConv = { ...current, messages: messagesWithoutActions, updatedAt: now };
+        updateConversationState(nextConv, true);
+        return;
+      }
+
+      // "apply" — replace the original text on the page
+      const meta = clickedMessage.wizardMeta || {};
+      const originalText = meta.originalText || '';
+      const pageUrl = meta.pageUrl || content?.['@id'] || '';
+      const assistantContent = clickedMessage.content?.trim() || '';
+
+      if (!originalText || !assistantContent || !pageUrl) {
+        const errMsg: ChatMessage = {
+          id: generateId(),
+          role: 'assistant',
+          content: isDe
+            ? 'Konnte den Text nicht auf der Seite ersetzen (fehlende Daten).'
+            : 'Could not apply text to page (missing data).',
+          createdAt: now,
+          status: 'error',
+        };
+        nextMessages = [...nextMessages, errMsg];
+        const nextConv = { ...current, messages: nextMessages, updatedAt: now };
+        updateConversationState(nextConv, true);
+        return;
+      }
+
+      // Show "applying" status
+      const applyingId = generateId();
+      const applyingMsg: ChatMessage = {
+        id: applyingId,
+        role: 'assistant',
+        content: isDe ? 'Wende \u00c4nderung auf der Seite an\u2026' : 'Applying changes to page\u2026',
+        createdAt: now,
+        status: 'streaming',
+      };
+      nextMessages = [...nextMessages, applyingMsg];
+      const tempConv = { ...current, messages: nextMessages, updatedAt: now };
+      updateConversationState(tempConv, false);
+
+      try {
+        const { blocks } = await computeBlocksWithReplacement(
+          pageUrl,
+          originalText,
+          assistantContent,
+          token,
+        );
+        // Pass path only (not full URL) so Volto's API middleware adds the correct API prefix
+        const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+        // Unlock (force) in case the page is open in edit mode, then patch, then re-lock
+        try { await (dispatch as any)(unlockContent(contentPath, true)); } catch (_) { /* not locked */ }
+        await (dispatch as any)(updateContent(contentPath, { blocks }));
+        try { await (dispatch as any)(lockContent(contentPath)); } catch (_) { /* ignore */ }
+        finalizeAssistant(applyingId, {
+          content: isDe
+            ? 'Text wurde erfolgreich auf der Seite ersetzt.'
+            : 'Text has been successfully replaced on the page.',
+          status: 'done',
+        });
+        // Reload to reflect changes
+        setTimeout(() => window.location.reload(), 800);
+      } catch (err: any) {
+        finalizeAssistant(applyingId, {
+          content: isDe
+            ? `Fehler beim Ersetzen: ${err?.message || 'Unbekannter Fehler'}`
+            : `Error replacing text: ${err?.message || 'Unknown error'}`,
+          status: 'error',
+        });
+      }
     } else if (actionType === 'cancel') {
       const cancelMessage: ChatMessage = {
         id: generateId(),
@@ -1070,6 +1276,9 @@ const ChatWidgetProvider: React.FC = () => {
         onPinConversation={togglePinConversation}
         onArchiveConversation={toggleArchiveConversation}
         uiLanguage={preferredLanguage}
+        contextMode={contextMode}
+        contextLabel={contextLabel}
+        onDismissContext={handleDismissContext}
       />
       {!isOpen && token && (
         <LauncherButton
