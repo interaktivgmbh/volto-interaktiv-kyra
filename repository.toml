@@ -1,0 +1,32 @@
+[repository]
+name = "clean-volto-template"
+changelog = "CHANGELOG.md"
+version = "version.txt"
+version_format = "calver"
+container_images_prefix = "ghcr.io/collective/clean-volto-template"
+compose = ["docker-compose.yml"]
+
+[repository.towncrier]
+section = "Project"
+settings = "towncrier.toml"
+
+[backend.package]
+name = "clean.volto.template"
+path = "backend"
+changelog = "backend/CHANGELOG.md"
+towncrier_settings = "backend/pyproject.toml"
+base_package = "Products.CMFPlone"
+publish = false
+
+[frontend.package]
+name = "volto-clean-volto-template"
+path = "frontend/packages/volto-clean-volto-template"
+changelog = "frontend/packages/volto-clean-volto-template/CHANGELOG.md"
+towncrier_settings = "frontend/packages/volto-clean-volto-template/towncrier.toml"
+base_package = "@plone/volto"
+publish = false
+
+[cookieplone]
+template = "project"
+template_version = "44f4a492fdf40acb385227b0564b7c62d22bd8d9"
+generated_date = "2026-02-25 14:59:17"

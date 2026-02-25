@@ -1,0 +1,70 @@
+{
+  "name": "volto-clean-volto-template",
+  "version": "1.0.0-alpha.0",
+  "description": "A new project using Plone 6.",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "keywords": [
+    "volto-addon",
+    "volto",
+    "plone",
+    "react"
+  ],
+  "author": "Plone Foundation",
+  "homepage": "https://github.com/collective/clean-volto-template#readme",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:collective/clean-volto-template"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "i18n": "rm -rf build/messages && NODE_ENV=production i18n --addon",
+    "dry-release": "release-it --dry-run",
+    "release": "release-it",
+    "release-major-alpha": "release-it major --preRelease=alpha",
+    "release-alpha": "release-it --preRelease=alpha"
+  },
+  "addons": [
+    "@kitconcept/volto-light-theme",
+    "@kitconcept/volto-bm3-compat",
+    "@kitconcept/volto-button-block",
+    "@kitconcept/volto-carousel-block",
+    "@kitconcept/volto-heading-block",
+    "@kitconcept/volto-highlight-block",
+    "@kitconcept/volto-introduction-block",
+    "@kitconcept/volto-light-theme",
+    "@kitconcept/volto-slider-block",
+    "@eeacms/volto-columns-block",
+    "@eeacms/volto-accordion-block",
+    "@eeacms/volto-block-divider"
+  ],
+  "theme": "",
+  "dependencies": {
+    "@kitconcept/volto-light-theme": "8.0.0-alpha.4",
+    "@kitconcept/volto-bm3-compat": "^1.0.0-alpha.1",
+    "@kitconcept/volto-button-block": "^3.0.3",
+    "@kitconcept/volto-carousel-block": "^1.1.0",
+    "@kitconcept/volto-heading-block": "^2.4.0",
+    "@kitconcept/volto-highlight-block": "^4.2.0",
+    "@kitconcept/volto-introduction-block": "^1.0.0",
+    "@kitconcept/volto-slider-block": "^6.3.1",
+    "@eeacms/volto-columns-block": "^8.1.0",
+    "@eeacms/volto-accordion-block": "^11.0.4",
+    "@eeacms/volto-block-divider": "^7.0.2"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@plone/registry": "workspace:*",
+    "@plone/scripts": "workspace:*",
+    "@plone/types": "workspace:*",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.7.3",
+    "release-it": "^19.0.5"
+  }
+}

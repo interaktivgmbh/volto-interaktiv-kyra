@@ -1,0 +1,28 @@
+{
+  "eslint.workingDirectories": ["./frontend"],
+  "stylelint.enable": true,
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "[css][less][scss]": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "ruff.organizeImports": true,
+  "python.terminal.activateEnvironment": true,
+  "python.testing.pytestArgs": [
+    "/backendtests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "ansible.python.interpreterPath": "${workspaceFolder}devops/ansible/.venv/bin/python",
+  "ansible.validation.lint.path": "devops/ansible.venv/bin/ansible-lint",
+  "ansible.validation.lint.arguments": "-c .ansible-lint",
+  "[markdown]": {
+    "editor.formatOnSave": false
+  }
+}
