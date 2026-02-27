@@ -1959,6 +1959,62 @@ body.has-ai-panel-docked {
   gap: 6px;
 }
 
+.kyra-ai-chat__composer-input {
+  flex: 1;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  background: rgba(248, 250, 252, 0.9);
+  min-height: 38px;
+  max-height: 120px;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+.kyra-ai-chat__composer-input:focus {
+  border-color: var(--ai-chat-accent, #007bff);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08),
+    0 0 0 2px rgba(0, 123, 255, 0.12);
+}
+
+.kyra-ai-chat__composer-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.kyra-ai-chat__composer-send-button {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ai-chat-text, #1a1a1a);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.kyra-ai-chat__composer-send-button:hover {
+  opacity: 0.8;
+}
+
+.kyra-ai-chat__composer-send-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.kyra-ai-chat__composer-send-button svg {
+  stroke: #fff;
+}
+
 /* ── Plus-button dropdown menu ── */
 .kyra-ai-chat__composer-plus-menu {
   position: relative;
@@ -2111,6 +2167,102 @@ body.has-ai-panel-docked {
 
 .kyra-ai-chat__message-wizard-btn--ghost:hover {
   background: rgba(0, 0, 0, 0.04);
+}
+
+/* Prompt comparison view */
+.kyra-ai-chat__prompt-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kyra-ai-chat__prompt-comparison-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+.kyra-ai-chat__prompt-comparison--original {
+  color: #999;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.kyra-ai-chat__prompt-comparison-divider {
+  border-top: 1px solid var(--ai-chat-border, #e0e0e0);
+  margin: 4px 0;
+}
+
+.kyra-ai-chat__prompt-comparison--result {
+  color: #1a1a1a;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 450;
+}
+
+/* Inline editing */
+.kyra-ai-chat__message-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.kyra-ai-chat__message-edit-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--ai-chat-accent, #007bff);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.kyra-ai-chat__message-edit-textarea:focus {
+  border-color: var(--ai-chat-accent-strong, #0056b3);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+.kyra-ai-chat__message-edit-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.kyra-ai-chat__message-edit-btn {
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.kyra-ai-chat__message-edit-btn--send {
+  background: var(--ai-chat-accent, #007bff);
+  color: #fff;
+}
+
+.kyra-ai-chat__message-edit-btn--send:hover {
+  background: var(--ai-chat-accent-strong, #0056b3);
+}
+
+.kyra-ai-chat__message-edit-btn--cancel {
+  background: transparent;
+  color: #666;
+}
+
+.kyra-ai-chat__message-edit-btn--cancel:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Tag Mappings Panel */

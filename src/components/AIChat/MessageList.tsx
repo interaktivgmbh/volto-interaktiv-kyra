@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ChatMessage } from './types';
 
@@ -6,6 +6,9 @@ type Props = {
   messages: ChatMessage[];
   onAction?: (messageId: string, value: string) => void;
   uiLanguage?: string;
+  editingMessageId?: string | null;
+  onEditAndResend?: (messageId: string, newText: string) => void;
+  onCancelEdit?: () => void;
 };
 
 const getMessageLabels = (lang?: string) => {
@@ -15,12 +18,20 @@ const getMessageLabels = (lang?: string) => {
       sources: 'Quellen',
       error: 'Fehler',
       thinking: 'KI denkt nach\u2026',
+      promptOriginal: 'Original',
+      promptResult: 'Ergebnis',
+      editSend: 'Senden',
+      editCancel: 'Abbrechen',
     };
   }
   return {
     sources: 'Sources',
     error: 'Error',
     thinking: 'AI is thinking\u2026',
+    promptOriginal: 'Original',
+    promptResult: 'Result',
+    editSend: 'Send',
+    editCancel: 'Cancel',
   };
 };
 
@@ -124,9 +135,18 @@ const renderMarkdown = (text: string): string => {
   return htmlParts.join('');
 };
 
-const MessageList: React.FC<Props> = ({ messages, onAction, uiLanguage }) => {
+const MessageList: React.FC<Props> = ({
+  messages,
+  onAction,
+  uiLanguage,
+  editingMessageId,
+  onEditAndResend,
+  onCancelEdit,
+}) => {
   const rendered = useMemo(() => messages, [messages]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [editText, setEditText] = useState('');
+  const editRef = useRef<HTMLTextAreaElement>(null);
   const t = getMessageLabels(uiLanguage);
 
   useEffect(() => {
@@ -135,10 +155,20 @@ const MessageList: React.FC<Props> = ({ messages, onAction, uiLanguage }) => {
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  // When entering edit mode, populate the textarea
+  useEffect(() => {
+    if (editingMessageId) {
+      const msg = messages.find((m) => m.id === editingMessageId);
+      if (msg) setEditText(msg.content || '');
+      setTimeout(() => editRef.current?.focus(), 50);
+    }
+  }, [editingMessageId, messages]);
+
   return (
     <div className="kyra-ai-chat__messages" ref={containerRef}>
       {rendered.map((message) => {
         const isAssistant = message.role === 'assistant';
+        const isUser = message.role === 'user';
         const isStreaming = message.status === 'streaming';
         const isError = message.status === 'error';
         const isDone = message.status === 'done' || (!isStreaming && !isError);
@@ -146,6 +176,13 @@ const MessageList: React.FC<Props> = ({ messages, onAction, uiLanguage }) => {
           stripHtml(message.content || '') ||
           (isStreaming ? '' : isError ? t.error : '');
         const useMarkdown = isAssistant && isDone && !isError;
+        const isEditing = isUser && editingMessageId === message.id;
+
+        // Prompt comparison view
+        const isPromptResult =
+          isAssistant && isDone && !isError && message.wizardMeta?.isPromptResult;
+        const originalText = message.wizardMeta?.originalText || '';
+
         return (
           <div
             key={message.id}
@@ -153,31 +190,96 @@ const MessageList: React.FC<Props> = ({ messages, onAction, uiLanguage }) => {
               message.status ? ` kyra-ai-chat__message--${message.status}` : ''
             }`}
           >
-            {/* Thinking phase: shown while streaming */}
-            {isAssistant && isStreaming && (
-              <div className="kyra-ai-chat__message-thinking">
-                <span className="kyra-ai-chat__message-thinking-label">
-                  <span className="kyra-ai-chat__thinking-dots">
-                    <span /><span /><span />
-                  </span>
-                  {rawContent || t.thinking}
-                </span>
+            {/* Inline editing for user messages */}
+            {isEditing ? (
+              <div className="kyra-ai-chat__message-edit">
+                <textarea
+                  ref={editRef}
+                  className="kyra-ai-chat__message-edit-textarea"
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      onEditAndResend?.(message.id, editText);
+                    }
+                    if (e.key === 'Escape') {
+                      onCancelEdit?.();
+                    }
+                  }}
+                  rows={3}
+                />
+                <div className="kyra-ai-chat__message-edit-actions">
+                  <button
+                    type="button"
+                    className="kyra-ai-chat__message-edit-btn kyra-ai-chat__message-edit-btn--send"
+                    onClick={() => onEditAndResend?.(message.id, editText)}
+                  >
+                    {t.editSend}
+                  </button>
+                  <button
+                    type="button"
+                    className="kyra-ai-chat__message-edit-btn kyra-ai-chat__message-edit-btn--cancel"
+                    onClick={() => onCancelEdit?.()}
+                  >
+                    {t.editCancel}
+                  </button>
+                </div>
               </div>
-            )}
-            {/* Final answer */}
-            {!(isAssistant && isStreaming) && (
-              <div className="kyra-ai-chat__message-bubble">
-                {useMarkdown ? (
-                  <div
-                    className="kyra-ai-chat__message-content kyra-ai-chat__message-content--markdown"
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
-                  />
-                ) : (
-                  <div className="kyra-ai-chat__message-content">
-                    {rawContent}
+            ) : (
+              <>
+                {/* Thinking phase: shown while streaming */}
+                {isAssistant && isStreaming && (
+                  <div className="kyra-ai-chat__message-thinking">
+                    <span className="kyra-ai-chat__message-thinking-label">
+                      <span className="kyra-ai-chat__thinking-dots">
+                        <span /><span /><span />
+                      </span>
+                      {rawContent || t.thinking}
+                    </span>
                   </div>
                 )}
-              </div>
+                {/* Prompt comparison view */}
+                {isPromptResult && !(isAssistant && isStreaming) && (
+                  <div className="kyra-ai-chat__message-bubble">
+                    <div className="kyra-ai-chat__prompt-comparison">
+                      {originalText && (
+                        <>
+                          <div className="kyra-ai-chat__prompt-comparison-label">
+                            {t.promptOriginal}
+                          </div>
+                          <div className="kyra-ai-chat__prompt-comparison--original">
+                            {originalText}
+                          </div>
+                          <div className="kyra-ai-chat__prompt-comparison-divider" />
+                        </>
+                      )}
+                      <div className="kyra-ai-chat__prompt-comparison-label">
+                        {t.promptResult}
+                      </div>
+                      <div
+                        className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__message-content--markdown"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {/* Regular final answer (non-prompt-result) */}
+                {!isPromptResult && !(isAssistant && isStreaming) && (
+                  <div className="kyra-ai-chat__message-bubble">
+                    {useMarkdown ? (
+                      <div
+                        className="kyra-ai-chat__message-content kyra-ai-chat__message-content--markdown"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
+                      />
+                    ) : (
+                      <div className="kyra-ai-chat__message-content">
+                        {rawContent}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
             {/* Wizard action buttons */}
             {isAssistant && message.actions && message.actions.length > 0 && (

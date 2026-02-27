@@ -4,6 +4,7 @@ import { Icon } from '@plone/volto/components';
 import { translateSVG } from '../../helpers/icons';
 
 type Props = {
+  onSend?: (text: string) => void;
   onTranslateClick?: () => void;
   onSyncClick?: () => void;
   onPromptsClick?: () => void;
@@ -22,16 +23,21 @@ const getComposerLabels = (lang?: string) => {
       translate: '\u00dcbersetzen',
       sync: 'Synchronisieren',
       prompts: 'Gespeicherte Prompts',
+      placeholder: 'Nachricht eingeben\u2026',
+      send: 'Senden',
     };
   }
   return {
     translate: 'Translate',
     sync: 'Sync translations',
     prompts: 'Saved Prompts',
+    placeholder: 'Type a message\u2026',
+    send: 'Send',
   };
 };
 
 const Composer: React.FC<Props> = ({
+  onSend,
   onTranslateClick,
   onSyncClick,
   onPromptsClick,
@@ -43,8 +49,17 @@ const Composer: React.FC<Props> = ({
   onDismissContext,
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [text, setText] = useState('');
   const plusMenuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const t = getComposerLabels(uiLanguage);
+
+  const handleSubmit = () => {
+    const trimmed = text.trim();
+    if (!trimmed || disabled) return;
+    onSend?.(trimmed);
+    setText('');
+  };
 
   useEffect(() => {
     if (!showPlusMenu) return;
@@ -153,6 +168,34 @@ const Composer: React.FC<Props> = ({
             </div>
           )}
         </div>
+        <textarea
+          ref={inputRef}
+          className="kyra-ai-chat__composer-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder={t.placeholder}
+          disabled={disabled}
+          rows={1}
+        />
+        <button
+          type="button"
+          className="kyra-ai-chat__composer-send-button"
+          onClick={handleSubmit}
+          disabled={disabled || !text.trim()}
+          aria-label={t.send}
+          title={t.send}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
       </div>
     </div>
   );

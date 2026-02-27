@@ -66,6 +66,7 @@ type Props = {
   onClearHistory: () => void;
   onClose: () => void;
   onToggleHistory: () => void;
+  onSend: (text: string) => void;
   onStartTranslation: () => void;
   onStartSync: () => void;
   onPromptsClick: () => void;
@@ -82,6 +83,9 @@ type Props = {
   contextMode: 'page' | 'site' | 'selection';
   contextLabel: string | null;
   onDismissContext: () => void;
+  editingMessageId: string | null;
+  onEditAndResend: (messageId: string, newText: string) => void;
+  onCancelEdit: () => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -103,6 +107,7 @@ const ChatPanel: React.FC<Props> = ({
   onClearHistory,
   onClose,
   onToggleHistory,
+  onSend,
   onStartTranslation,
   onStartSync,
   onPromptsClick,
@@ -119,6 +124,9 @@ const ChatPanel: React.FC<Props> = ({
   contextMode,
   contextLabel,
   onDismissContext,
+  editingMessageId,
+  onEditAndResend,
+  onCancelEdit,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -278,10 +286,14 @@ const ChatPanel: React.FC<Props> = ({
             messages={conversation?.messages || []}
             uiLanguage={uiLanguage}
             onAction={onWizardAction}
+            editingMessageId={editingMessageId}
+            onEditAndResend={onEditAndResend}
+            onCancelEdit={onCancelEdit}
           />
         )}
       </div>
       <Composer
+        onSend={onSend}
         onTranslateClick={onStartTranslation}
         onSyncClick={onStartSync}
         onPromptsClick={() => setShowPromptPicker(true)}
