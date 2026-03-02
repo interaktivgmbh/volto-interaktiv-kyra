@@ -2203,6 +2203,18 @@ body.has-ai-panel-docked {
   font-weight: 450;
 }
 
+.kyra-ai-chat__prompt-comparison--placeholder {
+  color: #aaa;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.kyra-ai-chat__thinking-dots--inline {
+  display: inline-flex;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 /* Inline editing */
 .kyra-ai-chat__message-edit {
   display: flex;

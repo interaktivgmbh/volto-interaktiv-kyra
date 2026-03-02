@@ -560,6 +560,70 @@ const ChatWidgetProvider: React.FC = () => {
     }
     updateConversationState(workingConversation, true);
 
+    // Read from refs to survive selection-clear during click events
+    const activeMode = contextOverrides?.mode || contextModeRef.current;
+    const activeSelection = selectionTextRef.current;
+
+    // Capture selection info for "apply to page" action
+    const isSelectionRequest = activeMode === 'selection' && activeSelection.length > 5;
+    const originalSelectionText = isSelectionRequest ? activeSelection : '';
+
+    const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+
+    // Prompt Manager prompts get comparison view + 3 action buttons
+    let selectionActions: ChatMessageAction[] | undefined;
+    let selectionMeta: Record<string, any> | undefined;
+
+    if (promptMeta) {
+      selectionActions = [
+        {
+          label: isDe ? 'Anwenden' : 'Apply',
+          value: 'prompt:apply',
+          variant: 'primary',
+        },
+        {
+          label: isDe ? 'Erneut ausführen' : 'Re-run',
+          value: 'prompt:rerun',
+        },
+        {
+          label: isDe ? 'Prompt bearbeiten' : 'Edit prompt',
+          value: 'prompt:edit',
+        },
+        {
+          label: isDe ? 'Abbrechen' : 'Dismiss',
+          value: 'prompt:dismiss',
+          variant: 'ghost',
+        },
+      ];
+      selectionMeta = {
+        step: 'prompt',
+        isPromptResult: true,
+        originalText: originalSelectionText || undefined,
+        promptText: promptMeta.promptText,
+        pageUid: content?.UID,
+        pageUrl: content?.['@id'],
+      };
+    } else if (isSelectionRequest) {
+      selectionActions = [
+        {
+          label: isDe ? 'Auf Seite anwenden' : 'Apply to page',
+          value: 'apply_selection:apply',
+          variant: 'primary',
+        },
+        {
+          label: isDe ? 'Verwerfen' : 'Dismiss',
+          value: 'apply_selection:dismiss',
+          variant: 'ghost',
+        },
+      ];
+      selectionMeta = {
+        step: 'apply_selection',
+        originalText: originalSelectionText,
+        pageUid: content?.UID,
+        pageUrl: content?.['@id'],
+      };
+    }
+
     const assistantId = generateId();
     const assistantMessage: ChatMessage = {
       id: assistantId,
@@ -568,6 +632,7 @@ const ChatWidgetProvider: React.FC = () => {
       createdAt: new Date().toISOString(),
       status: 'streaming',
       citations: [],
+      ...(selectionMeta ? { wizardMeta: selectionMeta } : {}),
     };
 
     const conversationWithAssistant = {
@@ -577,9 +642,6 @@ const ChatWidgetProvider: React.FC = () => {
     };
     updateConversationState(conversationWithAssistant, false);
 
-    // Read from refs to survive selection-clear during click events
-    const activeMode = contextOverrides?.mode || contextModeRef.current;
-    const activeSelection = selectionTextRef.current;
     const contextPayload: ChatContextPayload = {
       mode: contextOverrides?.mode || 'page',
       ...(activeMode === 'site'
@@ -615,61 +677,6 @@ const ChatWidgetProvider: React.FC = () => {
       context: contextPayload,
       params: Object.keys(paramsPayload).length ? paramsPayload : undefined,
     };
-
-    // Capture selection info for "apply to page" action
-    const isSelectionRequest = activeMode === 'selection' && activeSelection.length > 5;
-    const originalSelectionText = isSelectionRequest ? activeSelection : '';
-
-    const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
-
-    // Prompt Manager prompts get comparison view + 4 action buttons
-    let selectionActions: ChatMessageAction[] | undefined;
-    let selectionMeta: Record<string, any> | undefined;
-
-    if (promptMeta) {
-      selectionActions = [
-        {
-          label: isDe ? 'Anwenden' : 'Apply',
-          value: 'prompt:apply',
-          variant: 'primary',
-        },
-        {
-          label: isDe ? 'Erneut ausführen' : 'Re-run',
-          value: 'prompt:rerun',
-        },
-        {
-          label: isDe ? 'Prompt bearbeiten' : 'Edit prompt',
-          value: 'prompt:edit',
-        },
-      ];
-      selectionMeta = {
-        step: 'prompt',
-        isPromptResult: true,
-        originalText: originalSelectionText || undefined,
-        promptText: promptMeta.promptText,
-        pageUid: content?.UID,
-        pageUrl: content?.['@id'],
-      };
-    } else if (isSelectionRequest) {
-      selectionActions = [
-        {
-          label: isDe ? 'Auf Seite anwenden' : 'Apply to page',
-          value: 'apply_selection:apply',
-          variant: 'primary',
-        },
-        {
-          label: isDe ? 'Verwerfen' : 'Dismiss',
-          value: 'apply_selection:dismiss',
-          variant: 'ghost',
-        },
-      ];
-      selectionMeta = {
-        step: 'apply_selection',
-        originalText: originalSelectionText,
-        pageUid: content?.UID,
-        pageUrl: content?.['@id'],
-      };
-    }
 
     const canStream = capabilities.features?.includes('streaming');
 
@@ -1228,6 +1235,19 @@ const ChatWidgetProvider: React.FC = () => {
         if (userMsgId) {
           setEditingMessageId(userMsgId);
         }
+      } else if (actionValue === 'dismiss') {
+        // Dismiss — remove the user message + assistant response entirely
+        const msgIndex = current.messages.findIndex((m) => m.id === messageId);
+        let removeFrom = msgIndex;
+        for (let i = msgIndex - 1; i >= 0; i--) {
+          if (current.messages[i].role === 'user') {
+            removeFrom = i;
+            break;
+          }
+        }
+        const cleaned = current.messages.slice(0, removeFrom);
+        const nextConv = { ...current, messages: cleaned, updatedAt: now };
+        updateConversationState(nextConv, true);
       }
     } else if (actionType === 'apply_selection') {
       const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');

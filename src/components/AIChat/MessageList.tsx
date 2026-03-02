@@ -178,9 +178,9 @@ const MessageList: React.FC<Props> = ({
         const useMarkdown = isAssistant && isDone && !isError;
         const isEditing = isUser && editingMessageId === message.id;
 
-        // Prompt comparison view
+        // Prompt comparison view — show during streaming AND when done
         const isPromptResult =
-          isAssistant && isDone && !isError && message.wizardMeta?.isPromptResult;
+          isAssistant && !isError && message.wizardMeta?.isPromptResult;
         const originalText = message.wizardMeta?.originalText || '';
 
         return (
@@ -228,19 +228,8 @@ const MessageList: React.FC<Props> = ({
               </div>
             ) : (
               <>
-                {/* Thinking phase: shown while streaming */}
-                {isAssistant && isStreaming && (
-                  <div className="kyra-ai-chat__message-thinking">
-                    <span className="kyra-ai-chat__message-thinking-label">
-                      <span className="kyra-ai-chat__thinking-dots">
-                        <span /><span /><span />
-                      </span>
-                      {rawContent || t.thinking}
-                    </span>
-                  </div>
-                )}
-                {/* Prompt comparison view */}
-                {isPromptResult && !(isAssistant && isStreaming) && (
+                {/* Prompt comparison view — live during streaming + final */}
+                {isPromptResult && (
                   <div className="kyra-ai-chat__message-bubble">
                     <div className="kyra-ai-chat__prompt-comparison">
                       {originalText && (
@@ -256,12 +245,34 @@ const MessageList: React.FC<Props> = ({
                       )}
                       <div className="kyra-ai-chat__prompt-comparison-label">
                         {t.promptResult}
+                        {isStreaming && (
+                          <span className="kyra-ai-chat__thinking-dots kyra-ai-chat__thinking-dots--inline">
+                            <span /><span /><span />
+                          </span>
+                        )}
                       </div>
-                      <div
-                        className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__message-content--markdown"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
-                      />
+                      {rawContent ? (
+                        <div
+                          className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__message-content--markdown"
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
+                        />
+                      ) : isStreaming ? (
+                        <div className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__prompt-comparison--placeholder">
+                          {t.thinking}
+                        </div>
+                      ) : null}
                     </div>
+                  </div>
+                )}
+                {/* Thinking phase: shown while streaming (non-prompt only) */}
+                {!isPromptResult && isAssistant && isStreaming && (
+                  <div className="kyra-ai-chat__message-thinking">
+                    <span className="kyra-ai-chat__message-thinking-label">
+                      <span className="kyra-ai-chat__thinking-dots">
+                        <span /><span /><span />
+                      </span>
+                      {rawContent || t.thinking}
+                    </span>
                   </div>
                 )}
                 {/* Regular final answer (non-prompt-result) */}
