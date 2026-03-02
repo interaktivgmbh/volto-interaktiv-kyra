@@ -1952,6 +1952,15 @@ body.has-ai-panel-docked {
   color: #000;
 }
 
+.kyra-ai-chat__context-tag--edit {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+}
+
+.kyra-ai-chat__context-tag--edit > button {
+  color: #92400e;
+}
+
 /* ── Composer row layout ── */
 .kyra-ai-chat__composer-row {
   display: flex;
@@ -2052,6 +2061,11 @@ body.has-ai-panel-docked {
 
 .kyra-ai-chat__composer-plus-panel button:hover {
   background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__composer-plus-item--active {
+  background: rgba(245, 158, 11, 0.12) !important;
+  font-weight: 600;
 }
 
 .kyra-ai-chat__composer-plus-arrow {

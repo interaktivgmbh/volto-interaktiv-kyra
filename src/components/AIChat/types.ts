@@ -39,6 +39,7 @@ export type ChatCapabilities = {
   is_anonymous: boolean;
   can_edit: boolean;
   features: string[];
+  edit_backend_url?: string;
 };
 
 export type AiAction = {

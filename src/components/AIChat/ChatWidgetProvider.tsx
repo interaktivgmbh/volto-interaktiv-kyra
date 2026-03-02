@@ -12,6 +12,8 @@ import {
   postAiActionsPlan,
   postAiActionsApply,
   computeBlocksWithReplacement,
+  prepareBlocksForEditMode,
+  postEditModeRequest,
 } from './api';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
 import { extractPageContent } from './extractPageContent';
@@ -168,6 +170,9 @@ const ChatWidgetProvider: React.FC = () => {
   const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editModeActive, setEditModeActive] = useState(false);
+  const editModeActiveRef = useRef(false);
+  const [editBackendUrl, setEditBackendUrl] = useState('');
   const contextModeRef = useRef<'page' | 'site' | 'selection'>('page');
   const selectionTextRef = useRef('');
   const manualSiteModeRef = useRef(false);
@@ -289,6 +294,9 @@ const ChatWidgetProvider: React.FC = () => {
             ...response,
             features: response.features || prev.features || [],
           }));
+          if (response.edit_backend_url) {
+            setEditBackendUrl(response.edit_backend_url);
+          }
         }
       } catch (_error) {
         // Ignore capability fetch errors.
@@ -330,11 +338,17 @@ const ChatWidgetProvider: React.FC = () => {
     setSelectionText(text);
   };
 
+  const updateEditMode = (active: boolean) => {
+    editModeActiveRef.current = active;
+    setEditModeActive(active);
+  };
+
   // Reset context mode when navigating to a different page
   useEffect(() => {
     updateContextMode('page');
     manualSiteModeRef.current = false;
     updateSelectionText('');
+    updateEditMode(false);
   }, [content?.UID]);
 
   // Listen for text selection on the page (outside chat)
@@ -562,6 +576,75 @@ const ChatWidgetProvider: React.FC = () => {
       };
     }
     updateConversationState(workingConversation, true);
+
+    // --- Edit Mode Branch: send blocks to external backend ---
+    if (editModeActiveRef.current && editBackendUrl) {
+      const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+      const editAssistantId = generateId();
+      const editAssistantMsg: ChatMessage = {
+        id: editAssistantId,
+        role: 'assistant',
+        content: isDe ? 'Bereite Seiten-Daten vor\u2026' : 'Preparing page data\u2026',
+        createdAt: new Date().toISOString(),
+        status: 'streaming',
+      };
+      const editConv = {
+        ...workingConversation,
+        messages: [...workingConversation.messages, editAssistantMsg],
+        updatedAt: now,
+      };
+      updateConversationState(editConv, false);
+      setIsSending(true);
+
+      try {
+        const pageUrl = content?.['@id'] || '';
+        const { blocks, blocks_layout } = await prepareBlocksForEditMode(pageUrl, token);
+
+        applyAssistantUpdate(editAssistantId, (m) => ({
+          ...m,
+          content: isDe ? 'Sende an Bearbeiten-Backend\u2026' : 'Sending to edit backend\u2026',
+        }));
+
+        const editResponse = await postEditModeRequest(
+          editBackendUrl,
+          {
+            message: contentText,
+            blocks,
+            blocks_layout,
+            page: { uid: content?.UID, url: pageUrl },
+          },
+          token,
+        );
+
+        applyAssistantUpdate(editAssistantId, (m) => ({
+          ...m,
+          content: isDe ? 'Wende \u00c4nderungen an\u2026' : 'Applying changes\u2026',
+        }));
+
+        const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+        try { await (dispatch as any)(unlockContent(contentPath, true)); } catch (_) {}
+        await (dispatch as any)(updateContent(contentPath, { blocks: editResponse.blocks }));
+        try { await (dispatch as any)(lockContent(contentPath)); } catch (_) {}
+
+        finalizeAssistant(editAssistantId, {
+          content: isDe
+            ? '\u00c4nderungen erfolgreich angewendet.'
+            : 'Changes applied successfully.',
+          status: 'done',
+        });
+        setTimeout(() => window.location.reload(), 800);
+      } catch (err: any) {
+        finalizeAssistant(editAssistantId, {
+          content: isDe
+            ? `Fehler: ${err?.message || 'Unbekannter Fehler'}`
+            : `Error: ${err?.message || 'Unknown error'}`,
+          status: 'error',
+        });
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
 
     // Read from refs to survive selection-clear during click events
     // Use contextOverrides.selection_text as fallback (e.g. re-run with stored original)
@@ -1448,7 +1531,7 @@ const ChatWidgetProvider: React.FC = () => {
         history={history}
         onClose={() => setIsOpen(false)}
         onToggleHistory={() => setShowHistory((value) => !value)}
-        onSend={handleApplyPrompt}
+        onSend={editModeActive ? (text: string) => handleSend(text) : handleApplyPrompt}
         onStartTranslation={startTranslationWizard}
         onStartSync={startSyncWizard}
         onPromptsClick={() => {}}
@@ -1469,6 +1552,9 @@ const ChatWidgetProvider: React.FC = () => {
         editingMessageId={editingMessageId}
         onEditAndResend={handleEditAndResend}
         onCancelEdit={handleCancelEdit}
+        editModeActive={editModeActive}
+        editBackendUrl={editBackendUrl}
+        onEditModeToggle={() => updateEditMode(!editModeActive)}
       />
       {!isOpen && token && (
         <LauncherButton

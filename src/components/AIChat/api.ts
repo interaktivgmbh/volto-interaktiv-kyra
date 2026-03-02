@@ -963,3 +963,137 @@ export const computeBlocksWithReplacement = async (
 
   return { blocks: updatedBlocks };
 };
+
+// ---------------------------------------------------------------------------
+// Edit Mode — external backend
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves listing block items via Plone's @querystring-search endpoint.
+ */
+export const resolveListingBlockItems = async (
+  querystring: Record<string, any>,
+  contextPath: string,
+  token?: string,
+): Promise<any[]> => {
+  const response = await fetch(buildApiUrl(`${contextPath}/@querystring-search`), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(querystring),
+  });
+
+  if (!response.ok) return [];
+
+  const data = await response.json();
+  return (data.items || []).map((item: any) => ({
+    '@id': item['@id'],
+    '@type': item['@type'],
+    title: item.title,
+    description: item.description,
+    preview_image: item.preview_image || item.image || null,
+  }));
+};
+
+/**
+ * Recursively resolves listing block items in a blocks dict.
+ */
+const resolveListingsInBlocks = async (
+  blocks: Record<string, any>,
+  layoutItems: string[],
+  contextPath: string,
+  token?: string,
+): Promise<Record<string, any>> => {
+  const resolved = { ...blocks };
+
+  for (const id of layoutItems) {
+    const block = blocks[id];
+    if (!block) continue;
+
+    // Resolve listing block items
+    if (block['@type'] === 'listing' && block.querystring) {
+      const items = await resolveListingBlockItems(block.querystring, contextPath, token);
+      resolved[id] = { ...block, items };
+    }
+
+    // Recurse into container blocks
+    if (block.blocks && block.blocks_layout?.items) {
+      const nested = await resolveListingsInBlocks(
+        block.blocks, block.blocks_layout.items, contextPath, token,
+      );
+      resolved[id] = { ...resolved[id], blocks: nested };
+    }
+    if (block.data?.blocks && block.data?.blocks_layout?.items) {
+      const nested = await resolveListingsInBlocks(
+        block.data.blocks, block.data.blocks_layout.items, contextPath, token,
+      );
+      resolved[id] = {
+        ...resolved[id],
+        data: { ...block.data, blocks: nested },
+      };
+    }
+  }
+
+  return resolved;
+};
+
+/**
+ * Fetches page blocks and resolves listing items for edit mode.
+ */
+export const prepareBlocksForEditMode = async (
+  pageUrl: string,
+  token?: string,
+): Promise<{ blocks: Record<string, any>; blocks_layout: { items: string[] } }> => {
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const response = await fetch(buildApiUrl(path), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) throw new Error('Failed to fetch page content');
+  const data = await response.json();
+
+  const blocks = data.blocks || {};
+  const blocksLayout = data.blocks_layout || { items: [] };
+
+  const resolved = await resolveListingsInBlocks(blocks, blocksLayout.items, path, token);
+
+  return { blocks: resolved, blocks_layout: blocksLayout };
+};
+
+/**
+ * Sends blocks JSON to the external edit backend and returns modified blocks.
+ */
+export const postEditModeRequest = async (
+  externalUrl: string,
+  payload: {
+    message: string;
+    blocks: Record<string, any>;
+    blocks_layout: { items: string[] };
+    page?: { uid?: string; url?: string };
+  },
+  token?: string,
+): Promise<{ blocks: Record<string, any>; blocks_layout?: { items: string[] } }> => {
+  const response = await fetch(externalUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Edit mode request failed');
+  }
+
+  return response.json();
+};
