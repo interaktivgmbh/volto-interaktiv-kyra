@@ -354,14 +354,17 @@ const ChatWidgetProvider: React.FC = () => {
         updateContextMode('selection');
         updateSelectionText(text);
       } else if (contextModeRef.current === 'selection') {
-        // Selection cleared — but if the user clicked into the chat panel
-        // to type or use a prompt, preserve the selection context
-        const activeEl = document.activeElement;
-        const inChat = activeEl?.closest('.kyra-ai-chat');
-        if (inChat) return;
-        // Selection cleared by clicking outside chat — revert
-        updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
-        updateSelectionText('');
+        // Selection cleared — defer check so activeElement has time to update
+        // (selectionchange fires before focus transfer completes)
+        setTimeout(() => {
+          if (contextModeRef.current !== 'selection') return;
+          const activeEl = document.activeElement;
+          const inChat = activeEl?.closest('.kyra-ai-chat');
+          if (inChat) return;
+          // Selection cleared by clicking outside chat — revert
+          updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
+          updateSelectionText('');
+        }, 0);
       }
     };
     document.addEventListener('selectionchange', handleSelection);
@@ -561,8 +564,9 @@ const ChatWidgetProvider: React.FC = () => {
     updateConversationState(workingConversation, true);
 
     // Read from refs to survive selection-clear during click events
+    // Use contextOverrides.selection_text as fallback (e.g. re-run with stored original)
     const activeMode = contextOverrides?.mode || contextModeRef.current;
-    const activeSelection = selectionTextRef.current;
+    const activeSelection = contextOverrides?.selection_text || selectionTextRef.current;
 
     // Capture selection info for "apply to page" action
     const isSelectionRequest = activeMode === 'selection' && activeSelection.length > 5;
@@ -1220,7 +1224,11 @@ const ChatWidgetProvider: React.FC = () => {
             : messagesWithoutActions;
           const nextConv = { ...current, messages: trimmed, updatedAt: now };
           updateConversationState(nextConv, true);
-          handleSend(promptText, undefined, { promptText }, { skipUserMessage: true });
+          const origText = meta.originalText || '';
+          const ctxOverrides = origText
+            ? { mode: 'selection' as const, selection_text: origText }
+            : undefined;
+          handleSend(promptText, ctxOverrides, { promptText }, { skipUserMessage: true });
         }
       } else if (actionValue === 'edit') {
         // Trigger inline editing on the user message — don't modify messages
@@ -1362,6 +1370,15 @@ const ChatWidgetProvider: React.FC = () => {
     const userMsgIndex = current.messages.findIndex((m) => m.id === messageId);
     if (userMsgIndex === -1) return;
 
+    // Find the assistant message that follows to get the stored originalText
+    let origText = '';
+    for (let i = userMsgIndex + 1; i < current.messages.length; i++) {
+      if (current.messages[i].role === 'assistant' && current.messages[i].wizardMeta?.originalText) {
+        origText = current.messages[i].wizardMeta.originalText;
+        break;
+      }
+    }
+
     // Update user message content in place, remove the assistant response after it
     const updatedMessages = current.messages
       .slice(0, userMsgIndex + 1)
@@ -1375,7 +1392,10 @@ const ChatWidgetProvider: React.FC = () => {
     };
     updateConversationState(nextConv, true);
 
-    handleSend(newText.trim(), undefined, { promptText: newText.trim() }, { skipUserMessage: true });
+    const ctxOverrides = origText
+      ? { mode: 'selection' as const, selection_text: origText }
+      : undefined;
+    handleSend(newText.trim(), ctxOverrides, { promptText: newText.trim() }, { skipUserMessage: true });
   };
 
   const handleCancelEdit = () => {
@@ -1428,7 +1448,7 @@ const ChatWidgetProvider: React.FC = () => {
         history={history}
         onClose={() => setIsOpen(false)}
         onToggleHistory={() => setShowHistory((value) => !value)}
-        onSend={(text: string) => handleSend(text)}
+        onSend={handleApplyPrompt}
         onStartTranslation={startTranslationWizard}
         onStartSync={startSyncWizard}
         onPromptsClick={() => {}}
