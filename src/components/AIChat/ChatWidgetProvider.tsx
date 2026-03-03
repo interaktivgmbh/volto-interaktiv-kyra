@@ -605,16 +605,36 @@ const ChatWidgetProvider: React.FC = () => {
           content: isDe ? 'Sende an Bearbeiten-Backend\u2026' : 'Sending to edit backend\u2026',
         }));
 
-        const editResponse = await postEditModeRequest(
-          editBackendUrl,
-          {
-            message: contentText,
-            blocks,
-            blocks_layout,
-            page: { uid: content?.UID, url: pageUrl },
-          },
-          token,
-        );
+        const editPayload = {
+          message: contentText,
+          blocks,
+          blocks_layout,
+          page: { uid: content?.UID, url: pageUrl },
+        };
+
+        let editResponse: { blocks: Record<string, any>; blocks_layout?: { items: string[] } };
+        try {
+          editResponse = await postEditModeRequest(editBackendUrl, editPayload, token);
+        } catch (sendErr: any) {
+          // Backend not reachable — download payload as JSON for debugging
+          const blob = new Blob([JSON.stringify(editPayload, null, 2)], { type: 'application/json' });
+          const downloadUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `edit-payload-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+
+          finalizeAssistant(editAssistantId, {
+            content: isDe
+              ? `Backend nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als JSON-Datei heruntergeladen.`
+              : `Backend not reachable (${sendErr?.message || 'network error'}). The payload has been downloaded as a JSON file.`,
+            status: 'done',
+          });
+          return;
+        }
 
         applyAssistantUpdate(editAssistantId, (m) => ({
           ...m,
