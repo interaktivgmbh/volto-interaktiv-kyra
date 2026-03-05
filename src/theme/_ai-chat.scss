@@ -1515,6 +1515,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  position: relative;
   align-items: center;
   padding-left: 4px;
 }
@@ -1539,24 +1540,30 @@
 }
 
 .kyra-ai-chat__settings-color-picker {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kyra-ai-chat__settings-color-picker-label {
+  display: block;
   width: 28px;
   height: 28px;
   border-radius: 50%;
   border: 2px solid rgba(148, 163, 184, 0.3);
   cursor: pointer;
-  padding: 0;
-  overflow: hidden;
+  flex-shrink: 0;
   background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+  transition: transform 0.15s ease;
 }
 
-.kyra-ai-chat__settings-color-picker::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.kyra-ai-chat__settings-color-picker::-webkit-color-swatch {
-  border: none;
-  border-radius: 50%;
-  opacity: 0;
+.kyra-ai-chat__settings-color-picker-label:hover {
+  transform: scale(1.15);
 }
 
 @keyframes ai-chat-float-in {

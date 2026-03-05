@@ -205,6 +205,13 @@ const SettingsDrawer: React.FC<Props> = ({
           </div>
           <div className="kyra-ai-chat__settings-hint">{t.accentHint}</div>
           <div className="kyra-ai-chat__settings-color-swatches">
+            <input
+              id="kyra-accent-color-picker"
+              type="color"
+              className="kyra-ai-chat__settings-color-picker"
+              value={draftAccent || '#3b97d4'}
+              onChange={(e) => setDraftAccent(e.target.value)}
+            />
             {ACCENT_PRESETS.map((color) => (
               <button
                 key={color}
@@ -221,11 +228,10 @@ const SettingsDrawer: React.FC<Props> = ({
                 aria-label={color}
               />
             ))}
-            <input
-              type="color"
-              className="kyra-ai-chat__settings-color-picker"
-              value={draftAccent || '#3b97d4'}
-              onChange={(e) => setDraftAccent(e.target.value)}
+            <label
+              className="kyra-ai-chat__settings-color-picker-label"
+              htmlFor="kyra-accent-color-picker"
+              aria-label="Custom color"
             />
           </div>
           {draftAccent && (
@@ -299,6 +305,13 @@ const SettingsDrawer: React.FC<Props> = ({
                 {t.colorLabel}
               </div>
               <div className="kyra-ai-chat__settings-color-swatches">
+                <input
+                  id="kyra-icon-color-picker"
+                  type="color"
+                  className="kyra-ai-chat__settings-color-picker"
+                  value={draftIconColor}
+                  onChange={(e) => setDraftIconColor(e.target.value)}
+                />
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color}
@@ -313,11 +326,10 @@ const SettingsDrawer: React.FC<Props> = ({
                     aria-label={color}
                   />
                 ))}
-                <input
-                  type="color"
-                  className="kyra-ai-chat__settings-color-picker"
-                  value={draftIconColor}
-                  onChange={(e) => setDraftIconColor(e.target.value)}
+                <label
+                  className="kyra-ai-chat__settings-color-picker-label"
+                  htmlFor="kyra-icon-color-picker"
+                  aria-label="Custom color"
                 />
               </div>
             </div>

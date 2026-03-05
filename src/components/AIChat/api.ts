@@ -1068,31 +1068,95 @@ export const prepareBlocksForEditMode = async (
   return { blocks: resolved, blocks_layout: blocksLayout };
 };
 
-/**
- * Sends blocks JSON to the external edit backend and returns modified blocks.
- */
-export const postEditModeRequest = async (
-  externalUrl: string,
-  payload: {
-    message: string;
-    blocks: Record<string, any>;
-    blocks_layout: { items: string[] };
-    page?: { uid?: string; url?: string };
-  },
+// ---------------------------------------------------------------------------
+// Layout Agent API (conversation-based async edit backend)
+// ---------------------------------------------------------------------------
+
+const buildLayoutHeaders = (token?: string): Record<string, string> => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+};
+
+export type LayoutJobStatus =
+  | { status: 'running'; progress?: string }
+  | { status: 'completed'; message?: string; state?: Record<string, any> }
+  | { status: 'failed'; error?: string }
+  | { status: 'cancelled' };
+
+export const createLayoutConversation = async (
+  baseUrl: string,
+  payload: { schema: string; version: string; state: Record<string, any> },
   token?: string,
-): Promise<{ blocks: Record<string, any>; blocks_layout?: { items: string[] } }> => {
-  const response = await fetch(externalUrl, {
+): Promise<{ conversation_id: string }> => {
+  const response = await fetch(`${baseUrl}/conversations`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: buildLayoutHeaders(token),
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || 'Edit mode request failed');
+    throw new Error(errorText || 'Failed to create layout conversation');
+  }
+
+  return response.json();
+};
+
+export const sendLayoutMessage = async (
+  baseUrl: string,
+  conversationId: string,
+  payload: { message: string; permissions?: string[]; state?: Record<string, any> },
+  token?: string,
+): Promise<{ job_id: string }> => {
+  const response = await fetch(
+    `${baseUrl}/conversations/${conversationId}/messages`,
+    {
+      method: 'POST',
+      headers: buildLayoutHeaders(token),
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to send layout message');
+  }
+
+  return response.json();
+};
+
+export const pollLayoutJob = async (
+  baseUrl: string,
+  jobId: string,
+  token?: string,
+): Promise<LayoutJobStatus> => {
+  const response = await fetch(`${baseUrl}/jobs/${jobId}`, {
+    method: 'GET',
+    headers: buildLayoutHeaders(token),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to poll layout job');
+  }
+
+  return response.json();
+};
+
+export const cancelLayoutJob = async (
+  baseUrl: string,
+  jobId: string,
+  token?: string,
+): Promise<{ status: string }> => {
+  const response = await fetch(`${baseUrl}/jobs/${jobId}/cancel`, {
+    method: 'POST',
+    headers: buildLayoutHeaders(token),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to cancel layout job');
   }
 
   return response.json();
