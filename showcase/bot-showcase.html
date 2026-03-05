@@ -1,0 +1,1350 @@
+w<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volto AI Assistant — Showcase</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --accent: #3b97d4;
+    --accent-strong: #307db0;
+    --bg: #f1f5f9;
+    --panel-bg: linear-gradient(165deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.94) 100%);
+    --border: rgba(148,163,184,0.3);
+    --muted: #64748b;
+    --text: #000;
+    --shadow: 0 14px 38px rgba(15,23,42,0.16);
+    --radius: 18px;
+  }
+
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1.57;
+    color: var(--text);
+  }
+
+  .stage {
+    position: relative;
+    width: 440px;
+    height: 660px;
+  }
+
+  /* ═══════════ LAUNCHER ═══════════ */
+  .launcher {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    z-index: 100;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .launcher svg { width: 36px; height: 36px; }
+  .show-launcher .launcher { opacity: 1; transform: scale(1); }
+  .launcher-pulse .launcher {
+    animation: pulse-ring 1.2s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(59,151,212,0.5); }
+    70% { box-shadow: 0 0 0 18px rgba(59,151,212,0); }
+    100% { box-shadow: 0 0 0 0 rgba(59,151,212,0); }
+  }
+
+  /* ═══════════ PANEL ═══════════ */
+  .panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+    transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1), transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+  }
+  .show-panel .panel { opacity: 1; transform: translateY(0) scale(1); }
+  .show-panel .launcher { opacity: 0; transform: scale(0.5); }
+
+  /* ═══════════ HEADER ═══════════ */
+  .panel-header {
+    padding: 16px 16px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(148,163,184,0.18);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .panel-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .panel-subtitle { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-top: 2px; }
+  .header-icons { display: flex; gap: 4px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: transparent; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); cursor: pointer; transition: background 0.15s;
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.08); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  /* ═══════════ HEADER DROPDOWN MENU ═══════════ */
+  .header-menu {
+    position: absolute;
+    top: 56px;
+    right: 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 0;
+    min-width: 200px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.14);
+    z-index: 1300;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .header-menu.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .header-menu .hm-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; font-size: 13px; color: var(--text);
+    cursor: pointer; border: none; background: transparent;
+    width: 100%; text-align: left; transition: background 0.15s;
+  }
+  .header-menu .hm-item:hover { background: rgba(0,0,0,0.06); }
+  .header-menu .hm-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ═══════════ BODY ═══════════ */
+  .panel-body {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ═══════════ MESSAGES ═══════════ */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+  }
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-track { background: rgba(237,242,247,0.8); }
+  .messages::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 999px; }
+
+  .msg {
+    max-width: 90%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 400;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .msg.visible { opacity: 1; transform: translateY(0); }
+  .msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color: #fff; border: 1px solid transparent;
+  }
+  .msg.assistant {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.85);
+    color: var(--text);
+    border: 1px solid rgba(148,163,184,0.25);
+    box-shadow: 0 10px 30px rgba(15,23,42,0.1);
+  }
+  .msg.streaming { border-style: dashed; }
+  .msg.success {
+    background: #e7f6ef; border-color: #a8d8c4; color: #1d563f;
+  }
+  .msg.error {
+    background: #fff1f0; border-color: #e6b3b0; color: #7a1b14;
+  }
+  .msg strong { font-weight: 600; }
+
+  /* ═══════════ THINKING DOTS ═══════════ */
+  .dots { display: inline-flex; gap: 3px; align-items: center; }
+  .dots span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); opacity: 0.4;
+    animation: dot-pulse 1.4s ease-in-out infinite;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-pulse {
+    0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ═══════════ WIZARD ACTION BUTTONS ═══════════ */
+  .wizard-actions {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .wizard-actions.visible { opacity: 1; }
+  .wiz-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; border-radius: 12px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border);
+    background: #fff; color: var(--text);
+    transition: transform 0.15s ease, background 0.15s ease;
+    font-family: inherit;
+  }
+  .wiz-btn:hover { transform: translateY(-1px); }
+  .wiz-btn.primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 18px rgba(48,125,176,0.25);
+  }
+  .wiz-btn.ghost {
+    background: transparent; color: var(--muted); border-color: var(--border); font-weight: 500;
+  }
+  .wiz-btn svg { width: 16px; height: 16px; }
+
+  /* ═══════════ COMPARISON VIEW ═══════════ */
+  .comparison { display: flex; flex-direction: column; gap: 6px; }
+  .comparison .label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #888;
+  }
+  .comparison .original { color: #999; font-size: 13px; line-height: 1.5; }
+  .comparison .result { color: #1a1a1a; font-size: 13px; font-weight: 450; line-height: 1.5; }
+  .comparison .divider { border-top: 1px solid var(--border); margin: 4px 0; }
+
+  /* ═══════════ CITATIONS ═══════════ */
+  .citations {
+    border-left: 2px solid var(--border);
+    margin-top: 6px; padding: 4px 0 4px 10px;
+    font-size: 12px; color: var(--muted);
+  }
+  .citations summary { cursor: pointer; font-weight: 600; }
+  .citations a { color: var(--accent-strong); text-decoration: none; }
+  .citations ul { margin: 4px 0 0; padding-left: 16px; }
+  .citations li { padding: 2px 0; }
+
+  /* ═══════════ COMPOSER ═══════════ */
+  .composer {
+    padding: 12px 16px 16px;
+    border-top: 1px solid rgba(148,163,184,0.2);
+    background: rgba(255,255,255,0.94);
+    border-radius: 0 0 var(--radius) var(--radius);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .composer-context {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 0; min-height: 0;
+    transition: margin-bottom 0.2s ease;
+  }
+  .composer-context:not(:empty) { margin-bottom: 8px; }
+
+  .context-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #e1e1e1; border-radius: 10px;
+    padding: 8px 11px; font-size: 12px; color: #5c5c5c;
+    max-width: 100%;
+    opacity: 0; transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
+  }
+  .context-tag.visible { opacity: 1; transform: scale(1); }
+  .context-tag.selection { background: rgba(0,107,248,0.1); color: #000; }
+  .context-tag.edit { background: rgba(245,158,11,0.15); color: #92400e; }
+  .context-tag .x-btn {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: none; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: inherit; line-height: 1;
+    transition: background 0.15s;
+  }
+  .context-tag .x-btn:hover { background: rgba(0,0,0,0.08); }
+
+  .composer-row { display: flex; align-items: center; gap: 6px; }
+  .plus-btn {
+    width: 46px; height: 46px; border-radius: 25%;
+    background: #e8e8e8; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text); flex-shrink: 0; transition: background 0.15s;
+  }
+  .plus-btn:hover { background: #ddd; }
+  .plus-btn svg { width: 24px; height: 24px; }
+  .composer-input {
+    flex: 1; border-radius: 16px;
+    border: 1px solid rgba(148,163,184,0.4);
+    padding: 10px 14px; font-size: 14px; font-family: inherit;
+    background: rgba(248,250,252,0.9);
+    min-height: 38px; max-height: 120px; outline: none; resize: none;
+    box-shadow: inset 0 1px 2px rgba(15,23,42,0.08);
+    line-height: 1.5; color: var(--text);
+  }
+  .composer-input:focus { border-color: var(--accent); box-shadow: inset 0 1px 2px rgba(15,23,42,0.08), 0 0 0 2px rgba(0,123,255,0.12); }
+  .send-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--text); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .send-btn:hover { opacity: 0.8; }
+
+  /* ═══════════ PLUS MENU ═══════════ */
+  .plus-menu {
+    position: absolute;
+    bottom: 80px; left: 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 2px; min-width: 280px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.14);
+    z-index: 1300;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+  .plus-menu.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .pm-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px; margin: 0 2px; border-radius: 6px;
+    font-size: 14px; color: var(--text); cursor: pointer;
+    border: none; background: transparent; width: calc(100% - 4px);
+    text-align: left; transition: background 0.15s; font-family: inherit;
+  }
+  .pm-item:hover { background: rgba(0,0,0,0.06); }
+  .pm-item.active-item { background: rgba(245,158,11,0.12); font-weight: 600; }
+  .pm-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .pm-badge {
+    min-width: 18px; height: 18px; border-radius: 9px;
+    background: #ef4444; color: #fff; font-size: 11px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 5px; margin-left: auto;
+  }
+
+  /* ═══════════ DRAWERS (settings, history, glossary, tag-mappings, prompts) ═══════════ */
+  .drawer {
+    position: absolute;
+    inset: 0;
+    background: rgba(247,242,234,0.97);
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0); pointer-events: auto; }
+  .drawer-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(148,163,184,0.18);
+    flex-shrink: 0;
+  }
+  .drawer-title { font-size: 16px; font-weight: 700; }
+  .drawer-close {
+    border: none; background: transparent; cursor: pointer;
+    color: var(--muted); font-size: 13px; font-family: inherit;
+    padding: 4px 8px; border-radius: 6px; transition: background 0.15s;
+  }
+  .drawer-close:hover { background: rgba(0,0,0,0.06); }
+  .drawer-scroll {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* Section labels */
+  .section-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .section-hint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+
+  /* Inputs */
+  .s-input {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; font-size: 13px; background: #fff;
+    width: 100%; font-family: inherit; outline: none;
+    transition: border-color 0.15s;
+  }
+  .s-input:focus { border-color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 10px 30px rgba(48,125,176,0.28);
+  }
+  .btn-ghost { background: #fff; color: var(--text); }
+  .btn-small { padding: 4px 10px; font-size: 11px; white-space: nowrap; }
+  .btn-danger { background: #ef4444; color: #fff; border-color: transparent; }
+
+  /* ═══════════ SETTINGS PANEL ═══════════ */
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .swatch {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid rgba(148,163,184,0.3); cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .icon-preview {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+  }
+  .icon-preview svg { width: 70%; height: 70%; }
+
+  /* ═══════════ HISTORY PANEL ═══════════ */
+  .history-item {
+    border-radius: 12px; border: 1px solid var(--border);
+    padding: 10px; background: #fff; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .history-item:hover { border-color: rgba(59,151,212,0.4); }
+  .history-item.active { border-color: var(--accent); background: rgba(59,151,212,0.06); }
+  .history-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .history-title .pin { color: var(--accent); margin-right: 4px; }
+  .history-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ═══════════ GLOSSARY PANEL ═══════════ */
+  .pair-selector { display: flex; gap: 6px; margin-bottom: 8px; }
+  .pair-btn {
+    padding: 4px 12px; border: 1px solid var(--border); border-radius: 16px;
+    background: #fff; color: var(--text); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .pair-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sync-btn-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .sync-icon-btn {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 6px; background: transparent; cursor: pointer;
+    color: var(--muted); transition: color 0.2s, border-color 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sync-icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .sync-label { font-size: 12px; color: var(--muted); }
+
+  /* ═══════════ TABLE (glossary, tag mappings) ═══════════ */
+  .data-table {
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    font-size: 13px;
+  }
+  .data-table .row {
+    display: grid; gap: 8px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border); align-items: center;
+  }
+  .data-table .row:last-child { border-bottom: none; }
+  .data-table .row.header {
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    color: var(--muted); background: rgba(0,0,0,0.02);
+  }
+  .data-table .row.glossary-row { grid-template-columns: 1fr 1fr 32px; }
+  .data-table .row.tag-row { grid-template-columns: 1fr 60px 1fr 32px; }
+  .del-btn {
+    width: 24px; height: 24px; border-radius: 4px; border: none;
+    background: transparent; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .del-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+  .add-form {
+    display: flex; gap: 6px; margin-top: 8px; align-items: center;
+  }
+  .add-form .s-input { flex: 1; }
+
+  /* ═══════════ PROMPTS PANEL ═══════════ */
+  .freetext-section {
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(48,125,176,0.06), rgba(59,151,212,0.05));
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  .freetext-section textarea {
+    width: 100%; min-height: 50px; border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+    font-family: inherit; resize: vertical; outline: none;
+    background: #fff; margin-top: 6px;
+  }
+  .freetext-section textarea:focus { border-color: var(--accent); }
+  .freetext-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+
+  .prompts-divider {
+    border: none; border-top: 1px solid var(--border); margin: 4px 0;
+  }
+  .prompt-card {
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: #fff; transition: border-color 0.15s;
+  }
+  .prompt-card:hover { border-color: rgba(59,151,212,0.4); }
+  .prompt-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .prompt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .prompt-cats { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .cat-badge {
+    background: rgba(48,125,176,0.1); color: var(--accent-strong);
+    border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+  }
+  .prompt-card-actions {
+    display: flex; gap: 4px; margin-top: 6px;
+  }
+  .prompt-card-actions button {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 3px 8px; background: transparent; cursor: pointer;
+    font-size: 11px; color: var(--muted); transition: all 0.15s;
+    display: flex; align-items: center; gap: 3px; font-family: inherit;
+  }
+  .prompt-card-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .prompt-card-actions button.danger:hover { border-color: #ef4444; color: #ef4444; }
+
+  /* ═══════════ PROMPT PICKER (inline) ═══════════ */
+  .prompt-picker {
+    position: absolute; inset: 0;
+    background: rgba(248,250,252,0.98);
+    z-index: 500;
+    display: flex; flex-direction: column;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    padding: 12px 16px;
+  }
+  .prompt-picker.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .pp-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .pp-back {
+    border: none; background: transparent; cursor: pointer; color: var(--muted);
+    display: flex; align-items: center; padding: 4px; border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .pp-back:hover { background: rgba(0,0,0,0.06); }
+  .pp-title { font-size: 14px; font-weight: 700; }
+  .pp-cats { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .pp-cat {
+    padding: 6px 12px; border-radius: 12px; border: none;
+    background: rgba(255,255,255,0.7); font-weight: 600; font-size: 12px;
+    cursor: pointer; transition: all 0.15s; font-family: inherit; color: var(--text);
+  }
+  .pp-cat.active { background: var(--accent); color: #fff; box-shadow: 0 10px 30px rgba(48,125,176,0.28); }
+  .pp-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+  .pp-item {
+    padding: 10px 14px; border-radius: 14px;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(148,163,184,0.25);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .pp-item:hover { background: #fff; border-color: var(--accent); transform: translateY(-1px); }
+  .pp-item-name { font-weight: 600; font-size: 13px; color: #1e293b; }
+  .pp-item-desc { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+  /* ═══════════ SYNC CARD ═══════════ */
+  .sync-card {
+    padding: 12px; background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2); border-radius: 8px;
+  }
+  .sync-card-title { font-size: 13px; font-weight: 600; color: #dc2626; margin-bottom: 6px; }
+  .sync-item { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
+
+  /* ═══════════ SCENE LABEL ═══════════ */
+  .scene-label {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15,23,42,0.85); color: #fff;
+    padding: 8px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    z-index: 9999; opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+  }
+  .scene-label.visible { opacity: 1; }
+
+  /* ═══════════ EYEBROW ═══════════ */
+  .eyebrow {
+    font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase;
+    font-weight: 700; color: var(--accent-strong); margin-bottom: 4px;
+  }
+
+  /* ═══════════ BADGE ═══════════ */
+  .badge {
+    background: rgba(48,125,176,0.12); color: var(--accent-strong);
+    border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <!-- ═══ LAUNCHER ═══ -->
+  <div class="launcher">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/>
+      <path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>
+    </svg>
+  </div>
+
+  <!-- ═══ PANEL ═══ -->
+  <div class="panel">
+    <!-- HEADER -->
+    <div class="panel-header">
+      <div>
+        <div class="panel-title" id="panelTitle">Volto AI Assistant</div>
+        <div class="panel-subtitle" id="panelSubtitle">Editor-Modus</div>
+      </div>
+      <div class="header-icons">
+        <button class="icon-btn" title="Menü">
+          <!-- 3 dots -->
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+        <button class="icon-btn" title="Historie">
+          <!-- History clock -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V12L14.5 14.5"/><path d="M3.05 11A9 9 0 1 1 3.05 13" /><path d="M3 7v4h4"/></svg>
+        </button>
+        <button class="icon-btn" title="Neuer Chat">
+          <!-- New chat / pen -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn" title="Schließen">
+          <!-- Close X -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- HEADER DROPDOWN MENU -->
+      <div class="header-menu" id="headerMenu">
+        <button class="hm-item">
+          <svg viewBox="2 2 20 20" fill="currentColor"><path d="M8.61 22a2.25 2.25 0 0 1-1.35-.46L5.19 20a2.37 2.37 0 0 1-.49-3.22 2.06 2.06 0 0 0 .23-1.86l-.06-.16a1.83 1.83 0 0 0-1.12-1.22h-.16a2.34 2.34 0 0 1-1.48-2.94L2.93 8a2.18 2.18 0 0 1 1.12-1.41 2.14 2.14 0 0 1 1.68-.12 1.93 1.93 0 0 0 1.78-.29l.13-.1a1.94 1.94 0 0 0 .73-1.51v-.24A2.32 2.32 0 0 1 10.66 2h2.55a2.26 2.26 0 0 1 1.6.67 2.37 2.37 0 0 1 .68 1.68v.28a1.76 1.76 0 0 0 .69 1.43l.11.08a1.74 1.74 0 0 0 1.59.26l.34-.11A2.26 2.26 0 0 1 21.1 7.8l.79 2.52a2.36 2.36 0 0 1-1.46 2.93l-.2.07A1.89 1.89 0 0 0 19 14.6a2 2 0 0 0 .25 1.65l.26.38a2.38 2.38 0 0 1-.5 3.23L17 21.41a2.24 2.24 0 0 1-3.22-.53l-.12-.17a1.75 1.75 0 0 0-1.5-.78 1.8 1.8 0 0 0-1.43.77l-.23.33A2.25 2.25 0 0 1 9 22zM12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+          Einstellungen
+        </button>
+        <button class="hm-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          Schlagwort-Mappings
+        </button>
+        <button class="hm-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          DeepL Glossar
+        </button>
+        <button class="hm-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Promptmanager
+        </button>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="panel-body" id="panelBody">
+      <div class="messages" id="messages"></div>
+
+      <!-- PROMPT PICKER (inline overlay) -->
+      <div class="prompt-picker" id="promptPicker">
+        <div class="pp-header">
+          <button class="pp-back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="pp-title">Prompt auswählen</span>
+        </div>
+        <div class="pp-cats">
+          <button class="pp-cat active">Alle</button>
+          <button class="pp-cat">SEO</button>
+          <button class="pp-cat">Inhalt</button>
+          <button class="pp-cat">Stil</button>
+        </div>
+        <div class="pp-list">
+          <div class="pp-item">
+            <div class="pp-item-name">Zusammenfassung</div>
+            <div class="pp-item-desc">Kürze den Text auf das Wesentliche</div>
+          </div>
+          <div class="pp-item">
+            <div class="pp-item-name">SEO-Optimierung</div>
+            <div class="pp-item-desc">Optimiere den Text für Suchmaschinen</div>
+          </div>
+          <div class="pp-item">
+            <div class="pp-item-name">Formaler Stil</div>
+            <div class="pp-item-desc">Passe den Tonfall formaler an</div>
+          </div>
+          <div class="pp-item">
+            <div class="pp-item-name">Leichte Sprache</div>
+            <div class="pp-item-desc">Vereinfache den Text</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLUS MENU -->
+    <div class="plus-menu" id="plusMenu">
+      <button class="pm-item" id="pmTranslate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/>
+          <path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>
+        </svg>
+        <span>Übersetzen</span>
+      </button>
+      <button class="pm-item" id="pmPrompts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <span>Gespeicherte Prompts</span>
+      </button>
+      <button class="pm-item" id="pmEdit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span>Bearbeiten</span>
+      </button>
+      <button class="pm-item" id="pmSync">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        <span>Synchronisieren</span>
+        <span class="pm-badge">2</span>
+      </button>
+    </div>
+
+    <!-- COMPOSER -->
+    <div class="composer">
+      <div class="composer-context" id="contextArea"></div>
+      <div class="composer-row">
+        <button class="plus-btn" id="plusBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <input class="composer-input" id="inputField" placeholder="Nachricht eingeben…" readonly>
+        <button class="send-btn" id="sendBtn">
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="white"><path d="M44.9,23.2l-38-18L6,5A2,2,0,0,0,4,7L9.3,23H24a2.1,2.1,0,0,1,2,2,2,2,0,0,1-2,2H9.3L4,43a2,2,0,0,0,2,2l.9-.2,38-18A2,2,0,0,0,44.9,23.2Z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ DRAWERS ═══ -->
+
+    <!-- SETTINGS DRAWER -->
+    <div class="drawer" id="settingsDrawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Einstellungen</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-primary btn-small" style="font-size:12px;">Speichern</button>
+          <button class="drawer-close">Schließen</button>
+        </div>
+      </div>
+      <div class="drawer-scroll">
+        <div>
+          <div class="section-title">App-Name</div>
+          <div class="section-hint">Eigener Name statt "Volto AI Assistant".</div>
+          <input class="s-input" value="Volto AI Assistant" readonly>
+        </div>
+        <div>
+          <div class="section-title">Akzentfarbe</div>
+          <div class="section-hint">Ändert die Hauptfarbe des Chat-Widgets.</div>
+          <div class="swatches">
+            <div class="swatch active" style="background:#3b97d4"></div>
+            <div class="swatch" style="background:#10b981"></div>
+            <div class="swatch" style="background:#f59e0b"></div>
+            <div class="swatch" style="background:#ef4444"></div>
+            <div class="swatch" style="background:#8b5cf6"></div>
+            <div class="swatch" style="background:#ec4899"></div>
+            <div class="swatch" style="background:#0ea5e9"></div>
+            <div class="swatch" style="background:#f97316"></div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">App-Icon</div>
+          <div class="section-hint">Lade ein Bild oder SVG hoch, um das Chat-Icon zu ändern.</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="icon-preview">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 12.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5M3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.6 26.6 0 004.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.93.93 0 01-.765.935c-.845.147-2.34.346-4.235.346s-3.39-.2-4.235-.346A.93.93 0 013 9.219z"/><path d="M8.5 1.866a1 1 0 10-1 0V3h-2A4.5 4.5 0 001 7.5V8a1 1 0 00-1 1v2a1 1 0 001 1v1a2 2 0 002 2h10a2 2 0 002-2v-1a1 1 0 001-1V9a1 1 0 00-1-1v-.5A4.5 4.5 0 0010.5 3h-2zM14 7.5V13a1 1 0 01-1 1H3a1 1 0 01-1-1V7.5A3.5 3.5 0 015.5 4h5A3.5 3.5 0 0114 7.5"/></svg>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <button class="btn btn-ghost btn-small">Bild hochladen</button>
+              <button class="btn btn-ghost btn-small" style="color:var(--muted)">Standard wiederherstellen</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Chat-Verlauf löschen</div>
+          <div class="section-hint">Alle gespeicherten Unterhaltungen entfernen.</div>
+          <button class="btn btn-ghost btn-small">Verlauf löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY DRAWER -->
+    <div class="drawer" id="historyDrawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Letzte Chats</span>
+        <button class="drawer-close">Schließen</button>
+      </div>
+      <div class="drawer-scroll" style="gap:8px;">
+        <div class="history-item active">
+          <div class="history-title"><span class="pin">★</span>Wie optimiere ich die Seite?</div>
+          <div class="history-meta">Heute, 14:32</div>
+        </div>
+        <div class="history-item">
+          <div class="history-title">Übersetzung der Startseite</div>
+          <div class="history-meta">Heute, 10:15</div>
+        </div>
+        <div class="history-item">
+          <div class="history-title">SEO-Verbesserungen für News</div>
+          <div class="history-meta">Gestern, 16:48</div>
+        </div>
+        <div class="history-item">
+          <div class="history-title">Zusammenfassung Forschungsbericht</div>
+          <div class="history-meta">22. Feb, 09:20</div>
+        </div>
+        <div class="history-item">
+          <div class="history-title">Leichte Sprache Kontaktseite</div>
+          <div class="history-meta">20. Feb, 11:05</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GLOSSARY DRAWER -->
+    <div class="drawer" id="glossaryDrawer">
+      <div class="drawer-header">
+        <span class="drawer-title">DeepL Glossar</span>
+        <button class="drawer-close">Schließen</button>
+      </div>
+      <div class="drawer-scroll">
+        <div class="pair-selector">
+          <button class="pair-btn active">DE → EN</button>
+          <button class="pair-btn">EN → DE</button>
+        </div>
+        <div class="sync-btn-row">
+          <button class="sync-icon-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          </button>
+          <span class="sync-label">Mit DeepL synchronisieren</span>
+        </div>
+        <div class="data-table">
+          <div class="row glossary-row header">
+            <span>Quellbegriff</span><span>Zielbegriff</span><span></span>
+          </div>
+          <div class="row glossary-row">
+            <span>Forschungszentrum</span><span>Research Center</span>
+            <button class="del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="row glossary-row">
+            <span>Helmholtz-Gemeinschaft</span><span>Helmholtz Association</span>
+            <button class="del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="row glossary-row">
+            <span>Nachhaltigkeit</span><span>Sustainability</span>
+            <button class="del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>
+        <div class="add-form">
+          <input class="s-input" placeholder="z.B. Forschungszentrum" readonly>
+          <input class="s-input" placeholder="z.B. Research Center" readonly>
+          <button class="btn btn-primary btn-small">Hinzufügen</button>
+        </div>
+        <div style="margin-top:4px;">
+          <button class="btn btn-ghost btn-small" style="display:flex;align-items:center;gap:4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            CSV importieren
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAG MAPPINGS DRAWER -->
+    <div class="drawer" id="tagMappingsDrawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Schlagwort-Mappings</span>
+        <button class="drawer-close">Schließen</button>
+      </div>
+      <div class="drawer-scroll">
+        <div class="section-hint">Lege fest, wie Schlagwörter bei der Übersetzung übertragen werden. Tags ohne Mapping werden in der Übersetzung weggelassen.</div>
+        <div class="data-table">
+          <div class="row tag-row header">
+            <span>Schlagwort</span><span>Sprache</span><span>Übersetzung</span><span></span>
+          </div>
+          <div class="row tag-row">
+            <span>Forschung</span><span>EN</span><span>Research</span>
+            <button class="del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="row tag-row">
+            <span>Energie</span><span>EN</span><span>Energy</span>
+            <button class="del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="row tag-row">
+            <span>Klima</span><span>EN</span><span>Climate</span>
+            <button class="del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>
+        <div class="add-form">
+          <input class="s-input" placeholder="z.B. Forschung" readonly style="flex:1.2;">
+          <select class="s-input" style="flex:0.6;padding:6px 8px;"><option>EN</option><option>DE</option></select>
+          <input class="s-input" placeholder="z.B. Research" readonly style="flex:1.2;">
+          <button class="btn btn-primary btn-small">Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMPTS MANAGER DRAWER -->
+    <div class="drawer" id="promptsDrawer">
+      <div class="drawer-header">
+        <span class="drawer-title">Promptmanager</span>
+        <button class="drawer-close">Schließen</button>
+      </div>
+      <div class="drawer-scroll">
+        <div class="section-hint">Erstelle und verwalte wiederverwendbare Prompts. Klicke auf „Ausführen", um einen Prompt als Chat-Nachricht zu senden.</div>
+        <div class="freetext-section">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);">Freitext</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">Eigenen Prompt direkt eingeben und ausführen.</div>
+          <textarea placeholder="Freien Prompt eingeben…" readonly></textarea>
+          <div class="freetext-actions">
+            <button class="btn btn-primary btn-small" style="display:flex;align-items:center;gap:4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Ausführen
+            </button>
+          </div>
+        </div>
+
+        <hr class="prompts-divider">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="section-title" style="margin:0;">Gespeicherte Prompts</div>
+          <button class="btn btn-ghost btn-small">+ Neuer Prompt</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="prompt-card">
+            <div class="prompt-name">Zusammenfassung</div>
+            <div class="prompt-desc">Kürze den Text auf das Wesentliche</div>
+            <div class="prompt-cats"><span class="cat-badge">Inhalt</span></div>
+            <div class="prompt-card-actions">
+              <button><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Ausführen</button>
+              <button><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Bearbeiten</button>
+              <button class="danger"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Löschen</button>
+            </div>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-name">SEO-Optimierung</div>
+            <div class="prompt-desc">Optimiere den Text für Suchmaschinen</div>
+            <div class="prompt-cats"><span class="cat-badge">SEO</span></div>
+            <div class="prompt-card-actions">
+              <button><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Ausführen</button>
+              <button><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Bearbeiten</button>
+              <button class="danger"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Löschen</button>
+            </div>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-name">Leichte Sprache</div>
+            <div class="prompt-desc">Vereinfache den Text für bessere Verständlichkeit</div>
+            <div class="prompt-cats"><span class="cat-badge">Stil</span><span class="cat-badge">Inhalt</span></div>
+            <div class="prompt-card-actions">
+              <button><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Ausführen</button>
+              <button><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Bearbeiten</button>
+              <button class="danger"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Löschen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scene label -->
+<div class="scene-label" id="sceneLabel"></div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const stage = $('#stage');
+const messages = $('#messages');
+const inputField = $('#inputField');
+const plusMenu = $('#plusMenu');
+const headerMenu = $('#headerMenu');
+const contextArea = $('#contextArea');
+const sceneLabel = $('#sceneLabel');
+const promptPicker = $('#promptPicker');
+
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+function showLabel(text) { sceneLabel.textContent = text; sceneLabel.classList.add('visible'); }
+function hideLabel() { sceneLabel.classList.remove('visible'); }
+
+function addMsg(type, html, extraClass = '') {
+  const div = document.createElement('div');
+  div.className = `msg ${type} ${extraClass}`.trim();
+  div.innerHTML = html;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  requestAnimationFrame(() => requestAnimationFrame(() => div.classList.add('visible')));
+  return div;
+}
+
+function clearMessages() { messages.innerHTML = ''; }
+
+function setContext(text, cls = '') {
+  contextArea.innerHTML = text
+    ? `<span class="context-tag ${cls} visible"><button class="x-btn">&times;</button><span>${text}</span></span>`
+    : '';
+}
+
+function setInput(text) { inputField.value = text; }
+function showPlus() { plusMenu.classList.add('visible'); }
+function hidePlus() { plusMenu.classList.remove('visible'); }
+function showHeaderMenu() { headerMenu.classList.add('visible'); }
+function hideHeaderMenu() { headerMenu.classList.remove('visible'); }
+function openDrawer(id) { $(id).classList.add('open'); }
+function closeDrawer(id) { $(id).classList.remove('open'); }
+function showPromptPicker() { promptPicker.classList.add('visible'); }
+function hidePromptPicker() { promptPicker.classList.remove('visible'); }
+function makeDots() { return '<div class="dots"><span></span><span></span><span></span></div>'; }
+
+async function typeText(text, delay = 35) {
+  setInput('');
+  for (let i = 0; i <= text.length; i++) {
+    inputField.value = text.slice(0, i);
+    await wait(delay);
+  }
+}
+
+// ═══════════ ANIMATION SEQUENCE ═══════════
+async function runShowcase() {
+  // Reset everything
+  stage.className = 'stage';
+  clearMessages();
+  setContext('');
+  setInput('');
+  hidePlus();
+  hideHeaderMenu();
+  hideLabel();
+  hidePromptPicker();
+  ['#settingsDrawer','#historyDrawer','#glossaryDrawer','#tagMappingsDrawer','#promptsDrawer'].forEach(closeDrawer);
+  $('#pmEdit').classList.remove('active-item');
+  $('#pmEdit').querySelector('span').textContent = 'Bearbeiten';
+
+  // ── SCENE 1: Launcher ──
+  showLabel('Launcher');
+  stage.classList.add('show-launcher', 'launcher-pulse');
+  await wait(2500);
+
+  // ── SCENE 2: Panel opens ──
+  hideLabel(); await wait(200);
+  showLabel('Chat-Panel');
+  stage.classList.remove('launcher-pulse');
+  stage.classList.add('show-panel');
+  await wait(1500);
+
+  // ── SCENE 3: Chat ──
+  hideLabel(); await wait(300);
+  showLabel('KI-Chat');
+
+  await typeText('Was kann ich mit dem AI Assistant machen?');
+  await wait(400);
+  setInput('');
+  addMsg('user', 'Was kann ich mit dem AI Assistant machen?');
+  await wait(600);
+
+  const thinkMsg = addMsg('assistant', makeDots(), 'streaming');
+  await wait(2000);
+  thinkMsg.classList.remove('streaming');
+  thinkMsg.innerHTML = 'Ich kann dir bei vielen Aufgaben helfen:<br>• <strong>Seiten übersetzen</strong> (via DeepL)<br>• <strong>Texte optimieren</strong> mit Prompts<br>• <strong>Inhalte bearbeiten</strong> über ein externes Backend<br>• <strong>Übersetzungen synchronisieren</strong>';
+
+  // Citations
+  await wait(600);
+  const citeHtml = `<details class="citations"><summary>Quellen</summary><ul><li><a href="#">/de/hilfe/ai-assistent</a></li><li><a href="#">/de/dokumentation/features</a></li></ul></details>`;
+  thinkMsg.innerHTML += citeHtml;
+  await wait(2500);
+
+  // ── SCENE 4: Header Menu ──
+  hideLabel(); await wait(300);
+  showLabel('Menü');
+  clearMessages();
+
+  showHeaderMenu();
+  await wait(2500);
+  hideHeaderMenu();
+  await wait(300);
+
+  // ── SCENE 5: Settings ──
+  hideLabel(); await wait(200);
+  showLabel('Einstellungen');
+  openDrawer('#settingsDrawer');
+  await wait(3500);
+  closeDrawer('#settingsDrawer');
+  await wait(400);
+
+  // ── SCENE 6: History ──
+  hideLabel(); await wait(200);
+  showLabel('Chat-Historie');
+  openDrawer('#historyDrawer');
+  await wait(3000);
+  closeDrawer('#historyDrawer');
+  await wait(400);
+
+  // ── SCENE 7: Translation Wizard ──
+  hideLabel(); await wait(300);
+  showLabel('Übersetzung');
+
+  showPlus();
+  await wait(800);
+  hidePlus();
+  await wait(300);
+
+  // Scope question
+  const scopeMsg = addMsg('assistant', 'Was soll übersetzt werden?');
+  await wait(300);
+  const scopeAct = document.createElement('div');
+  scopeAct.className = 'wizard-actions';
+  scopeAct.innerHTML = `
+    <button class="wiz-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>Nur diese Seite</button>
+    <button class="wiz-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>Mit Unterseiten</button>
+    <button class="wiz-btn ghost">Abbrechen</button>`;
+  scopeMsg.appendChild(scopeAct);
+  requestAnimationFrame(() => scopeAct.classList.add('visible'));
+  await wait(1800);
+
+  addMsg('user', 'Nur diese Seite');
+  scopeAct.classList.remove('visible');
+  await wait(500);
+
+  // Language question
+  const langMsg = addMsg('assistant', 'In welche Sprache übersetzen?');
+  await wait(300);
+  const langAct = document.createElement('div');
+  langAct.className = 'wizard-actions';
+  langAct.innerHTML = `
+    <button class="wiz-btn">English</button>
+    <button class="wiz-btn">Deutsch</button>
+    <button class="wiz-btn ghost">Abbrechen</button>`;
+  langMsg.appendChild(langAct);
+  requestAnimationFrame(() => langAct.classList.add('visible'));
+  await wait(1500);
+
+  addMsg('user', 'English');
+  langAct.classList.remove('visible');
+  await wait(400);
+
+  const transRunning = addMsg('assistant', 'Übersetze Seite…', 'streaming');
+  await wait(2000);
+  transRunning.classList.remove('streaming');
+  transRunning.classList.add('success');
+  transRunning.textContent = '✓ Übersetzung nach English erfolgreich abgeschlossen.';
+  await wait(2000);
+
+  // ── SCENE 8: Prompt Picker ──
+  hideLabel(); await wait(300);
+  showLabel('Gespeicherte Prompts');
+  clearMessages();
+
+  showPlus();
+  await wait(800);
+  hidePlus();
+  await wait(300);
+
+  showPromptPicker();
+  await wait(3000);
+  hidePromptPicker();
+  await wait(400);
+
+  // ── SCENE 9: Prompt + Comparison View ──
+  hideLabel(); await wait(300);
+  showLabel('Vergleichsansicht');
+
+  setContext('Ausgewählter Text', 'selection');
+  await wait(600);
+
+  await typeText('Kürze auf das Wesentliche', 40);
+  await wait(300);
+  setInput('');
+  addMsg('user', 'Kürze auf das Wesentliche');
+  await wait(500);
+
+  const compMsg = addMsg('assistant', `
+    <div class="comparison">
+      <div class="label">Original</div>
+      <div class="original">Das Forschungszentrum ist eine der größten interdisziplinären Forschungseinrichtungen Europas mit etwa 7.400 Mitarbeitenden und einem breiten Spektrum an wissenschaftlichen Disziplinen.</div>
+      <div class="divider"></div>
+      <div class="label">Ergebnis</div>
+      ${makeDots()}
+    </div>
+  `, 'streaming');
+  await wait(2200);
+
+  compMsg.classList.remove('streaming');
+  compMsg.querySelector('.comparison').innerHTML = `
+    <div class="label">Original</div>
+    <div class="original">Das Forschungszentrum ist eine der größten interdisziplinären Forschungseinrichtungen Europas mit etwa 7.400 Mitarbeitenden und einem breiten Spektrum an wissenschaftlichen Disziplinen.</div>
+    <div class="divider"></div>
+    <div class="label">Ergebnis</div>
+    <div class="result">Eines der größten interdisziplinären Forschungszentren Europas.</div>
+  `;
+  await wait(400);
+
+  const compAct = document.createElement('div');
+  compAct.className = 'wizard-actions';
+  compAct.innerHTML = `
+    <button class="wiz-btn primary">Anwenden</button>
+    <button class="wiz-btn">Nochmals</button>
+    <button class="wiz-btn">Bearbeiten</button>
+    <button class="wiz-btn ghost">Abbrechen</button>`;
+  compMsg.appendChild(compAct);
+  requestAnimationFrame(() => compAct.classList.add('visible'));
+  await wait(2500);
+
+  compAct.classList.remove('visible');
+  await wait(300);
+  const applyMsg = addMsg('assistant', 'Wende Änderungen an…', 'streaming');
+  await wait(1200);
+  applyMsg.classList.remove('streaming');
+  applyMsg.classList.add('success');
+  applyMsg.textContent = '✓ Text wurde erfolgreich auf der Seite ersetzt.';
+  setContext('');
+  await wait(2000);
+
+  // ── SCENE 10: Edit Mode ──
+  hideLabel(); await wait(300);
+  showLabel('Bearbeiten-Modus');
+  clearMessages();
+
+  showPlus();
+  $('#pmEdit').classList.add('active-item');
+  $('#pmEdit').querySelector('span').textContent = 'Bearbeiten (aktiv)';
+  await wait(1200);
+  hidePlus();
+  await wait(300);
+
+  setContext('Bearbeiten-Modus', 'edit');
+  await wait(600);
+
+  await typeText('Modernisiere die Seitenüberschrift', 30);
+  await wait(300);
+  setInput('');
+  addMsg('user', 'Modernisiere die Seitenüberschrift');
+  await wait(500);
+
+  const editMsg = addMsg('assistant', 'Bereite Seiten-Daten vor…', 'streaming');
+  await wait(800);
+  editMsg.textContent = 'Erstelle Konversation…';
+  await wait(700);
+  editMsg.textContent = 'Sende an Bearbeiten-Backend…';
+  await wait(800);
+  editMsg.textContent = 'Analysiere Layout-Struktur…';
+  await wait(1000);
+  editMsg.textContent = 'Wende Änderungen an…';
+  await wait(800);
+  editMsg.classList.remove('streaming');
+  editMsg.classList.add('success');
+  editMsg.textContent = '✓ Die Seitenüberschrift wurde modernisiert.';
+  await wait(2000);
+
+  // ── SCENE 11: Sync ──
+  hideLabel(); await wait(300);
+  showLabel('Synchronisieren');
+  clearMessages();
+  setContext('');
+  $('#pmEdit').classList.remove('active-item');
+  $('#pmEdit').querySelector('span').textContent = 'Bearbeiten';
+
+  // Show sync card in messages
+  addMsg('assistant', `<div class="sync-card">
+    <div class="sync-card-title">Veraltete Übersetzungen</div>
+    <div class="section-hint" style="margin:0 0 6px">Folgende Übersetzungen sind nicht mehr aktuell:</div>
+    <div class="sync-item"><span class="sync-dot"></span><span>/de/forschung/projekte</span></div>
+    <div class="sync-item"><span class="sync-dot"></span><span>/de/ueber-uns/team</span></div>
+    <div style="margin-top:8px;"><button class="btn btn-primary btn-small">Synchronisieren</button></div>
+  </div>`);
+  await wait(3000);
+
+  // ── SCENE 12: Glossary ──
+  hideLabel(); await wait(300);
+  showLabel('DeepL Glossar');
+  clearMessages();
+  openDrawer('#glossaryDrawer');
+  await wait(3500);
+  closeDrawer('#glossaryDrawer');
+  await wait(400);
+
+  // ── SCENE 13: Tag Mappings ──
+  hideLabel(); await wait(200);
+  showLabel('Schlagwort-Mappings');
+  openDrawer('#tagMappingsDrawer');
+  await wait(3000);
+  closeDrawer('#tagMappingsDrawer');
+  await wait(400);
+
+  // ── SCENE 14: Prompt Manager ──
+  hideLabel(); await wait(200);
+  showLabel('Promptmanager');
+  openDrawer('#promptsDrawer');
+  await wait(3500);
+  closeDrawer('#promptsDrawer');
+  await wait(400);
+
+  // ── SCENE 15: Context Tags ──
+  hideLabel(); await wait(300);
+  showLabel('Kontext-Modi');
+  clearMessages();
+
+  setContext('Meine Seite');
+  await wait(1200);
+  setContext('Ausgewählter Text', 'selection');
+  await wait(1200);
+  setContext('Bearbeiten-Modus', 'edit');
+  await wait(1200);
+  setContext('');
+  await wait(600);
+
+  // ── SCENE 16: Close ──
+  hideLabel(); await wait(300);
+  stage.classList.remove('show-panel');
+  stage.classList.add('show-launcher', 'launcher-pulse');
+  await wait(2500);
+  stage.classList.remove('show-launcher', 'launcher-pulse');
+  await wait(1500);
+
+  // Loop
+  runShowcase();
+}
+
+runShowcase();
+</script>
+</body>
+</html>
