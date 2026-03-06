@@ -379,14 +379,14 @@ const ChatWidgetProvider: React.FC = () => {
         updateContextMode('selection');
         updateSelectionText(text);
       } else if (contextModeRef.current === 'selection') {
-        // Selection cleared — defer check so activeElement has time to update
+        // Selection cleared - defer check so activeElement has time to update
         // (selectionchange fires before focus transfer completes)
         setTimeout(() => {
           if (contextModeRef.current !== 'selection') return;
           const activeEl = document.activeElement;
           const inChat = activeEl?.closest('.kyra-ai-chat');
           if (inChat) return;
-          // Selection cleared by clicking outside chat — revert
+          // Selection cleared by clicking outside chat - revert
           updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
           updateSelectionText('');
         }, 0);
