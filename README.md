@@ -261,6 +261,14 @@ After setting up mrs-developer, make sure the add-on is also registered in your 
 }
 ```
 
+```json
+{
+  "dependencies": [
+     "@interaktiv.de/volto-interaktiv-kyra": "workspace:*",
+  ]
+}
+```
+
 Then:
 
 ```bash
