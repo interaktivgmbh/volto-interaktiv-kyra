@@ -36,28 +36,36 @@ DeepL translation · AI chat · Prompt management · Widget customization
 
 ---
 
+## Contents
+
+> **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [History](#chat-history) · [Customization](#customization)
+>
+> **Technical** — [Architecture](#architecture) · [API Endpoints](#api-endpoints) · [Installation](#installation) · [Configuration](#configuration) · [Theming](#theming) · [Troubleshooting](#troubleshooting)
+
+---
+
 ## Translation
 
 Full DeepL integration in the editor workflow.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#3b97d4', 'signalColor': '#3b97d4', 'actorBkg': '#3b97d4', 'actorTextColor': '#fff', 'actorBorder': '#307db0', 'noteBkgColor': '#fef9c3', 'noteBorderColor': '#eab308'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#2563eb', 'signalColor': '#2563eb', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#1d4ed8', 'actorTextColor': '#fff', 'actorBorder': '#1e40af', 'actorLineColor': '#64748b', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
 sequenceDiagram
     participant Editor
     participant Kyra
     participant Plone
     participant DeepL
 
-    Editor->>Kyra: Click + then Translate
-    Kyra->>Editor: Scope? Page or Subtree
+    Editor->>Kyra: Click + → Translate
+    Kyra->>Editor: Scope? Page / Subtree
     Editor->>Kyra: This page only
     Kyra->>Editor: Target language?
     Editor->>Kyra: English
-    Kyra->>Plone: POST translate endpoint
-    Plone->>DeepL: Translate content blocks
+    Kyra->>Plone: POST translate
+    Plone->>DeepL: Translate blocks
     DeepL-->>Plone: Translated content
     Plone-->>Kyra: Result
-    Kyra->>Editor: Page updated ✓
+    Kyra->>Editor: Page updated
 ```
 
 - **Scope**: Single page or entire subtree with subpages
@@ -82,21 +90,24 @@ Header menu, then **Tag Mappings**: Define per-language keyword translations. Ta
 Automatic detection and resolution of outdated translations.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b', 'tertiaryColor': '#f0fdf4'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'tertiaryColor': '#f0fdf4'}}}%%
 flowchart LR
-    A["📄 Page modified"] --> B{"Translations\nexist?"}
+    A["Page modified"] --> B{"Translations\nexist?"}
     B -->|Yes| C["Compare\ntimestamps"]
     C --> D{"Outdated?"}
-    D -->|Yes| E["🔴 Badge on\nlauncher"]
+    D -->|Yes| E["Badge on\nlauncher"]
     E --> F["Sync card\nin chat"]
-    F --> G["🔄 Re-translate"]
-    D -->|No| I["✅ Up to date"]
+    F --> G["Re-translate"]
+    D -->|No| I["Up to date"]
     B -->|No| J["No action"]
 
-    style A fill:#dbeafe,stroke:#3b82f6
-    style E fill:#fee2e2,stroke:#ef4444
-    style G fill:#dbeafe,stroke:#3b82f6
-    style I fill:#dcfce7,stroke:#22c55e
+    style A fill:#dbeafe,stroke:#2563eb,color:#111
+    style E fill:#fee2e2,stroke:#dc2626,color:#111
+    style G fill:#dbeafe,stroke:#2563eb,color:#111
+    style I fill:#dcfce7,stroke:#16a34a,color:#111
+    style J fill:#f1f5f9,stroke:#94a3b8,color:#111
+    style B fill:#fff,stroke:#475569,color:#111
+    style D fill:#fff,stroke:#475569,color:#111
 ```
 
 1. The translation status endpoint compares modification timestamps
@@ -111,7 +122,7 @@ flowchart LR
 Context-aware streaming chat with citations.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#3b97d4', 'signalColor': '#3b97d4', 'actorBkg': '#3b97d4', 'actorTextColor': '#fff', 'actorBorder': '#307db0'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#2563eb', 'signalColor': '#2563eb', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#1d4ed8', 'actorTextColor': '#fff', 'actorBorder': '#1e40af', 'actorLineColor': '#64748b', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
 sequenceDiagram
     participant Editor
     participant Kyra
@@ -125,7 +136,7 @@ sequenceDiagram
     AI-->>Plone: SSE stream tokens
     Plone-->>Kyra: Token-by-token
     Kyra->>Editor: Live rendering
-    Note over Kyra,Editor: Citations appended ✓
+    Note over Kyra,Editor: Citations appended
 ```
 
 - **Streaming** via Server-Sent Events with real-time rendering
@@ -151,21 +162,26 @@ Select any text on the page to use it as targeted AI context.
 ## Prompt Management
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
 flowchart TD
-    A["✏️ Admin creates prompt"] --> B["Stored via Prompts API"]
+    A["Admin creates prompt"] --> B["Stored via Prompts API"]
     B --> C["Prompt Picker\nin chat"]
     B --> D["Prompt Manager\nControl Panel"]
     C --> E["Editor picks prompt"]
     E --> F["AI processes\nwith context"]
     F --> G{"Compare View"}
-    G -->|"✅ Apply"| H["Text replaced\non page"]
-    G -->|"🔄 Retry"| F
-    G -->|"❌ Cancel"| I["Dismissed"]
+    G -->|"Apply"| H["Text replaced\non page"]
+    G -->|"Retry"| F
+    G -->|"Cancel"| I["Dismissed"]
 
-    style A fill:#dbeafe,stroke:#3b82f6
-    style H fill:#dcfce7,stroke:#22c55e
-    style G fill:#fef9c3,stroke:#eab308
+    style A fill:#dbeafe,stroke:#2563eb,color:#111
+    style B fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style C fill:#dbeafe,stroke:#2563eb,color:#111
+    style D fill:#dbeafe,stroke:#2563eb,color:#111
+    style F fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style G fill:#fef3c7,stroke:#d97706,color:#111
+    style H fill:#dcfce7,stroke:#16a34a,color:#111
+    style I fill:#f1f5f9,stroke:#94a3b8,color:#111
 ```
 
 **Three ways to use prompts:**
@@ -205,10 +221,10 @@ Personalize via the settings drawer:
 ## Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b', 'clusterBkg': '#f8fafc', 'clusterBorder': '#cbd5e1'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#94a3b8'}}}%%
 flowchart TD
-    subgraph Frontend["🖥️ Volto Frontend"]
-        L["Launcher"] --> P["Chat Panel"]
+    subgraph Frontend["Volto Frontend"]
+        L["Launcher Button"] --> P["Chat Panel"]
         P --> Chat["Messages"]
         P --> Comp["Composer"]
         P --> Set["Settings"]
@@ -218,7 +234,7 @@ flowchart TD
         P --> Prom["Prompt Picker"]
     end
 
-    subgraph Backend["⚙️ Plone Backend"]
+    subgraph Backend["Plone Backend"]
         C1["Chat API"]
         C2["Translate API"]
         C3["Prompts API"]
@@ -228,7 +244,7 @@ flowchart TD
         C7["Capabilities"]
     end
 
-    subgraph Services["☁️ External Services"]
+    subgraph Services["External Services"]
         GW["AI Gateway"]
         DL["DeepL API"]
         KC["Keycloak"]
@@ -245,21 +261,29 @@ flowchart TD
     C1 --> KC
     C2 --> DL
 
-    style L fill:#3b97d4,stroke:#307db0,color:#fff
-    style GW fill:#dbeafe,stroke:#3b82f6
-    style DL fill:#dbeafe,stroke:#3b82f6
-    style KC fill:#dbeafe,stroke:#3b82f6
+    style L fill:#1d4ed8,stroke:#1e40af,color:#fff
+    style P fill:#dbeafe,stroke:#2563eb,color:#111
+    style GW fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style DL fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style KC fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style C1 fill:#fff,stroke:#2563eb,color:#111
+    style C2 fill:#fff,stroke:#2563eb,color:#111
+    style C3 fill:#fff,stroke:#2563eb,color:#111
+    style C4 fill:#fff,stroke:#2563eb,color:#111
+    style C5 fill:#fff,stroke:#2563eb,color:#111
+    style C6 fill:#fff,stroke:#2563eb,color:#111
+    style C7 fill:#fff,stroke:#2563eb,color:#111
 ```
 
 ### Permissions
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b', 'clusterBkg': '#f8fafc', 'clusterBorder': '#cbd5e1'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#94a3b8'}}}%%
 flowchart LR
     subgraph Roles
-        ANON["👤 Anonymous"]
-        EDITOR["✏️ Editor"]
-        ADMIN["🔧 Admin"]
+        ANON["Anonymous"]
+        EDITOR["Editor"]
+        ADMIN["Admin"]
     end
 
     subgraph Access
@@ -282,9 +306,17 @@ flowchart LR
     ADMIN --> F7
     ADMIN --> F8
 
-    style ANON fill:#f1f5f9,stroke:#94a3b8
-    style EDITOR fill:#dbeafe,stroke:#3b82f6
-    style ADMIN fill:#3b97d4,stroke:#307db0,color:#fff
+    style ANON fill:#f1f5f9,stroke:#64748b,color:#111
+    style EDITOR fill:#dbeafe,stroke:#2563eb,color:#111
+    style ADMIN fill:#1d4ed8,stroke:#1e40af,color:#fff
+    style F1 fill:#fff,stroke:#94a3b8,color:#111
+    style F2 fill:#fff,stroke:#2563eb,color:#111
+    style F3 fill:#fff,stroke:#2563eb,color:#111
+    style F4 fill:#fff,stroke:#2563eb,color:#111
+    style F5 fill:#fff,stroke:#1d4ed8,color:#111
+    style F6 fill:#fff,stroke:#1d4ed8,color:#111
+    style F7 fill:#fff,stroke:#1d4ed8,color:#111
+    style F8 fill:#fff,stroke:#1d4ed8,color:#111
 ```
 
 ---
