@@ -14,7 +14,7 @@ DeepL translation · AI chat · Prompt management · Widget customization
 
 <img src="showcase/bot-showcase.gif" alt="Kyra AI Assistant — Animated Showcase" width="100%" />
 
-<sub>17 animated scenes — <a href="showcase/bot-showcase.svg">open interactive version</a></sub>
+<sub>17 animated scenes — <a href="https://www.interaktiv.de/medien/svg/bot-showcase.svg/@@images/16c622ac-b240-4370-82ee-264fd1d449c8.svg">open interactive version</a></sub>
 
 </div>
 
@@ -462,5 +462,7 @@ Navigate to **Site Setup, Kyra AI Settings**:
 **Built with** [Plone](https://plone.org) · [Volto](https://github.com/plone/volto) · [DeepL](https://www.deepl.com)
 
 **Maintained by** [Interaktiv GmbH](https://www.interaktiv.de)
+
+Explore our other AI + Plone projects at [interaktiv.de/plone/ki-und-plone](https://www.interaktiv.de/plone/ki-und-plone)
 
 </div>
