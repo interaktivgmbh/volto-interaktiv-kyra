@@ -40,7 +40,7 @@ DeepL translation · AI chat · Prompt management · Widget customization
 
 > **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [History](#chat-history) · [Customization](#customization)
 >
-> **Technical** — [Architecture](#architecture) · [API Endpoints](#api-endpoints) · [Installation](#installation) · [Configuration](#configuration) · [Theming](#theming) · [Troubleshooting](#troubleshooting)
+> **Technical** — [Architecture](#architecture) · [API Endpoints](#api-endpoints) · [Installation](#installation) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -364,7 +364,10 @@ flowchart LR
 
 ```json
 {
-  "addons": ["@interaktiv.de/volto-interaktiv-kyra"]
+  "addons": ["@interaktiv.de/volto-interaktiv-kyra"],
+  "dependencies": {
+    "@interaktiv.de/volto-interaktiv-kyra": "workspace:*"
+  }
 }
 ```
 
@@ -388,24 +391,6 @@ Navigate to **Site Setup, Kyra AI Settings**:
 | `keycloak_client_secret` | OAuth client secret (required) |
 | `domain_id` | Domain identifier, default: `plone` |
 | `deepl_api_key` | DeepL API key for translations |
-
----
-
-## Theming
-
-Override CSS variables to match your design:
-
-```css
-:root {
-  --ai-chat-accent: #3b97d4;
-  --ai-chat-accent-strong: #307db0;
-  --ai-chat-bg: #f8fafc;
-  --ai-chat-text: #000;
-  --ai-chat-muted: #64748b;
-  --ai-chat-border: rgba(148, 163, 184, 0.3);
-  --ai-chat-radius: 18px;
-}
-```
 
 ---
 
