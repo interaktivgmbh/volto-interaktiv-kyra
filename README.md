@@ -10,7 +10,15 @@ DeepL translation · AI chat · Prompt management · Widget customization
 [![Plone](https://img.shields.io/badge/Plone-6-orange.svg)](https://plone.org)
 [![Volto](https://img.shields.io/badge/Volto-18+-purple.svg)](https://github.com/plone/volto)
 
-**[Open Interactive Showcase](showcase/bot-showcase.svg)** — 17 animated scenes demonstrating all features
+<br/>
+
+<a href="showcase/bot-showcase.svg">
+  <picture>
+    <img src="showcase/bot-showcase.svg" alt="Kyra AI Assistant — Interactive Showcase" width="100%" />
+  </picture>
+</a>
+
+<sub>17 animated scenes — click to open fullscreen interactive version</sub>
 
 </div>
 
@@ -37,6 +45,7 @@ DeepL translation · AI chat · Prompt management · Widget customization
 Full DeepL integration in the editor workflow.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#3b97d4', 'signalColor': '#3b97d4', 'actorBkg': '#3b97d4', 'actorTextColor': '#fff', 'actorBorder': '#307db0', 'noteBkgColor': '#fef9c3', 'noteBorderColor': '#eab308'}}}%%
 sequenceDiagram
     participant Editor
     participant Kyra
@@ -52,7 +61,7 @@ sequenceDiagram
     Plone->>DeepL: Translate content blocks
     DeepL-->>Plone: Translated content
     Plone-->>Kyra: Result
-    Kyra->>Editor: Page updated
+    Kyra->>Editor: Page updated ✓
 ```
 
 - **Scope**: Single page or entire subtree with subpages
@@ -77,15 +86,21 @@ Header menu, then **Tag Mappings**: Define per-language keyword translations. Ta
 Automatic detection and resolution of outdated translations.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b', 'tertiaryColor': '#f0fdf4'}}}%%
 flowchart LR
-    A["Page modified"] --> B{"Translations exist?"}
-    B -->|Yes| C["Compare timestamps"]
+    A["📄 Page modified"] --> B{"Translations\nexist?"}
+    B -->|Yes| C["Compare\ntimestamps"]
     C --> D{"Outdated?"}
-    D -->|Yes| E["Badge on launcher"]
-    E --> F["Sync card in chat"]
-    F --> G["Click Sync"]
-    G --> H["Re-translate pages"]
-    D -->|No| I["Up to date"]
+    D -->|Yes| E["🔴 Badge on\nlauncher"]
+    E --> F["Sync card\nin chat"]
+    F --> G["🔄 Re-translate"]
+    D -->|No| I["✅ Up to date"]
+    B -->|No| J["No action"]
+
+    style A fill:#dbeafe,stroke:#3b82f6
+    style E fill:#fee2e2,stroke:#ef4444
+    style G fill:#dbeafe,stroke:#3b82f6
+    style I fill:#dcfce7,stroke:#22c55e
 ```
 
 1. The translation status endpoint compares modification timestamps
@@ -100,6 +115,7 @@ flowchart LR
 Context-aware streaming chat with citations.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#3b97d4', 'signalColor': '#3b97d4', 'actorBkg': '#3b97d4', 'actorTextColor': '#fff', 'actorBorder': '#307db0'}}}%%
 sequenceDiagram
     participant Editor
     participant Kyra
@@ -107,14 +123,16 @@ sequenceDiagram
     participant AI as AI Gateway
 
     Editor->>Kyra: Sends message
-    Kyra->>Plone: POST chat endpoint with page context
-    Plone->>AI: Forward request
-    AI-->>Plone: SSE stream
-    Plone-->>Kyra: Token-by-token response
-    Kyra->>Editor: Live rendering with citations
+    Note over Kyra: Attaches page context<br/>or selected text
+    Kyra->>Plone: POST chat endpoint
+    Plone->>AI: Forward with context
+    AI-->>Plone: SSE stream tokens
+    Plone-->>Kyra: Token-by-token
+    Kyra->>Editor: Live rendering
+    Note over Kyra,Editor: Citations appended ✓
 ```
 
-- **Streaming** via Server-Sent Events with real-time token rendering
+- **Streaming** via Server-Sent Events with real-time rendering
 - **Citations** with source links and snippets
 - **Feedback** — rate responses with thumbs up or down
 - **File Upload** — attach documents for additional context
@@ -137,16 +155,21 @@ Select any text on the page to use it as targeted AI context.
 ## Prompt Management
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b'}}}%%
 flowchart TD
-    A["Admin creates prompt"] --> B["Stored via API"]
-    B --> C["Prompt Picker in chat"]
-    B --> D["Prompt Manager CP"]
+    A["✏️ Admin creates prompt"] --> B["Stored via Prompts API"]
+    B --> C["Prompt Picker\nin chat"]
+    B --> D["Prompt Manager\nControl Panel"]
     C --> E["Editor picks prompt"]
-    E --> F["AI processes with context"]
+    E --> F["AI processes\nwith context"]
     F --> G{"Compare View"}
-    G -->|Apply| H["Text replaced"]
-    G -->|Retry| F
-    G -->|Cancel| I["Dismissed"]
+    G -->|"✅ Apply"| H["Text replaced\non page"]
+    G -->|"🔄 Retry"| F
+    G -->|"❌ Cancel"| I["Dismissed"]
+
+    style A fill:#dbeafe,stroke:#3b82f6
+    style H fill:#dcfce7,stroke:#22c55e
+    style G fill:#fef9c3,stroke:#eab308
 ```
 
 **Three ways to use prompts:**
@@ -186,8 +209,9 @@ Personalize via the settings drawer:
 ## Architecture
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b', 'clusterBkg': '#f8fafc', 'clusterBorder': '#cbd5e1'}}}%%
 flowchart TD
-    subgraph Frontend
+    subgraph Frontend["🖥️ Volto Frontend"]
         L["Launcher"] --> P["Chat Panel"]
         P --> Chat["Messages"]
         P --> Comp["Composer"]
@@ -198,17 +222,17 @@ flowchart TD
         P --> Prom["Prompt Picker"]
     end
 
-    subgraph Backend
+    subgraph Backend["⚙️ Plone Backend"]
         C1["Chat API"]
         C2["Translate API"]
         C3["Prompts API"]
         C4["Glossary API"]
         C5["Tag Mappings API"]
-        C6["Translation Status API"]
-        C7["Capabilities API"]
+        C6["Translation Status"]
+        C7["Capabilities"]
     end
 
-    subgraph Services
+    subgraph Services["☁️ External Services"]
         GW["AI Gateway"]
         DL["DeepL API"]
         KC["Keycloak"]
@@ -224,27 +248,33 @@ flowchart TD
     C1 --> GW
     C1 --> KC
     C2 --> DL
+
+    style L fill:#3b97d4,stroke:#307db0,color:#fff
+    style GW fill:#dbeafe,stroke:#3b82f6
+    style DL fill:#dbeafe,stroke:#3b82f6
+    style KC fill:#dbeafe,stroke:#3b82f6
 ```
 
 ### Permissions
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4fd', 'primaryBorderColor': '#3b97d4', 'primaryTextColor': '#1e293b', 'lineColor': '#64748b', 'clusterBkg': '#f8fafc', 'clusterBorder': '#cbd5e1'}}}%%
 flowchart LR
     subgraph Roles
-        ANON["Anonymous"]
-        EDITOR["Editor"]
-        ADMIN["Admin"]
+        ANON["👤 Anonymous"]
+        EDITOR["✏️ Editor"]
+        ADMIN["🔧 Admin"]
     end
 
     subgraph Access
         F1["Chat read-only"]
-        F2["Chat full"]
+        F2["Chat full access"]
         F3["Translation"]
         F4["Prompt Picker"]
         F5["Prompt Manager"]
         F6["Glossary"]
         F7["Tag Mappings"]
-        F8["Settings CP"]
+        F8["Settings Panel"]
     end
 
     ANON --> F1
@@ -255,6 +285,10 @@ flowchart LR
     ADMIN --> F6
     ADMIN --> F7
     ADMIN --> F8
+
+    style ANON fill:#f1f5f9,stroke:#94a3b8
+    style EDITOR fill:#dbeafe,stroke:#3b82f6
+    style ADMIN fill:#3b97d4,stroke:#307db0,color:#fff
 ```
 
 ---
