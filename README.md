@@ -6,7 +6,7 @@
 DeepL translation · AI chat · Prompt management · Widget customization
 
 [![Version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](LICENSE)
 [![Plone](https://img.shields.io/badge/Plone-6-orange.svg)](https://plone.org)
 [![Volto](https://img.shields.io/badge/Volto-18+-purple.svg)](https://github.com/plone/volto)
 
