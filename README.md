@@ -12,13 +12,9 @@ DeepL translation · AI chat · Prompt management · Widget customization
 
 <br/>
 
-<object type="image/svg+xml" data="https://www.interaktiv.de/medien/svg/bot-showcase.svg/@@images/16c622ac-b240-4370-82ee-264fd1d449c8.svg" width="100%" style="max-width:1200px; aspect-ratio:4/3; border:1px solid #e2e8f0; border-radius:12px;">
-  <a href="https://www.interaktiv.de/medien/svg/bot-showcase.svg/@@images/16c622ac-b240-4370-82ee-264fd1d449c8.svg">
-    <img src="showcase/bot-showcase.svg" alt="Kyra AI Assistant — Interactive Showcase" width="100%" />
-  </a>
-</object>
+<img src="showcase/bot-showcase.gif" alt="Kyra AI Assistant — Animated Showcase" width="100%" />
 
-<sub>Interactive animated showcase — 17 scenes</sub>
+<sub>17 animated scenes — <a href="showcase/bot-showcase.svg">open interactive version</a></sub>
 
 </div>
 
