@@ -1,79 +1,80 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useIntl } from 'react-intl';
 
-import { selectPromptsGrouped } from '../../helpers/selectPromptsGrouped';
-import { getPrompts } from '../../redux/actions';
+import { getPrompts } from '../AIChat/api';
+
+const groupPromptsByCategory = (prompts) => {
+  const grouped = {};
+  (prompts || []).forEach((p) => {
+    const cats = p.categories?.length ? p.categories : ['Allgemein'];
+    cats.forEach((cat) => {
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+  });
+  return grouped;
+};
 
 const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
-  const dispatch = useDispatch();
   const intl = useIntl();
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
   const t = (en, de) => (isDe && de ? de : en);
 
-  const grouped = useSelector(selectPromptsGrouped) || {};
-  const categories = Object.keys(grouped);
+  const token = useSelector(
+    (state) => state?.userSession?.token,
+  );
 
-  const { loading, loaded, itemsLength } = useSelector(({ kyra }) => ({
-    loading: kyra?.loading,
-    loaded: kyra?.loaded,
-    itemsLength: (kyra?.items || []).length,
-  }));
+  const [prompts, setPrompts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
 
   useEffect(() => {
-    if (!loading && !loaded && itemsLength === 0) {
-      dispatch(getPrompts());
-    }
-  }, [loading, loaded, itemsLength, dispatch]);
+    if (loaded || loading) return;
+    setLoading(true);
+    getPrompts(token)
+      .then((res) => {
+        setPrompts(res.prompts || []);
+        setLoaded(true);
+      })
+      .catch(() => {
+        setLoaded(true);
+      })
+      .finally(() => setLoading(false));
+  }, [loaded, loading, token]);
 
-  const [activeCategory, setActiveCategory] = useState(null);
+  const grouped = groupPromptsByCategory(prompts);
+  const categories = Object.keys(grouped);
 
   useEffect(() => {
     if (categories.length === 0) {
       setActiveCategory(null);
       return;
     }
-
-    if (!activeCategory) {
-      setActiveCategory(categories[0]);
-      return;
-    }
-
-    if (!categories.includes(activeCategory)) {
+    if (!activeCategory || !categories.includes(activeCategory)) {
       setActiveCategory(categories[0]);
     }
-  }, [categories, activeCategory]);
+  }, [categories.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading && categories.length === 0) {
     return (
-      <div
-        style={{
-          padding: '8px 12px',
-          fontSize: '0.85rem',
-          color: '#666',
-        }}
-      >
-        {t('Prompts are loading…', 'Prompts werden geladen …')}
+      <div style={{ padding: '8px 12px', fontSize: '0.85rem', color: '#666' }}>
+        {t('Prompts are loading\u2026', 'Prompts werden geladen \u2026')}
       </div>
     );
   }
 
   if (!loading && categories.length === 0) {
     return (
-      <div
-        style={{
-          padding: '8px 12px',
-          fontSize: '0.85rem',
-          color: '#666',
-        }}
-      >
-        {t('No prompts available.', 'Keine Prompts verfügbar.')}
+      <div style={{ padding: '8px 12px', fontSize: '0.85rem', color: '#666' }}>
+        {t('No prompts available.', 'Keine Prompts verf\u00fcgbar.')}
       </div>
     );
   }
 
-  const prompts = activeCategory ? grouped[activeCategory] || [] : [];
+  const currentPrompts = activeCategory ? grouped[activeCategory] || [] : [];
 
   return (
     <div
@@ -125,13 +126,9 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
 
       <div
         className="kyra-ai-menu-prompts"
-        style={{
-          flex: 1,
-          padding: '8px',
-          overflowY: 'auto',
-        }}
+        style={{ flex: 1, padding: '8px', overflowY: 'auto' }}
       >
-        {prompts.map((prompt) => (
+        {currentPrompts.map((prompt) => (
           <button
             key={prompt.id}
             type="button"
@@ -153,17 +150,11 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
           </button>
         ))}
 
-        {prompts.length === 0 && (
-          <div
-          style={{
-            padding: '6px 10px',
-            fontSize: '0.8rem',
-            color: '#777',
-          }}
-        >
-          {t('No prompts in this category.', 'Keine Prompts in dieser Kategorie.')}
-        </div>
-      )}
+        {currentPrompts.length === 0 && (
+          <div style={{ padding: '6px 10px', fontSize: '0.8rem', color: '#777' }}>
+            {t('No prompts in this category.', 'Keine Prompts in dieser Kategorie.')}
+          </div>
+        )}
       </div>
     </div>
   );

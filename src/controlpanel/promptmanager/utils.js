@@ -7,7 +7,7 @@ export const formatSizeMB = (sizeBytes) => {
 };
 
 export const splitCategories = (value) =>
-  value
+  (value || '')
     .split(',')
     .map((category) => category.trim())
     .filter(Boolean);

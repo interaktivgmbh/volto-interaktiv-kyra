@@ -19,7 +19,7 @@ const PromptRow = ({ prompt, onEdit, onDelete, t }) => {
       </Table.Cell>
       <Table.Cell>
         {prompt.actionType === 'append'
-          ? t('Append', 'Anhängen')
+          ? t('Append', 'Anh\u00e4ngen')
           : t('Replace', 'Ersetzen')}
       </Table.Cell>
       <Table.Cell textAlign="right">
@@ -27,7 +27,7 @@ const PromptRow = ({ prompt, onEdit, onDelete, t }) => {
           {t('Edit', 'Bearbeiten')}
         </Button>
         <Button size="small" color="red" onClick={handleDelete}>
-          {t('Delete', 'Löschen')}
+          {t('Delete', 'L\u00f6schen')}
         </Button>
       </Table.Cell>
     </Table.Row>
@@ -38,7 +38,7 @@ const PromptList = ({ prompts, loading, error, onEdit, onDelete, t }) => {
   if (loading) {
     return (
       <Loader active inline="centered">
-        {t('Loading prompts …', 'Prompts werden geladen …')}
+        {t('Loading prompts \u2026', 'Prompts werden geladen \u2026')}
       </Loader>
     );
   }
@@ -49,7 +49,15 @@ const PromptList = ({ prompts, loading, error, onEdit, onDelete, t }) => {
         <Message.Header>
           {t('Error while loading', 'Fehler beim Laden')}
         </Message.Header>
-        <p>{error.message}</p>
+        <p>{typeof error === 'string' ? error : error.message}</p>
+      </Message>
+    );
+  }
+
+  if (!prompts || prompts.length === 0) {
+    return (
+      <Message info>
+        <p>{t('No prompts created yet.', 'Noch keine Prompts erstellt.')}</p>
       </Message>
     );
   }

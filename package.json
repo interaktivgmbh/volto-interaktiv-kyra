@@ -3,7 +3,7 @@
   "version": "1.0.0-alpha.0",
   "description": "Kyra AI for Volto — a modern, editor-first AI add-on for structured prompts, smart settings and seamless Slate workflows.",
   "main": "src/index.ts",
-  "license": "MIT",
+  "license": "GPL-2.0-only",
   "keywords": [
     "volto-addon",
     "volto",

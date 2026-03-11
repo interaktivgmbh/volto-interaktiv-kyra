@@ -1,15 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSlate } from 'slate-react';
 import { Editor, Transforms } from 'slate';
-import { Api } from '@plone/volto/helpers';
+import { useSelector } from 'react-redux';
 import ToolbarButton from '@plone/volto-slate/editor/ui/ToolbarButton';
 import AIAssistantButton from './AIAssistantButton';
-import sendSVG from '../../theme/assets/icons/send.svg';
 import { Icon } from '@plone/volto/components';
-import { aichatSVG, aiSVG } from '../../helpers/icons';
+import { aichatSVG, aiSVG, sendSVG } from '../../helpers/icons';
 import { useIntl } from 'react-intl';
-
-const api = new Api();
 
 const CUSTOM_PROMPT_UUID = '123e4567-e89b-12d3-a456-426614174000';
 
@@ -77,13 +74,14 @@ const AIAssistantSlateButton = () => {
   const isDe = locale.startsWith('de');
   const t = (en, de) => (isDe && de ? de : en);
 
-  const [isPromptDropdownOpen, setPromptDropdownOpen] = useState(false); // Prompt-Dropdown
-  const [isRunning, setIsRunning] = useState(false);
+  const token = useSelector((state) => state?.userSession?.token);
 
+  const [isPromptDropdownOpen, setPromptDropdownOpen] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [chatResult, setChatResult] = useState(null); // { text, actionType }
+  const [chatResult, setChatResult] = useState(null);
 
   const editor = useSlate();
   const wrapperRef = useRef(null);
@@ -111,13 +109,11 @@ const AIAssistantSlateButton = () => {
 
   useEffect(() => {
     if (!isPromptDropdownOpen) return;
-
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setPromptDropdownOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isPromptDropdownOpen]);
@@ -163,9 +159,7 @@ const AIAssistantSlateButton = () => {
     const promptPayload = isCustom
       ? {
           id: CUSTOM_PROMPT_UUID,
-          name:
-            customText?.slice(0, 60) ||
-            t('Custom instruction', 'Eigene Anweisung'),
+          name: customText?.slice(0, 60) || t('Custom instruction', 'Eigene Anweisung'),
           text: customText,
           actionType: 'replace',
           categories: ['Custom'],
@@ -173,10 +167,7 @@ const AIAssistantSlateButton = () => {
       : prompt;
 
     setIsRunning(true);
-    setStatus({
-      type: 'running',
-      promptName: promptPayload.name,
-    });
+    setStatus({ type: 'running', promptName: promptPayload.name });
 
     try {
       const body = {
@@ -196,7 +187,7 @@ const AIAssistantSlateButton = () => {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Authorization: `Bearer ${api.token || ''}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
       });
@@ -204,10 +195,7 @@ const AIAssistantSlateButton = () => {
       if (!response.ok) {
         const text = await response.text();
         console.error('AI assistant run failed:', text);
-        setStatus({
-          type: 'error',
-          promptName: promptPayload.name,
-        });
+        setStatus({ type: 'error', promptName: promptPayload.name });
         return;
       }
 
@@ -231,28 +219,18 @@ const AIAssistantSlateButton = () => {
 
       const resultText = looksLikeHtml ? stripHtml(rawResult) : rawResult;
 
-      const actionType =
-        data.actionType || promptPayload.actionType || 'replace';
+      const actionType = data.actionType || promptPayload.actionType || 'replace';
 
       if (preview) {
-        setChatResult({
-          text: resultText,
-          actionType,
-        });
+        setChatResult({ text: resultText, actionType });
       } else {
         applyResultToEditor(resultText, actionType);
       }
 
-      setStatus({
-        type: 'success',
-        promptName: promptPayload.name,
-      });
+      setStatus({ type: 'success', promptName: promptPayload.name });
     } catch (e) {
       console.error('AI assistant run failed', e);
-      setStatus({
-        type: 'error',
-        promptName: prompt?.name || null,
-      });
+      setStatus({ type: 'error', promptName: prompt?.name || null });
     } finally {
       setIsRunning(false);
     }
@@ -294,17 +272,17 @@ const AIAssistantSlateButton = () => {
     let bg = '#e3f2fd';
     let border = '#90caf9';
     let color = '#0d47a1';
-    let icon = '⏳';
+    let icon = '\u23f3';
     let text = t(
-      'AI instruction is being processed… This may take a moment.',
-      'KI-Anweisung wird verarbeitet… Dies kann einen Moment dauern.',
+      'AI instruction is being processed\u2026 This may take a moment.',
+      'KI-Anweisung wird verarbeitet\u2026 Dies kann einen Moment dauern.',
     );
 
     if (status.type === 'success') {
       bg = '#e8f5e9';
       border = '#a5d6a7';
       color = '#1b5e20';
-      icon = '✔';
+      icon = '\u2714';
       text = status.promptName
         ? t(
             '"{name}" applied successfully.',
@@ -318,7 +296,7 @@ const AIAssistantSlateButton = () => {
       bg = '#ffebee';
       border = '#ef9a9a';
       color = '#b71c1c';
-      icon = '⚠';
+      icon = '\u26a0';
       text = t(
         'Error while processing the AI instruction.',
         'Fehler bei der Verarbeitung der KI-Anweisung.',
@@ -362,7 +340,7 @@ const AIAssistantSlateButton = () => {
             lineHeight: 1,
           }}
         >
-          ×
+          {'\u00d7'}
         </button>
       </div>
     );
@@ -407,12 +385,7 @@ const AIAssistantSlateButton = () => {
               marginBottom: 10,
             }}
           >
-            <div
-              style={{
-                fontSize: '1rem',
-                fontWeight: 600,
-              }}
-            >
+            <div style={{ fontSize: '1rem', fontWeight: 600 }}>
               {t('AI Assistant', 'AI Assistant')}
             </div>
             <button
@@ -427,7 +400,7 @@ const AIAssistantSlateButton = () => {
                 lineHeight: 1,
               }}
             >
-              ×
+              {'\u00d7'}
             </button>
           </div>
 
@@ -444,30 +417,15 @@ const AIAssistantSlateButton = () => {
                   overflowY: 'auto',
                   fontSize: '1rem',
                   lineHeight: 1.5,
-                  background:
-                    'radial-gradient(circle at top left, #f8fafc 0, #ffffff 40%)',
+                  background: 'radial-gradient(circle at top left, #f8fafc 0, #ffffff 40%)',
                 }}
               >
                 {chatResult.text}
               </div>
 
-              <div
-                style={{
-                  marginBottom: 10,
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    color: '#94a3b8',
-                  }}
-                >
-                  {t(
-                    'AI responses can be inaccurate',
-                    'KI-Antworten können ungenau sein',
-                  )}
+              <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  {t('AI responses can be inaccurate', 'KI-Antworten k\u00f6nnen ungenau sein')}
                 </span>
               </div>
             </>
@@ -485,8 +443,8 @@ const AIAssistantSlateButton = () => {
             <input
               type="text"
               placeholder={t(
-                'Instruct the AI to edit or generate something…',
-                'KI anweisen, etwas zu bearbeiten oder zu generieren…',
+                'Instruct the AI to edit or generate something\u2026',
+                'KI anweisen, etwas zu bearbeiten oder zu generieren\u2026',
               )}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
@@ -516,21 +474,15 @@ const AIAssistantSlateButton = () => {
                 minWidth: 56,
                 border: '1px solid #1f7ae0',
                 borderRadius: 999,
-                background:
-                  isRunning || !chatInput.trim() ? '#9cbcf4' : '#0094d4',
-                cursor:
-                  isRunning || !chatInput.trim() ? 'default' : 'pointer',
+                background: isRunning || !chatInput.trim() ? '#9cbcf4' : '#0094d4',
+                cursor: isRunning || !chatInput.trim() ? 'default' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '8px 14px',
               }}
             >
-              <Icon
-                name={sendSVG}
-                size="20px"
-                className="kyra-ai-send-icon"
-              />
+              <Icon name={sendSVG} size="20px" className="kyra-ai-send-icon" />
             </button>
           </div>
 
@@ -558,7 +510,7 @@ const AIAssistantSlateButton = () => {
                   cursor: 'pointer',
                 }}
               >
-                {t('Insert', 'Einfügen')}
+                {t('Insert', 'Einf\u00fcgen')}
               </button>
               <button
                 type="button"
@@ -587,7 +539,7 @@ const AIAssistantSlateButton = () => {
                   color: '#64748b',
                 }}
               >
-                {t('Close', 'Schließen')}
+                {t('Close', 'Schlie\u00dfen')}
               </button>
             </div>
           )}
@@ -599,26 +551,17 @@ const AIAssistantSlateButton = () => {
   return (
     <div
       ref={wrapperRef}
-      className={`ai-slate-wrapper${
-        isRunning ? ' ai-slate-wrapper--running' : ''
-      }`}
+      className={`ai-slate-wrapper${isRunning ? ' ai-slate-wrapper--running' : ''}`}
       style={{ position: 'relative', display: 'inline-block' }}
     >
       <ToolbarButton
         title={
           isRunning
-            ? t(
-                'AI Assistant – generating answer …',
-                'AI Assistant – Antwort wird generiert …',
-              )
+            ? t('AI Assistant \u2013 generating answer \u2026', 'AI Assistant \u2013 Antwort wird generiert \u2026')
             : t('AI Assistant', 'AI Assistant')
         }
         icon={aiSVG}
-        className={
-          isRunning
-            ? 'ai-toolbar-button ai-toolbar-button--running'
-            : 'ai-toolbar-button'
-        }
+        className={isRunning ? 'ai-toolbar-button ai-toolbar-button--running' : 'ai-toolbar-button'}
         onMouseDown={(e) => {
           e.preventDefault();
           if (isRunning) return;
@@ -628,7 +571,7 @@ const AIAssistantSlateButton = () => {
       />
 
       <ToolbarButton
-        title={t('AI Assistant – free text', 'AI Assistant – Freitext')}
+        title={t('AI Assistant \u2013 free text', 'AI Assistant \u2013 Freitext')}
         icon={aichatSVG}
         onMouseDown={(e) => {
           e.preventDefault();

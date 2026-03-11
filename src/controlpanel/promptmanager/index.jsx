@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useReducer } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Header, Container, Button, Icon, Progress, Message } from 'semantic-ui-react';
-import { Api } from '@plone/volto/helpers';
 import { useIntl } from 'react-intl';
 
 import {
@@ -9,18 +8,21 @@ import {
   createPrompt,
   updatePrompt,
   deletePrompt,
+  getPromptFiles,
+  getPromptFile,
   uploadPromptFiles,
   deletePromptFile,
-} from '../../redux/actions';
+} from '../../components/AIChat/api';
 
 import CreatePromptModal from './CreatePromptModal';
 import EditPromptModal from './EditPromptModal';
 import PromptList from './PromptList';
 import { splitCategories } from './utils';
 
-const api = new Api();
-
 const initialState = {
+  prompts: [],
+  loading: false,
+  error: null,
   uploadProgress: 0,
   uploading: false,
   submitting: false,
@@ -54,6 +56,12 @@ const initialState = {
 
 const reducer = (state, action) => {
   switch (action.type) {
+    case 'SET_PROMPTS':
+      return { ...state, prompts: action.prompts, loading: false, error: null };
+    case 'SET_LOADING':
+      return { ...state, loading: true };
+    case 'SET_ERROR':
+      return { ...state, error: action.error, loading: false };
     case 'SET_MODAL':
       return { ...state, [action.modal]: action.value };
     case 'SET_CREATE_FIELD':
@@ -141,18 +149,18 @@ const clearFileItems = (items) => {
 };
 
 const PromptManager = () => {
-  const reduxDispatch = useDispatch();
   const intl = useIntl();
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
   const t = (en, de) => (isDe && de ? de : en);
 
-  const prompts = useSelector((state) => state.kyra?.items || []);
-  const loading = useSelector((state) => state.kyra?.loading);
-  const error = useSelector((state) => state.kyra?.error);
+  const token = useSelector((state) => state?.userSession?.token);
 
   const [
     {
+      prompts,
+      loading,
+      error,
       uploadProgress,
       uploading,
       submitting,
@@ -167,83 +175,90 @@ const PromptManager = () => {
       formErrors,
       status,
     },
-    localDispatch,
+    dispatch,
   ] = useReducer(reducer, initialState);
 
-  useEffect(() => {
-    reduxDispatch(getPrompts());
-  }, [reduxDispatch]);
+  const fetchPrompts = useCallback(async () => {
+    dispatch({ type: 'SET_LOADING' });
+    try {
+      const res = await getPrompts(token);
+      dispatch({ type: 'SET_PROMPTS', prompts: res.prompts || [] });
+    } catch (err) {
+      dispatch({ type: 'SET_ERROR', error: err.message || 'Failed to load' });
+    }
+  }, [token]);
 
+  useEffect(() => {
+    fetchPrompts();
+  }, [fetchPrompts]);
+
+  // --- Upload progress helpers ---
   const startUploadProgress = useCallback(() => {
-    localDispatch({ type: 'UPLOAD_START' });
+    dispatch({ type: 'UPLOAD_START' });
     const interval = setInterval(() => {
-      localDispatch({ type: 'UPLOAD_INCREMENT' });
+      dispatch({ type: 'UPLOAD_INCREMENT' });
     }, 300);
     return interval;
   }, []);
 
   const finishUploadProgress = useCallback((interval) => {
-    if (interval) {
-      clearInterval(interval);
-    }
-    localDispatch({ type: 'UPLOAD_COMPLETE' });
-    setTimeout(() => localDispatch({ type: 'UPLOAD_RESET' }), 500);
+    if (interval) clearInterval(interval);
+    dispatch({ type: 'UPLOAD_COMPLETE' });
+    setTimeout(() => dispatch({ type: 'UPLOAD_RESET' }), 500);
   }, []);
 
+  // --- File item helpers ---
   const resetCreateForm = useCallback(() => {
     clearFileItems(uploadedFiles);
-    localDispatch({ type: 'RESET_CREATE_FORM' });
+    dispatch({ type: 'RESET_CREATE_FORM' });
   }, [uploadedFiles]);
 
   const resetEditFiles = useCallback(() => {
     clearFileItems(editNewFiles);
-    localDispatch({ type: 'SET_EDIT_NEW_FILES', files: [] });
+    dispatch({ type: 'SET_EDIT_NEW_FILES', files: [] });
   }, [editNewFiles]);
 
+  // --- Modal handlers ---
   const handleCloseCreateModal = useCallback(() => {
     resetCreateForm();
-    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
-    localDispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: false });
+    dispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
+    dispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: false });
   }, [resetCreateForm]);
 
   const handleCloseEditModal = useCallback(() => {
     resetEditFiles();
-    localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
-    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors: {} });
-    localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
+    dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+    dispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors: {} });
+    dispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
   }, [resetEditFiles]);
 
   const handleCreateFieldChange = useCallback((field, value) => {
-    localDispatch({ type: 'SET_CREATE_FIELD', field, value });
+    dispatch({ type: 'SET_CREATE_FIELD', field, value });
   }, []);
 
   const handleEditFieldChange = useCallback((field, value) => {
-    localDispatch({ type: 'SET_EDIT_FIELD', field, value });
+    dispatch({ type: 'SET_EDIT_FIELD', field, value });
   }, []);
 
-  const handleAddCreateFiles = useCallback(
-    (files) => {
-      const items = makeFileItems(files);
-      if (items.length) {
-        localDispatch({ type: 'APPEND_UPLOADED_FILES', files: items });
-      }
-    },
-    [],
-  );
+  // --- File selection handlers ---
+  const handleAddCreateFiles = useCallback((files) => {
+    const items = makeFileItems(files);
+    if (items.length) {
+      dispatch({ type: 'APPEND_UPLOADED_FILES', files: items });
+    }
+  }, []);
 
-  const handleAddEditFiles = useCallback(
-    (files) => {
-      const items = makeFileItems(files);
-      if (items.length) {
-        localDispatch({ type: 'APPEND_EDIT_NEW_FILES', files: items });
-      }
-    },
-    [],
-  );
+  const handleAddEditFiles = useCallback((files) => {
+    const items = makeFileItems(files);
+    if (items.length) {
+      dispatch({ type: 'APPEND_EDIT_NEW_FILES', files: items });
+    }
+  }, []);
 
+  // --- Load prompt files (for edit modal) ---
   const loadPromptFiles = useCallback(async (promptId) => {
     try {
-      const result = await api.get(`/@ai-prompt-files/${promptId}`);
+      const result = await getPromptFiles(promptId, token);
       const baseFiles =
         result?.files || result?.items || (Array.isArray(result) ? result : []);
 
@@ -251,9 +266,9 @@ const PromptManager = () => {
       for (const file of baseFiles) {
         let full = null;
         try {
-          full = await api.get(`/@ai-prompt-files/${promptId}/${file.id}`);
+          full = await getPromptFile(promptId, file.id, token);
         } catch (e) {
-          // ignore missing full file; fall back to base meta
+          // ignore; fall back to base meta
         }
 
         const contentType =
@@ -285,30 +300,27 @@ const PromptManager = () => {
         filesWithMeta.push(enriched);
       }
 
-      localDispatch({
-        type: 'SET_EDIT_ATTACHED_FILES',
-        files: filesWithMeta,
-      });
+      dispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: filesWithMeta });
     } catch (e) {
-      localDispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
+      dispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
     }
-  }, []);
+  }, [token]);
 
+  // --- Load single file for preview ---
   const loadPreviewFile = useCallback(async (promptId, fileId) => {
     try {
-      const file = await api.get(`/@ai-prompt-files/${promptId}/${fileId}`);
-      localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file });
+      const file = await getPromptFile(promptId, fileId, token);
+      dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file });
     } catch (e) {
-      localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+      dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
     }
-  }, []);
+  }, [token]);
 
+  // --- Download file ---
   const handleDownload = useCallback(async (promptId, fileId, fallbackFilename) => {
     try {
-      const file = await api.get(`/@ai-prompt-files/${promptId}/${fileId}`);
-      if (!file || !file.data) {
-        return;
-      }
+      const file = await getPromptFile(promptId, fileId, token);
+      if (!file || !file.data) return;
 
       const base64Data = file.data;
       const contentType = file.content_type || 'application/octet-stream';
@@ -331,13 +343,9 @@ const PromptManager = () => {
     } catch (error) {
       // ignore download errors
     }
-  }, []);
+  }, [token]);
 
-  const handleOpenCreateModal = useCallback(() => {
-    localDispatch({ type: 'CLEAR_STATUS' });
-    localDispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: true });
-  }, []);
-
+  // --- Validation ---
   const validateForm = useCallback(
     (form) => {
       const errors = {};
@@ -349,9 +357,10 @@ const PromptManager = () => {
       }
       return errors;
     },
-    [t],
+    [isDe], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  // --- Submit prompt (create or update) with optional file upload ---
   const submitPrompt = useCallback(
     async ({ mode, form, files = [] }) => {
       const payload = {
@@ -362,23 +371,27 @@ const PromptManager = () => {
       let progressInterval = null;
 
       try {
-        const response =
-          mode === 'create'
-            ? await reduxDispatch(createPrompt(payload))
-            : await reduxDispatch(updatePrompt(form.id, payload));
+        let res;
+        if (mode === 'create') {
+          res = await createPrompt(payload, token);
+        } else {
+          res = await updatePrompt(payload, token);
+        }
 
-        const created = response?.result || response || {};
+        const created = res?.prompt || res || {};
         const promptId =
           mode === 'create' ? created.id || created.uid : form.id;
 
         if (files.length > 0 && promptId) {
           progressInterval = startUploadProgress();
-          await reduxDispatch(
-            uploadPromptFiles(promptId, files.map((item) => item.file)),
+          await uploadPromptFiles(
+            promptId,
+            files.map((item) => item.file),
+            token,
           );
         }
 
-        reduxDispatch(getPrompts());
+        await fetchPrompts();
         return promptId;
       } catch (e) {
         return null;
@@ -388,25 +401,34 @@ const PromptManager = () => {
         }
       }
     },
-    [finishUploadProgress, reduxDispatch, startUploadProgress],
+    [fetchPrompts, finishUploadProgress, startUploadProgress, token],
   );
+
+  // --- Create prompt ---
+  const handleOpenCreateModal = useCallback(() => {
+    dispatch({ type: 'CLEAR_STATUS' });
+    dispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: true });
+  }, []);
 
   const handleCreatePrompt = useCallback(async () => {
     const errors = validateForm(createForm);
-    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors });
+    dispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors });
     if (Object.keys(errors).length) {
-      localDispatch({
+      dispatch({
         type: 'SET_STATUS',
         status: {
           type: 'error',
-          message: t('Please fill out the required fields.', 'Bitte die Pflichtfelder ausfüllen.'),
+          message: t(
+            'Please fill out the required fields.',
+            'Bitte die Pflichtfelder ausfüllen.',
+          ),
         },
       });
       return;
     }
 
-    localDispatch({ type: 'SET_STATUS', status: null });
-    localDispatch({ type: 'SET_SUBMITTING', value: true });
+    dispatch({ type: 'SET_STATUS', status: null });
+    dispatch({ type: 'SET_SUBMITTING', value: true });
 
     const promptId = await submitPrompt({
       mode: 'create',
@@ -414,44 +436,40 @@ const PromptManager = () => {
       files: uploadedFiles,
     });
 
-    localDispatch({ type: 'SET_SUBMITTING', value: false });
+    dispatch({ type: 'SET_SUBMITTING', value: false });
 
     if (promptId) {
       resetCreateForm();
-      localDispatch({
+      dispatch({
         type: 'SET_STATUS',
         status: {
           type: 'success',
-          message: t('Prompt created successfully.', 'Prompt wurde erfolgreich erstellt.'),
+          message: t(
+            'Prompt created successfully.',
+            'Prompt wurde erfolgreich erstellt.',
+          ),
         },
       });
-      localDispatch({
-        type: 'SET_MODAL',
-        modal: 'showCreateModal',
-        value: false,
-      });
-      localDispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
+      dispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: false });
+      dispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
     } else {
-      localDispatch({
+      dispatch({
         type: 'SET_STATUS',
         status: {
           type: 'error',
-          message: t('Creating the prompt failed.', 'Prompt konnte nicht erstellt werden.'),
+          message: t(
+            'Creating the prompt failed.',
+            'Prompt konnte nicht erstellt werden.',
+          ),
         },
       });
     }
-  }, [
-    createForm,
-    resetCreateForm,
-    submitPrompt,
-    uploadedFiles,
-    t,
-    validateForm,
-  ]);
+  }, [createForm, resetCreateForm, submitPrompt, uploadedFiles, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // --- Edit prompt ---
   const handleOpenEditModal = useCallback(
     (prompt) => {
-      localDispatch({
+      dispatch({
         type: 'SET_EDIT_FORM',
         form: {
           id: prompt.id,
@@ -465,10 +483,10 @@ const PromptManager = () => {
         },
       });
 
-      localDispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
-      localDispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+      dispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
+      dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
       resetEditFiles();
-      localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: true });
+      dispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: true });
       loadPromptFiles(prompt.id);
     },
     [loadPromptFiles, resetEditFiles],
@@ -476,20 +494,23 @@ const PromptManager = () => {
 
   const handleUpdatePrompt = useCallback(async () => {
     const errors = validateForm(editForm);
-    localDispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors });
+    dispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors });
     if (Object.keys(errors).length) {
-      localDispatch({
+      dispatch({
         type: 'SET_STATUS',
         status: {
           type: 'error',
-          message: t('Please fill out the required fields.', 'Bitte die Pflichtfelder ausfüllen.'),
+          message: t(
+            'Please fill out the required fields.',
+            'Bitte die Pflichtfelder ausfüllen.',
+          ),
         },
       });
       return;
     }
 
-    localDispatch({ type: 'SET_STATUS', status: null });
-    localDispatch({ type: 'SET_SUBMITTING', value: true });
+    dispatch({ type: 'SET_STATUS', status: null });
+    dispatch({ type: 'SET_SUBMITTING', value: true });
 
     const promptId = await submitPrompt({
       mode: 'update',
@@ -497,65 +518,66 @@ const PromptManager = () => {
       files: editNewFiles,
     });
 
-    localDispatch({ type: 'SET_SUBMITTING', value: false });
+    dispatch({ type: 'SET_SUBMITTING', value: false });
 
     if (promptId) {
       resetEditFiles();
-      localDispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
-      localDispatch({
+      dispatch({ type: 'SET_MODAL', modal: 'showEditModal', value: false });
+      dispatch({
         type: 'SET_STATUS',
         status: {
           type: 'success',
-          message: t('Changes saved successfully.', 'Änderungen wurden gespeichert.'),
+          message: t(
+            'Changes saved successfully.',
+            'Änderungen wurden gespeichert.',
+          ),
         },
       });
-      localDispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors: {} });
+      dispatch({ type: 'SET_FORM_ERRORS', scope: 'edit', errors: {} });
     } else {
-      localDispatch({
+      dispatch({
         type: 'SET_STATUS',
         status: {
           type: 'error',
-          message: t('Saving changes failed.', 'Speichern der Änderungen fehlgeschlagen.'),
+          message: t(
+            'Saving changes failed.',
+            'Speichern der Änderungen fehlgeschlagen.',
+          ),
         },
       });
     }
-  }, [
-    editForm,
-    editNewFiles,
-    resetEditFiles,
-    submitPrompt,
-    t,
-    validateForm,
-  ]);
+  }, [editForm, editNewFiles, resetEditFiles, submitPrompt, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // --- Delete prompt ---
   const handleDeletePrompt = useCallback(
     async (id) => {
       try {
-        await reduxDispatch(deletePrompt(id));
-        reduxDispatch(getPrompts());
-      } catch (e) {
+        await deletePrompt({ id }, token);
+        await fetchPrompts();
+      } catch (_err) {
         // ignore delete errors
       }
     },
-    [reduxDispatch],
+    [fetchPrompts, token],
   );
 
+  // --- File actions for edit modal ---
   const handleDeleteAttachedFile = useCallback(
     async (fileId) => {
-      localDispatch({
+      dispatch({
         type: 'SET_EDIT_ATTACHED_FILES',
         files: editAttachedFiles.filter((file) => file.id !== fileId),
       });
 
       try {
-        await reduxDispatch(deletePromptFile(editForm.id, fileId));
+        await deletePromptFile(editForm.id, fileId, token);
         await loadPromptFiles(editForm.id);
-        reduxDispatch(getPrompts());
+        await fetchPrompts();
       } catch (e) {
         // ignore delete errors
       }
     },
-    [editAttachedFiles, editForm.id, loadPromptFiles, reduxDispatch],
+    [editAttachedFiles, editForm.id, fetchPrompts, loadPromptFiles, token],
   );
 
   const handlePreviewAttachedFile = useCallback(
@@ -585,7 +607,7 @@ const PromptManager = () => {
         <Message
           positive={status.type === 'success'}
           negative={status.type === 'error'}
-          onDismiss={() => localDispatch({ type: 'CLEAR_STATUS' })}
+          onDismiss={() => dispatch({ type: 'CLEAR_STATUS' })}
         >
           <Message.Header>
             {status.type === 'success'
