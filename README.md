@@ -20,19 +20,8 @@ DeepL translation · AI chat · Prompt management · Widget customization
 
 ---
 
-## Features
-
-| Feature | Description |
-|:--------|:------------|
-| **DeepL Translation** | Translate pages or subtrees with glossary support |
-| **Translation Sync** | Detect and update outdated translations |
-| **AI Chat** | Streaming chat with citations and page context |
-| **Text Selection** | Select text on page as targeted AI context |
-| **Prompt Manager** | Curated prompt library with compare view |
-| **Chat History** | Pin, archive, rename conversations |
-| **Glossary** | DeepL glossary for consistent terminology |
-| **Tag Mappings** | Keyword translation mappings |
-| **Customization** | Custom icon, accent color and chat name |
+> **v1.0 — Translation Focus Release**
+> This is the initial release of the Volto AI Assistant, focused primarily on **DeepL-powered translation**, translation sync, glossary management and tag mappings. The AI chat and prompt features are included as a foundation but will be significantly expanded in future versions.
 
 ---
 
@@ -44,12 +33,42 @@ DeepL translation · AI chat · Prompt management · Widget customization
 
 ---
 
+## Roadmap
+
+Planned for upcoming releases:
+
+| Feature | Description |
+|:--------|:------------|
+| **AI Edit Mode** | Directly edit page content through AI instructions — modify headings, text blocks and metadata via chat commands |
+| **Layout Agent** | AI-driven page layout generation and restructuring — create and rearrange Volto blocks via natural language |
+| **Multi-Language Translation** | Support for additional language pairs beyond DE ↔ EN |
+| **RAG Context** | Retrieval-augmented generation with site-wide content indexing for more accurate AI responses |
+
+---
+
+## Features
+
+| Feature | Description |
+|:--------|:------------|
+| **DeepL Translation** | Translate pages or subtrees with glossary support |
+| **Translation Sync** | Detect and update outdated translations |
+| **AI Chat** | Streaming chat with citations and page context |
+| **Text Selection** | Select text on page as targeted AI context |
+| **Prompt Manager** | Curated prompt library with compare view — available in chat panel and as Slate editor toolbar buttons |
+| **Slate Editor Integration** | Prompt Manager and free-text prompts directly in the Slate rich-text editor toolbar for inline AI execution |
+| **Chat History** | Pin, archive, rename conversations |
+| **Glossary** | DeepL glossary for consistent terminology |
+| **Tag Mappings** | Keyword translation mappings |
+| **Customization** | Custom icon, accent color and chat name |
+
+---
+
 ## Translation
 
 Full DeepL integration in the editor workflow.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#2563eb', 'signalColor': '#2563eb', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#1d4ed8', 'actorTextColor': '#fff', 'actorBorder': '#1e40af', 'actorLineColor': '#64748b', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
 sequenceDiagram
     participant Editor
     participant Kyra
@@ -90,7 +109,7 @@ Header menu, then **Tag Mappings**: Define per-language keyword translations. Ta
 Automatic detection and resolution of outdated translations.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'tertiaryColor': '#f0fdf4'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
 flowchart LR
     A["Page modified"] --> B{"Translations\nexist?"}
     B -->|Yes| C["Compare\ntimestamps"]
@@ -122,7 +141,7 @@ flowchart LR
 Context-aware streaming chat with citations.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#2563eb', 'signalColor': '#2563eb', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#1d4ed8', 'actorTextColor': '#fff', 'actorBorder': '#1e40af', 'actorLineColor': '#64748b', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
 sequenceDiagram
     participant Editor
     participant Kyra
@@ -184,11 +203,12 @@ flowchart TD
     style I fill:#f1f5f9,stroke:#94a3b8,color:#111
 ```
 
-**Three ways to use prompts:**
+**Four ways to use prompts:**
 
 1. **Prompt Picker** — browse saved prompts by category in the chat panel
-2. **Prompt Manager** — full CRUD at Site Setup, AI Prompt Manager
-3. **Free-Text** — type any custom prompt directly
+2. **Slate Toolbar** — access Prompt Manager and free-text prompts directly from the Slate editor toolbar while editing content
+3. **Prompt Manager** — full CRUD at Site Setup, AI Prompt Manager
+4. **Free-Text** — type any custom prompt directly
 
 **Compare View**: After processing, editors see Original vs. Result side-by-side with actions: Apply, Retry, Edit, Cancel.
 
@@ -221,7 +241,7 @@ Personalize via the settings drawer:
 ## Architecture
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#94a3b8'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
 flowchart TD
     subgraph Frontend["Volto Frontend"]
         L["Launcher Button"] --> P["Chat Panel"]
@@ -261,11 +281,15 @@ flowchart TD
     C1 --> KC
     C2 --> DL
 
-    style L fill:#1d4ed8,stroke:#1e40af,color:#fff
+    style L fill:#dbeafe,stroke:#2563eb,color:#111
     style P fill:#dbeafe,stroke:#2563eb,color:#111
-    style GW fill:#e0e7ff,stroke:#4f46e5,color:#111
-    style DL fill:#e0e7ff,stroke:#4f46e5,color:#111
-    style KC fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style Chat fill:#dbeafe,stroke:#2563eb,color:#111
+    style Comp fill:#dbeafe,stroke:#2563eb,color:#111
+    style Set fill:#dbeafe,stroke:#2563eb,color:#111
+    style Hist fill:#dbeafe,stroke:#2563eb,color:#111
+    style Gloss fill:#dbeafe,stroke:#2563eb,color:#111
+    style Tags fill:#dbeafe,stroke:#2563eb,color:#111
+    style Prom fill:#dbeafe,stroke:#2563eb,color:#111
     style C1 fill:#fff,stroke:#2563eb,color:#111
     style C2 fill:#fff,stroke:#2563eb,color:#111
     style C3 fill:#fff,stroke:#2563eb,color:#111
@@ -273,12 +297,15 @@ flowchart TD
     style C5 fill:#fff,stroke:#2563eb,color:#111
     style C6 fill:#fff,stroke:#2563eb,color:#111
     style C7 fill:#fff,stroke:#2563eb,color:#111
+    style GW fill:#dcfce7,stroke:#16a34a,color:#111
+    style DL fill:#dcfce7,stroke:#16a34a,color:#111
+    style KC fill:#dcfce7,stroke:#16a34a,color:#111
 ```
 
 ### Permissions
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#94a3b8'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
 flowchart LR
     subgraph Roles
         ANON["Anonymous"]
@@ -306,17 +333,17 @@ flowchart LR
     ADMIN --> F7
     ADMIN --> F8
 
-    style ANON fill:#f1f5f9,stroke:#64748b,color:#111
+    style ANON fill:#f1f5f9,stroke:#94a3b8,color:#111
     style EDITOR fill:#dbeafe,stroke:#2563eb,color:#111
-    style ADMIN fill:#1d4ed8,stroke:#1e40af,color:#fff
+    style ADMIN fill:#dbeafe,stroke:#2563eb,color:#111
     style F1 fill:#fff,stroke:#94a3b8,color:#111
-    style F2 fill:#fff,stroke:#2563eb,color:#111
-    style F3 fill:#fff,stroke:#2563eb,color:#111
-    style F4 fill:#fff,stroke:#2563eb,color:#111
-    style F5 fill:#fff,stroke:#1d4ed8,color:#111
-    style F6 fill:#fff,stroke:#1d4ed8,color:#111
-    style F7 fill:#fff,stroke:#1d4ed8,color:#111
-    style F8 fill:#fff,stroke:#1d4ed8,color:#111
+    style F2 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F3 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F4 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F5 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F6 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F7 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F8 fill:#dcfce7,stroke:#16a34a,color:#111
 ```
 
 ---
@@ -342,7 +369,7 @@ flowchart LR
 ### Prerequisites
 
 - **Plone 6** with [interaktiv.kyra](https://github.com/interaktivgmbh/interaktiv.kyra) backend addon
-- **Volto 18+** with `@kitconcept/volto-light-theme`
+- **Volto 18+**
 
 ### Setup
 
