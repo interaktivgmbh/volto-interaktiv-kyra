@@ -40,7 +40,6 @@ export type ChatCapabilities = {
   can_edit: boolean;
   features: string[];
   edit_backend_url?: string;
-  edit_backend_api_key?: string;
 };
 
 export type AiAction = {

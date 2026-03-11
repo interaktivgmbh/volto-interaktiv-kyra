@@ -1069,14 +1069,8 @@ export const prepareBlocksForEditMode = async (
 };
 
 // ---------------------------------------------------------------------------
-// Layout Agent API (conversation-based async edit backend)
+// Layout Agent API — proxied through Plone backend (/@ai-edit-*)
 // ---------------------------------------------------------------------------
-
-const buildLayoutHeaders = (token?: string): Record<string, string> => {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
-};
 
 export type LayoutJobStatus =
   | { status: 'running'; progress?: string }
@@ -1085,13 +1079,14 @@ export type LayoutJobStatus =
   | { status: 'cancelled' };
 
 export const createLayoutConversation = async (
-  baseUrl: string,
+  _baseUrl: string,
   payload: { schema: string; version: string; state: Record<string, any> },
   token?: string,
 ): Promise<{ conversation_id: string }> => {
-  const response = await fetch(`${baseUrl}/conversations`, {
+  const response = await fetch(buildApiUrl('/@ai-edit-conversations'), {
     method: 'POST',
-    headers: buildLayoutHeaders(token),
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
     body: JSON.stringify(payload),
   });
 
@@ -1104,19 +1099,17 @@ export const createLayoutConversation = async (
 };
 
 export const sendLayoutMessage = async (
-  baseUrl: string,
+  _baseUrl: string,
   conversationId: string,
   payload: { message: string; permissions?: string[]; state?: Record<string, any> },
   token?: string,
 ): Promise<{ job_id: string }> => {
-  const response = await fetch(
-    `${baseUrl}/conversations/${conversationId}/messages`,
-    {
-      method: 'POST',
-      headers: buildLayoutHeaders(token),
-      body: JSON.stringify(payload),
-    },
-  );
+  const response = await fetch(buildApiUrl('/@ai-edit-messages'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify({ ...payload, conversation_id: conversationId }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -1127,14 +1120,21 @@ export const sendLayoutMessage = async (
 };
 
 export const pollLayoutJob = async (
-  baseUrl: string,
+  _baseUrl: string,
   jobId: string,
   token?: string,
 ): Promise<LayoutJobStatus> => {
-  const response = await fetch(`${baseUrl}/jobs/${jobId}`, {
-    method: 'GET',
-    headers: buildLayoutHeaders(token),
-  });
+  const response = await fetch(
+    buildApiUrl(`/@ai-edit-jobs?job_id=${encodeURIComponent(jobId)}`),
+    {
+      method: 'GET',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    },
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -1145,13 +1145,15 @@ export const pollLayoutJob = async (
 };
 
 export const cancelLayoutJob = async (
-  baseUrl: string,
+  _baseUrl: string,
   jobId: string,
   token?: string,
 ): Promise<{ status: string }> => {
-  const response = await fetch(`${baseUrl}/jobs/${jobId}/cancel`, {
+  const response = await fetch(buildApiUrl('/@ai-edit-job-cancel'), {
     method: 'POST',
-    headers: buildLayoutHeaders(token),
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify({ job_id: jobId }),
   });
 
   if (!response.ok) {

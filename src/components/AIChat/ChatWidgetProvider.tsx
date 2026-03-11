@@ -177,7 +177,6 @@ const ChatWidgetProvider: React.FC = () => {
   const [editModeActive, setEditModeActive] = useState(false);
   const editModeActiveRef = useRef(false);
   const [editBackendUrl, setEditBackendUrl] = useState('');
-  const [editBackendApiKey, setEditBackendApiKey] = useState('');
   const contextModeRef = useRef<'page' | 'site' | 'selection'>('page');
   const selectionTextRef = useRef('');
   const manualSiteModeRef = useRef(false);
@@ -303,9 +302,6 @@ const ChatWidgetProvider: React.FC = () => {
           }));
           if (response.edit_backend_url) {
             setEditBackendUrl(response.edit_backend_url);
-          }
-          if (response.edit_backend_api_key !== undefined) {
-            setEditBackendApiKey(response.edit_backend_api_key);
           }
         }
       } catch (_error) {
@@ -622,7 +618,7 @@ const ChatWidgetProvider: React.FC = () => {
           const convResponse = await createLayoutConversation(
             editBackendUrl,
             { schema: 'volto', version: 'vanilla', state: pageState },
-            editBackendApiKey || undefined,
+            token,
           );
           layoutConversationIdRef.current = convResponse.conversation_id;
         }
@@ -638,7 +634,7 @@ const ChatWidgetProvider: React.FC = () => {
             editBackendUrl,
             layoutConversationIdRef.current,
             { message: contentText },
-            editBackendApiKey || undefined,
+            token,
           );
           jobId = msgResponse.job_id;
         } catch (sendErr: any) {
@@ -668,7 +664,7 @@ const ChatWidgetProvider: React.FC = () => {
           while (!aborted.current) {
             await new Promise<void>((resolve) => setTimeout(resolve, 1500));
             if (aborted.current) break;
-            const status = await pollLayoutJob(editBackendUrl, jobId, editBackendApiKey || undefined);
+            const status = await pollLayoutJob(editBackendUrl, jobId, token);
             if (status.status === 'running') {
               if (status.progress) {
                 applyAssistantUpdate(editAssistantId, (m) => ({
@@ -680,7 +676,7 @@ const ChatWidgetProvider: React.FC = () => {
             }
             return status;
           }
-          await cancelLayoutJob(editBackendUrl, jobId, editBackendApiKey || undefined).catch(() => {});
+          await cancelLayoutJob(editBackendUrl, jobId, token).catch(() => {});
           return { status: 'cancelled' };
         };
 
@@ -706,14 +702,22 @@ const ChatWidgetProvider: React.FC = () => {
         }
 
         // completed — apply state if layout changed
-        if (result.state?.blocks) {
+        console.log('[Kyra Edit] Job completed. Full result:', JSON.stringify(result, null, 2));
+        const hasBlocks = result.state?.blocks && Object.keys(result.state.blocks).length > 0;
+        console.log('[Kyra Edit] hasBlocks:', hasBlocks, 'state keys:', result.state ? Object.keys(result.state) : 'no state');
+        if (hasBlocks) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
             content: isDe ? 'Wende \u00c4nderungen an\u2026' : 'Applying changes\u2026',
           }));
           const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+          const patch: Record<string, any> = { blocks: result.state!.blocks };
+          // Include blocks_layout when the agent returns it (e.g. new blocks added)
+          if (result.state!.blocks_layout) {
+            patch.blocks_layout = result.state!.blocks_layout;
+          }
           try { await (dispatch as any)(unlockContent(contentPath, true)); } catch (_) {}
-          await (dispatch as any)(updateContent(contentPath, { blocks: result.state.blocks }));
+          await (dispatch as any)(updateContent(contentPath, patch));
           try { await (dispatch as any)(lockContent(contentPath)); } catch (_) {}
         }
 
@@ -721,7 +725,7 @@ const ChatWidgetProvider: React.FC = () => {
           || (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.');
         finalizeAssistant(editAssistantId, { content: successMsg, status: 'done' });
 
-        if (result.state?.blocks) {
+        if (hasBlocks) {
           setTimeout(() => window.location.reload(), 800);
         }
       } catch (err: any) {
