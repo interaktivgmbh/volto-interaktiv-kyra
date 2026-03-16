@@ -1046,7 +1046,14 @@ const resolveListingsInBlocks = async (
 export const prepareBlocksForEditMode = async (
   pageUrl: string,
   token?: string,
-): Promise<{ blocks: Record<string, any>; blocks_layout: { items: string[] } }> => {
+): Promise<{
+  blocks: Record<string, any>;
+  blocks_layout: { items: string[] };
+  title?: string;
+  description?: string;
+  preview_image?: string;
+  subjects?: string[];
+}> => {
   const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
   const response = await fetch(buildApiUrl(path), {
     method: 'GET',
@@ -1065,7 +1072,19 @@ export const prepareBlocksForEditMode = async (
 
   const resolved = await resolveListingsInBlocks(blocks, blocksLayout.items, path, token);
 
-  return { blocks: resolved, blocks_layout: blocksLayout };
+  const previewImage = data.preview_image?.[0]?.['@id']
+    || data.preview_image?.download
+    || data.preview_image
+    || '';
+
+  return {
+    blocks: resolved,
+    blocks_layout: blocksLayout,
+    title: data.title || '',
+    description: data.description || '',
+    preview_image: typeof previewImage === 'string' ? previewImage : '',
+    subjects: data.subjects || [],
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -1080,7 +1099,7 @@ export type LayoutJobStatus =
 
 export const createLayoutConversation = async (
   _baseUrl: string,
-  payload: { schema: string; version: string; state: Record<string, any> },
+  payload: { schema: string; version: string; state: Record<string, any>; permissions?: string[] },
   token?: string,
 ): Promise<{ conversation_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-conversations'), {
@@ -1101,7 +1120,7 @@ export const createLayoutConversation = async (
 export const sendLayoutMessage = async (
   _baseUrl: string,
   conversationId: string,
-  payload: { message: string; permissions?: string[]; state?: Record<string, any> },
+  payload: { message: string; state?: Record<string, any> },
   token?: string,
 ): Promise<{ job_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-messages'), {

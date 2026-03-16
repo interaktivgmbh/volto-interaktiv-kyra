@@ -606,8 +606,12 @@ const ChatWidgetProvider: React.FC = () => {
 
       try {
         const pageUrl = content?.['@id'] || '';
-        const { blocks, blocks_layout } = await prepareBlocksForEditMode(pageUrl, token);
-        const pageState = { blocks, blocks_layout };
+        const { blocks, blocks_layout, title, description, preview_image, subjects } = await prepareBlocksForEditMode(pageUrl, token);
+        const pageState: Record<string, any> = { blocks, blocks_layout };
+        if (title) pageState.title = title;
+        if (description) pageState.description = description;
+        if (preview_image) pageState.preview_image = preview_image;
+        if (subjects && subjects.length > 0) pageState.subjects = subjects;
 
         // Create conversation on first message for this page
         if (!layoutConversationIdRef.current) {
@@ -617,7 +621,12 @@ const ChatWidgetProvider: React.FC = () => {
           }));
           const convResponse = await createLayoutConversation(
             editBackendUrl,
-            { schema: 'volto', version: 'vanilla', state: pageState },
+            {
+              schema: 'volto',
+              version: 'vanilla',
+              state: pageState,
+              permissions: ['update', 'create', 'delete', 'move'],
+            },
             token,
           );
           layoutConversationIdRef.current = convResponse.conversation_id;
@@ -703,19 +712,37 @@ const ChatWidgetProvider: React.FC = () => {
 
         // completed — apply state if layout changed
         console.log('[Kyra Edit] Job completed. Full result:', JSON.stringify(result, null, 2));
+        console.log('[Kyra Edit] result.state type:', typeof result.state, 'keys:', result.state ? Object.keys(result.state) : 'no state');
+        if (result.state?.blocks) {
+          console.log('[Kyra Edit] blocks count:', Object.keys(result.state.blocks).length);
+          console.log('[Kyra Edit] blocks_layout:', JSON.stringify(result.state.blocks_layout));
+        }
         const hasBlocks = result.state?.blocks && Object.keys(result.state.blocks).length > 0;
-        console.log('[Kyra Edit] hasBlocks:', hasBlocks, 'state keys:', result.state ? Object.keys(result.state) : 'no state');
-        if (hasBlocks) {
+        const hasMetadata = result.state?.title !== undefined
+          || result.state?.description !== undefined
+          || result.state?.preview_image !== undefined
+          || result.state?.subjects !== undefined;
+        const hasChanges = hasBlocks || hasMetadata;
+        console.log('[Kyra Edit] hasBlocks:', hasBlocks, 'hasMetadata:', hasMetadata);
+        if (hasChanges) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
             content: isDe ? 'Wende \u00c4nderungen an\u2026' : 'Applying changes\u2026',
           }));
           const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
-          const patch: Record<string, any> = { blocks: result.state!.blocks };
-          // Include blocks_layout when the agent returns it (e.g. new blocks added)
-          if (result.state!.blocks_layout) {
-            patch.blocks_layout = result.state!.blocks_layout;
+          const patch: Record<string, any> = {};
+          // Include blocks when the agent returns them
+          if (hasBlocks) {
+            patch.blocks = result.state!.blocks;
+            if (result.state!.blocks_layout) {
+              patch.blocks_layout = result.state!.blocks_layout;
+            }
           }
+          // Include metadata fields when the agent returns them (content fields, not blocks)
+          if (result.state!.title !== undefined) patch.title = result.state!.title;
+          if (result.state!.description !== undefined) patch.description = result.state!.description;
+          if (result.state!.preview_image !== undefined) patch.preview_image = result.state!.preview_image;
+          if (result.state!.subjects !== undefined) patch.subjects = result.state!.subjects;
           try { await (dispatch as any)(unlockContent(contentPath, true)); } catch (_) {}
           await (dispatch as any)(updateContent(contentPath, patch));
           try { await (dispatch as any)(lockContent(contentPath)); } catch (_) {}
