@@ -1588,7 +1588,6 @@
   }
 }
 
-// Dock-Modus: Seiteninhalt einrücken wie Volto Edit-Sidebar
 body.has-ai-panel-docked {
   margin-right: 515px !important;
   overflow-x: hidden !important;
@@ -1658,7 +1657,6 @@ body.has-ai-panel-docked {
   background: rgba(59, 151, 212, 0.08);
 }
 
-/* ── Translation sync card ── */
 .kyra-ai-chat__sync-card {
   margin-top: 12px;
   padding: 12px;
@@ -1724,7 +1722,6 @@ body.has-ai-panel-docked {
   white-space: nowrap;
 }
 
-/* ── Header dropdown menu ── */
 .kyra-ai-chat__header-menu {
   position: relative;
 }
@@ -1772,7 +1769,6 @@ body.has-ai-panel-docked {
   stroke-linecap: round;
 }
 
-/* ── Suggestions ── */
 .kyra-ai-chat__suggestions {
   display: flex;
   flex-direction: column;
@@ -1817,7 +1813,6 @@ body.has-ai-panel-docked {
   color: var(--ai-chat-text);
 }
 
-/* ── Message thinking/streaming state ── */
 .kyra-ai-chat__message-thinking {
   display: flex;
   flex-direction: column;
@@ -1869,7 +1864,6 @@ body.has-ai-panel-docked {
   }
 }
 
-/* ── Action button below AI response ── */
 .kyra-ai-chat__message-action-btn {
   display: inline-flex;
   align-items: center;
@@ -1897,7 +1891,6 @@ body.has-ai-panel-docked {
   flex-shrink: 0;
 }
 
-/* ── Context tag above composer ── */
 .kyra-ai-chat__composer-context {
   display: flex;
   flex-wrap: wrap;
@@ -1968,7 +1961,6 @@ body.has-ai-panel-docked {
   color: #92400e;
 }
 
-/* ── Composer row layout ── */
 .kyra-ai-chat__composer-row {
   display: flex;
   align-items: center;
@@ -2031,7 +2023,6 @@ body.has-ai-panel-docked {
   stroke: #fff;
 }
 
-/* ── Plus-button dropdown menu ── */
 .kyra-ai-chat__composer-plus-menu {
   position: relative;
 }
@@ -2097,7 +2088,6 @@ body.has-ai-panel-docked {
   line-height: 1;
 }
 
-/* ── Send button ── */
 .kyra-ai-chat__composer-send {
   width: 34px;
   height: 34px;
@@ -2126,7 +2116,6 @@ body.has-ai-panel-docked {
   stroke: #fff;
 }
 
-/* ── Wizard action buttons inside messages ── */
 .kyra-ai-chat__message-wizard-actions {
   display: flex;
   flex-direction: column;
@@ -2190,7 +2179,6 @@ body.has-ai-panel-docked {
   background: rgba(0, 0, 0, 0.04);
 }
 
-/* Prompt comparison view */
 .kyra-ai-chat__prompt-comparison {
   display: flex;
   flex-direction: column;
@@ -2236,7 +2224,6 @@ body.has-ai-panel-docked {
   vertical-align: middle;
 }
 
-/* Inline editing */
 .kyra-ai-chat__message-edit {
   display: flex;
   flex-direction: column;
@@ -2298,7 +2285,6 @@ body.has-ai-panel-docked {
   background: rgba(0, 0, 0, 0.05);
 }
 
-/* Tag Mappings Panel */
 .kyra-ai-chat__tag-mappings-table {
   display: flex;
   flex-direction: column;
@@ -2386,7 +2372,6 @@ body.has-ai-panel-docked {
   padding: 16px;
 }
 
-/* Glossary Panel */
 .kyra-ai-chat__glossary-row {
   grid-template-columns: 1fr 1fr 32px;
 }
@@ -2478,7 +2463,6 @@ body.has-ai-panel-docked {
   }
 }
 
-/* ── Prompts Panel ── */
 .kyra-ai-chat__prompts-freetext {
   padding: 12px;
   background: linear-gradient(135deg, rgba(48, 125, 176, 0.06), rgba(59, 151, 212, 0.05));
@@ -2630,8 +2614,6 @@ body.has-ai-panel-docked {
   font-weight: 600;
 }
 
-/* ── Slate AI Assistant Toolbar Buttons ── */
-
 .ai-slate-wrapper {
   position: relative;
   display: inline-flex;
@@ -2660,8 +2642,6 @@ body.has-ai-panel-docked {
   background: #f0f0f0 !important;
   border-color: #ccc !important;
 }
-
-/* ── Prompt Picker (inline in chat body) ── */
 
 .kyra-ai-chat__prompt-picker-inline {
   flex: 1;

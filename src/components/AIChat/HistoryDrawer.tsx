@@ -146,7 +146,6 @@ const HistoryDrawer: React.FC<Props> = ({
     exitSelectMode();
   };
 
-  // Close header menu on outside click
   React.useEffect(() => {
     if (!headerMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -158,12 +157,10 @@ const HistoryDrawer: React.FC<Props> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [headerMenuOpen]);
 
-  // Reset select mode when switching between archived/recent
   React.useEffect(() => {
     exitSelectMode();
   }, [showArchived]);
 
-  // Reset select mode when drawer closes
   React.useEffect(() => {
     if (!open) {
       exitSelectMode();

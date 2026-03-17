@@ -275,7 +275,6 @@ const ChatWidgetProvider: React.FC = () => {
           setPreferredLanguage(translations.language);
         }
       } catch (_error) {
-        // Ignore translation errors.
       }
     };
     loadTranslations();
@@ -305,7 +304,6 @@ const ChatWidgetProvider: React.FC = () => {
           }
         }
       } catch (_error) {
-        // Ignore capability fetch errors.
       }
     };
 
@@ -334,7 +332,6 @@ const ChatWidgetProvider: React.FC = () => {
     return () => { isMounted = false; };
   }, [content?.['@id'], token]);
 
-  // Helper to update context mode + ref together
   const updateContextMode = (mode: 'page' | 'site' | 'selection') => {
     contextModeRef.current = mode;
     setContextMode(mode);
@@ -349,7 +346,6 @@ const ChatWidgetProvider: React.FC = () => {
     setEditModeActive(active);
   };
 
-  // Reset context mode when navigating to a different page
   useEffect(() => {
     updateContextMode('page');
     manualSiteModeRef.current = false;
@@ -358,13 +354,11 @@ const ChatWidgetProvider: React.FC = () => {
     layoutConversationIdRef.current = null;
   }, [content?.UID]);
 
-  // Listen for text selection on the page (outside chat)
   useEffect(() => {
     const handleSelection = () => {
       const sel = window.getSelection();
       const text = sel?.toString()?.trim() || '';
       if (text.length > 5) {
-        // Check selection is not inside the chat panel
         const anchor = sel?.anchorNode;
         if (anchor) {
           const el = anchor.nodeType === Node.ELEMENT_NODE
@@ -375,14 +369,11 @@ const ChatWidgetProvider: React.FC = () => {
         updateContextMode('selection');
         updateSelectionText(text);
       } else if (contextModeRef.current === 'selection') {
-        // Selection cleared - defer check so activeElement has time to update
-        // (selectionchange fires before focus transfer completes)
         setTimeout(() => {
           if (contextModeRef.current !== 'selection') return;
           const activeEl = document.activeElement;
           const inChat = activeEl?.closest('.kyra-ai-chat');
           if (inChat) return;
-          // Selection cleared by clicking outside chat - revert
           updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
           updateSelectionText('');
         }, 0);
@@ -584,7 +575,6 @@ const ChatWidgetProvider: React.FC = () => {
     }
     updateConversationState(workingConversation, true);
 
-    // --- Edit Mode Branch: Layout Agent API (conversation + async polling) ---
     if (editModeActiveRef.current && editBackendUrl) {
       const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
       const editAssistantId = generateId();
@@ -613,7 +603,6 @@ const ChatWidgetProvider: React.FC = () => {
         if (preview_image) pageState.preview_image = preview_image;
         if (subjects && subjects.length > 0) pageState.subjects = subjects;
 
-        // Create conversation on first message for this page
         if (!layoutConversationIdRef.current) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
@@ -647,7 +636,6 @@ const ChatWidgetProvider: React.FC = () => {
           );
           jobId = msgResponse.job_id;
         } catch (sendErr: any) {
-          // Backend not reachable — download payload as JSON for debugging
           const debugPayload = { schema: 'volto', version: 'vanilla', state: pageState, message: contentText };
           const blob = new Blob([JSON.stringify(debugPayload, null, 2)], { type: 'application/json' });
           const downloadUrl = URL.createObjectURL(blob);
@@ -668,7 +656,6 @@ const ChatWidgetProvider: React.FC = () => {
           return;
         }
 
-        // Poll until job completes
         const pollUntilDone = async (): Promise<LayoutJobStatus> => {
           while (!aborted.current) {
             await new Promise<void>((resolve) => setTimeout(resolve, 1500));
@@ -710,7 +697,6 @@ const ChatWidgetProvider: React.FC = () => {
           return;
         }
 
-        // completed — apply state if layout changed
         console.log('[Kyra Edit] Job completed. Full result:', JSON.stringify(result, null, 2));
         console.log('[Kyra Edit] result.state type:', typeof result.state, 'keys:', result.state ? Object.keys(result.state) : 'no state');
         if (result.state?.blocks) {
@@ -731,14 +717,12 @@ const ChatWidgetProvider: React.FC = () => {
           }));
           const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
           const patch: Record<string, any> = {};
-          // Include blocks when the agent returns them
           if (hasBlocks) {
             patch.blocks = result.state!.blocks;
             if (result.state!.blocks_layout) {
               patch.blocks_layout = result.state!.blocks_layout;
             }
           }
-          // Include metadata fields when the agent returns them (content fields, not blocks)
           if (result.state!.title !== undefined) patch.title = result.state!.title;
           if (result.state!.description !== undefined) patch.description = result.state!.description;
           if (result.state!.preview_image !== undefined) patch.preview_image = result.state!.preview_image;
@@ -769,18 +753,14 @@ const ChatWidgetProvider: React.FC = () => {
       return;
     }
 
-    // Read from refs to survive selection-clear during click events
-    // Use contextOverrides.selection_text as fallback (e.g. re-run with stored original)
     const activeMode = contextOverrides?.mode || contextModeRef.current;
     const activeSelection = contextOverrides?.selection_text || selectionTextRef.current;
 
-    // Capture selection info for "apply to page" action
     const isSelectionRequest = activeMode === 'selection' && activeSelection.length > 5;
     const originalSelectionText = isSelectionRequest ? activeSelection : '';
 
     const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
 
-    // Prompt Manager prompts get comparison view + 3 action buttons
     let selectionActions: ChatMessageAction[] | undefined;
     let selectionMeta: Record<string, any> | undefined;
 
@@ -1061,7 +1041,6 @@ const ChatWidgetProvider: React.FC = () => {
       const status = await getTranslationStatus(pageUrl, token);
       setTranslationStatus(status);
     } catch (_error) {
-      // Ignore refetch errors.
     }
   };
 
@@ -1231,14 +1210,12 @@ const ChatWidgetProvider: React.FC = () => {
     const clickedMessage = current.messages.find((m) => m.id === messageId);
     if (!clickedMessage) return;
 
-    // Remove actions from clicked message
     const messagesWithoutActions = current.messages.map((m) =>
       m.id === messageId ? { ...m, actions: undefined } : m,
     );
 
     const [actionType, actionValue] = value.split(':');
 
-    // Determine user-visible label
     let userLabel = actionValue;
     if (actionType === 'scope') {
       userLabel = actionValue === 'single' ? t.scopeSingle : t.scopeSubtree;
@@ -1298,7 +1275,6 @@ const ChatWidgetProvider: React.FC = () => {
     } else if (actionType === 'language') {
       const targetLang = actionValue;
 
-      // Find mode from the wizard message that had the language buttons
       const mode = (clickedMessage?.wizardMeta?.mode || 'single') as
         | 'single'
         | 'subtree';
@@ -1363,7 +1339,6 @@ const ChatWidgetProvider: React.FC = () => {
       const meta = clickedMessage.wizardMeta || {};
 
       if (actionValue === 'apply') {
-        // Apply prompt result to page — same as apply_selection:apply
         const originalText = meta.originalText || '';
         const pageUrl = meta.pageUrl || content?.['@id'] || '';
         const assistantContent = clickedMessage.content?.trim() || '';
@@ -1420,11 +1395,9 @@ const ChatWidgetProvider: React.FC = () => {
           });
         }
       } else if (actionValue === 'rerun') {
-        // Re-run the same prompt — keep user message, remove old assistant response
         const promptText = meta.promptText || '';
         if (promptText) {
           const msgIndex = current.messages.findIndex((m) => m.id === messageId);
-          // Keep everything up to (but not including) this assistant message
           const trimmed = msgIndex > 0
             ? current.messages.slice(0, msgIndex)
             : messagesWithoutActions;
@@ -1437,7 +1410,6 @@ const ChatWidgetProvider: React.FC = () => {
           handleSend(promptText, ctxOverrides, { promptText }, { skipUserMessage: true });
         }
       } else if (actionValue === 'edit') {
-        // Trigger inline editing on the user message — don't modify messages
         const msgIndex = current.messages.findIndex((m) => m.id === messageId);
         let userMsgId = '';
         for (let i = msgIndex - 1; i >= 0; i--) {
@@ -1450,7 +1422,6 @@ const ChatWidgetProvider: React.FC = () => {
           setEditingMessageId(userMsgId);
         }
       } else if (actionValue === 'dismiss') {
-        // Dismiss — remove the user message + assistant response entirely
         const msgIndex = current.messages.findIndex((m) => m.id === messageId);
         let removeFrom = msgIndex;
         for (let i = msgIndex - 1; i >= 0; i--) {
@@ -1472,7 +1443,6 @@ const ChatWidgetProvider: React.FC = () => {
         return;
       }
 
-      // "apply" — replace the original text on the page
       const meta = clickedMessage.wizardMeta || {};
       const originalText = meta.originalText || '';
       const pageUrl = meta.pageUrl || content?.['@id'] || '';
@@ -1494,7 +1464,6 @@ const ChatWidgetProvider: React.FC = () => {
         return;
       }
 
-      // Show "applying" status
       const applyingId = generateId();
       const applyingMsg: ChatMessage = {
         id: applyingId,
@@ -1576,7 +1545,6 @@ const ChatWidgetProvider: React.FC = () => {
     const userMsgIndex = current.messages.findIndex((m) => m.id === messageId);
     if (userMsgIndex === -1) return;
 
-    // Find the assistant message that follows to get the stored originalText
     let origText = '';
     for (let i = userMsgIndex + 1; i < current.messages.length; i++) {
       if (current.messages[i].role === 'assistant' && current.messages[i].wizardMeta?.originalText) {
@@ -1585,7 +1553,6 @@ const ChatWidgetProvider: React.FC = () => {
       }
     }
 
-    // Update user message content in place, remove the assistant response after it
     const updatedMessages = current.messages
       .slice(0, userMsgIndex + 1)
       .map((m) =>
@@ -1630,7 +1597,6 @@ const ChatWidgetProvider: React.FC = () => {
       } as React.CSSProperties
     : undefined;
 
-  // Don't render during SSR — avoids settings flash on hydration
   if (!mounted) return null;
 
   return (

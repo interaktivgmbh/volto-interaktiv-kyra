@@ -81,19 +81,16 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
   const [showCreate, setShowCreate] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
-  // Create form
   const [createName, setCreateName] = useState('');
   const [createText, setCreateText] = useState('');
   const [createDesc, setCreateDesc] = useState('');
   const [createCats, setCreateCats] = useState('');
 
-  // Edit form
   const [editName, setEditName] = useState('');
   const [editText, setEditText] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editCats, setEditCats] = useState('');
 
-  // Freetext
   const [freetext, setFreetext] = useState('');
 
   const t = getLabels(uiLanguage);
@@ -104,7 +101,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       const res = await getPrompts(token);
       setPrompts(res.prompts || []);
     } catch (_err) {
-      // ignore
     } finally {
       setLoading(false);
     }
@@ -136,7 +132,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       setShowCreate(false);
       await fetchPrompts();
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -167,7 +162,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       setEditId(null);
       await fetchPrompts();
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -176,7 +170,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       await deletePrompt({ id }, token);
       await fetchPrompts();
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -203,7 +196,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
           {t.hint}
         </div>
 
-        {/* Freetext */}
         <div className="kyra-ai-chat__prompts-freetext">
           <div className="kyra-ai-chat__prompts-freetext-label">{t.freetext}</div>
           <div className="kyra-ai-chat__settings-hint" style={{ marginBottom: 8 }}>
@@ -233,10 +225,8 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
           </button>
         </div>
 
-        {/* Divider */}
         <div className="kyra-ai-chat__prompts-divider" />
 
-        {/* Saved Prompts Header + Create Button */}
         <div className="kyra-ai-chat__prompts-section-header">
           <div className="kyra-ai-chat__prompts-freetext-label">{t.title}</div>
           {!showCreate && (
@@ -251,7 +241,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
           )}
         </div>
 
-        {/* Create Form */}
         {showCreate && (
           <div className="kyra-ai-chat__prompts-form">
             <input
@@ -302,21 +291,17 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
           </div>
         )}
 
-        {/* Loading */}
         {loading && <div className="kyra-ai-chat__tag-mappings-loading">{t.loading}</div>}
 
-        {/* Empty */}
         {!loading && prompts.length === 0 && !showCreate && (
           <div className="kyra-ai-chat__tag-mappings-empty">{t.empty}</div>
         )}
 
-        {/* Prompt List */}
         {!loading && prompts.length > 0 && (
           <div className="kyra-ai-chat__prompts-list">
             {prompts.map((prompt) => (
               <div key={prompt.id} className="kyra-ai-chat__prompts-item">
                 {editId === prompt.id ? (
-                  /* Edit Mode */
                   <div className="kyra-ai-chat__prompts-form">
                     <input
                       type="text"
@@ -365,7 +350,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
                     </div>
                   </div>
                 ) : (
-                  /* View Mode */
                   <>
                     <div className="kyra-ai-chat__prompts-item-header">
                       <div className="kyra-ai-chat__prompts-item-name">{prompt.name}</div>

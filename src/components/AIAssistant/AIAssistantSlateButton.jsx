@@ -122,7 +122,6 @@ const AIAssistantSlateButton = () => {
     try {
       if (editor.selection) return Editor.string(editor, editor.selection);
     } catch (e) {
-      // ignore
     }
     return '';
   };

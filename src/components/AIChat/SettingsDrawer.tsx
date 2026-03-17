@@ -181,7 +181,6 @@ const SettingsDrawer: React.FC<Props> = ({
       </div>
 
       <div className="kyra-ai-chat__settings-scroll">
-        {/* Chat Name */}
         <div className="kyra-ai-chat__settings-section">
           <div className="kyra-ai-chat__settings-section-title">
             {t.nameSection}
@@ -198,7 +197,6 @@ const SettingsDrawer: React.FC<Props> = ({
           />
         </div>
 
-        {/* Accent Color */}
         <div className="kyra-ai-chat__settings-section">
           <div className="kyra-ai-chat__settings-section-title">
             {t.accentSection}
@@ -245,7 +243,6 @@ const SettingsDrawer: React.FC<Props> = ({
           )}
         </div>
 
-        {/* App Icon */}
         <div className="kyra-ai-chat__settings-section">
           <div className="kyra-ai-chat__settings-section-title">
             {t.iconSection}
@@ -336,7 +333,6 @@ const SettingsDrawer: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Clear History */}
         {onClearHistory && historyCount > 0 && (
           <div className="kyra-ai-chat__settings-section">
             <div className="kyra-ai-chat__settings-section-title">

@@ -85,7 +85,6 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setNewTag('');
       setNewTranslated('');
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -94,11 +93,9 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       const res = await deleteTagMapping({ tag, language }, token);
       setMappings(res.mappings || {});
     } catch (_err) {
-      // ignore
     }
   };
 
-  // Flatten mappings into rows for display
   const rows: Array<{ tag: string; language: string; translated: string }> = [];
   Object.entries(mappings).forEach(([tag, langMap]) => {
     Object.entries(langMap).forEach(([lang, translated]) => {

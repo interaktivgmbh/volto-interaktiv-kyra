@@ -37,11 +37,6 @@ const getMessageLabels = (lang?: string) => {
 
 const stripHtml = (value: string) => value.replace(/<[^>]+>/g, '').trim();
 
-/**
- * Lightweight markdown-to-HTML converter for chat messages.
- * Supports: headings (##), bold (**), italic (*), unordered lists (-),
- * ordered lists (1.), and paragraphs.
- */
 const renderMarkdown = (text: string): string => {
   if (!text) return '';
   const escaped = text
@@ -69,9 +64,7 @@ const renderMarkdown = (text: string): string => {
   };
 
   const inlineFormat = (line: string): string => {
-    // Bold: **text**
     line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    // Italic: *text* (but not inside bold)
     line = line.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
     return line;
   };
@@ -79,26 +72,22 @@ const renderMarkdown = (text: string): string => {
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // Empty line: flush paragraph
     if (!line) {
       flushParagraph();
       closeList();
       continue;
     }
 
-    // Headings: ## Text or ### Text
     const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
     if (headingMatch) {
       flushParagraph();
       closeList();
       const level = headingMatch[1].length;
-      // Use h3/h4 to keep headings smaller in chat context
       const tag = `h${Math.min(level + 1, 5)}`;
       htmlParts.push(`<${tag}>${inlineFormat(headingMatch[2])}</${tag}>`);
       continue;
     }
 
-    // Unordered list: - item or * item
     const ulMatch = line.match(/^[-*]\s+(.+)$/);
     if (ulMatch) {
       flushParagraph();
@@ -111,7 +100,6 @@ const renderMarkdown = (text: string): string => {
       continue;
     }
 
-    // Ordered list: 1. item
     const olMatch = line.match(/^\d+\.\s+(.+)$/);
     if (olMatch) {
       flushParagraph();
@@ -124,7 +112,6 @@ const renderMarkdown = (text: string): string => {
       continue;
     }
 
-    // Regular text line: accumulate into paragraph
     closeList();
     paragraph.push(inlineFormat(line));
   }
@@ -155,7 +142,6 @@ const MessageList: React.FC<Props> = ({
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  // When entering edit mode, populate the textarea
   useEffect(() => {
     if (editingMessageId) {
       const msg = messages.find((m) => m.id === editingMessageId);
@@ -178,7 +164,6 @@ const MessageList: React.FC<Props> = ({
         const useMarkdown = isAssistant && isDone && !isError;
         const isEditing = isUser && editingMessageId === message.id;
 
-        // Prompt comparison view — show during streaming AND when done
         const isPromptResult =
           isAssistant && !isError && message.wizardMeta?.isPromptResult;
         const originalText = message.wizardMeta?.originalText || '';
@@ -190,7 +175,6 @@ const MessageList: React.FC<Props> = ({
               message.status ? ` kyra-ai-chat__message--${message.status}` : ''
             }`}
           >
-            {/* Inline editing for user messages */}
             {isEditing ? (
               <div className="kyra-ai-chat__message-edit">
                 <textarea
@@ -228,7 +212,6 @@ const MessageList: React.FC<Props> = ({
               </div>
             ) : (
               <>
-                {/* Prompt comparison view — live during streaming + final */}
                 {isPromptResult && (
                   <div className="kyra-ai-chat__message-bubble">
                     <div className="kyra-ai-chat__prompt-comparison">
@@ -264,7 +247,6 @@ const MessageList: React.FC<Props> = ({
                     </div>
                   </div>
                 )}
-                {/* Thinking phase: shown while streaming (non-prompt only) */}
                 {!isPromptResult && isAssistant && isStreaming && (
                   <div className="kyra-ai-chat__message-thinking">
                     <span className="kyra-ai-chat__message-thinking-label">
@@ -275,7 +257,6 @@ const MessageList: React.FC<Props> = ({
                     </span>
                   </div>
                 )}
-                {/* Regular final answer (non-prompt-result) */}
                 {!isPromptResult && !(isAssistant && isStreaming) && (
                   <div className="kyra-ai-chat__message-bubble">
                     {useMarkdown ? (
@@ -292,7 +273,6 @@ const MessageList: React.FC<Props> = ({
                 )}
               </>
             )}
-            {/* Wizard action buttons */}
             {isAssistant && message.actions && message.actions.length > 0 && (
               <div className="kyra-ai-chat__message-wizard-actions">
                 {message.actions.map((action) => (

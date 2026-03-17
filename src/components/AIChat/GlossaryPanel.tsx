@@ -115,7 +115,6 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setNewSource('');
       setNewTarget('');
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -128,7 +127,6 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setEntries(res.entries || {});
       setGlossaryId(res.glossary_id || '');
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -147,7 +145,6 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
         setEntries(res.entries || {});
         setGlossaryId(res.glossary_id || '');
       } catch (_err) {
-        // ignore
       } finally {
         setImporting(false);
         if (csvInputRef.current) csvInputRef.current.value = '';
@@ -163,7 +160,6 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setEntries(res.entries || {});
       setGlossaryId(res.glossary_id || '');
     } catch (_err) {
-      // ignore
     } finally {
       setSyncing(false);
     }

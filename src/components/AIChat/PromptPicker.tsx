@@ -76,7 +76,6 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
 
   return (
     <div className="kyra-ai-chat__prompt-picker-inline">
-      {/* Header */}
       <div className="kyra-ai-chat__prompt-picker-header">
         <button
           type="button"
@@ -101,7 +100,6 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
 
       {!loading && prompts.length > 0 && (
         <>
-          {/* Category pills */}
           {categories.length > 1 && (
             <div className="kyra-ai-chat__prompt-picker-cats">
               <button
@@ -124,7 +122,6 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
             </div>
           )}
 
-          {/* Prompt items */}
           <div className="kyra-ai-chat__prompt-picker-list">
             {displayPrompts.map((prompt) => (
               <button

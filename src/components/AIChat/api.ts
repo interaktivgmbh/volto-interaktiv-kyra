@@ -221,7 +221,6 @@ const parseSseEvent = (
   try {
     payload = JSON.parse(dataText);
   } catch (_error) {
-    // keep as text
   }
 
   if (!eventType && payload && typeof payload === 'object') {
@@ -442,10 +441,6 @@ export const getAiChatTranslations = async (
   return response.json();
 };
 
-// ---------------------------------------------------------------------------
-// DeepL Glossary
-// ---------------------------------------------------------------------------
-
 export type GlossaryEntries = Record<string, string>;
 
 export const getGlossaryEntries = async (
@@ -535,10 +530,6 @@ export const importGlossaryCsv = async (
 
   return response.json();
 };
-
-// ---------------------------------------------------------------------------
-// Prompt Files
-// ---------------------------------------------------------------------------
 
 export const getPromptFiles = async (
   promptId: string,
@@ -633,10 +624,6 @@ export const deletePromptFile = async (
   return response.json();
 };
 
-// ---------------------------------------------------------------------------
-// Prompts
-// ---------------------------------------------------------------------------
-
 export const getPrompts = async (
   token?: string,
 ): Promise<{ prompts: Prompt[] }> => {
@@ -722,10 +709,6 @@ export const deletePrompt = async (
   return response.json();
 };
 
-// ---------------------------------------------------------------------------
-// Replace selected text in page blocks
-// ---------------------------------------------------------------------------
-
 function extractSlateText(nodes: any[]): string {
   return nodes
     .map((node) => {
@@ -745,19 +728,17 @@ function replaceInSlateNodes(
 ): { result: any[]; replaced: boolean } {
   const fullText = extractSlateText(nodes);
   let idx = fullText.indexOf(original);
-  // Fallback: normalised whitespace comparison
   if (idx === -1) {
     const normFull = normalizeWhitespace(fullText);
     const normOrig = normalizeWhitespace(original);
     const normIdx = normFull.indexOf(normOrig);
     if (normIdx === -1) return { result: nodes, replaced: false };
-    // Map normalised index back to original text position
     let ni = 0;
     let oi = 0;
     while (ni < normIdx && oi < fullText.length) {
       if (/\s/.test(fullText[oi])) {
         while (oi < fullText.length && /\s/.test(fullText[oi])) oi++;
-        ni++; // single space in normalised
+        ni++;
       } else {
         oi++;
         ni++;
@@ -768,13 +749,12 @@ function replaceInSlateNodes(
     while (remaining > 0 && oi < fullText.length) {
       if (/\s/.test(fullText[oi])) {
         while (oi < fullText.length && /\s/.test(fullText[oi])) oi++;
-        remaining--; // single space in normalised
+        remaining--;
       } else {
         oi++;
         remaining--;
       }
     }
-    // Use the mapped range in the original text
     original = fullText.substring(startOi, oi);
     idx = startOi;
   }
@@ -821,10 +801,6 @@ function replaceInSlateNodes(
   return { result: cloned, replaced: true };
 }
 
-/**
- * Fetches the page content and computes updated blocks with the text replaced.
- * Returns { blocks } ready to be PATCHed via Volto's updateContent action.
- */
 export const computeBlocksWithReplacement = async (
   pageUrl: string,
   originalText: string,
@@ -848,13 +824,11 @@ export const computeBlocksWithReplacement = async (
   const blocksLayout = pageData.blocks_layout;
   if (!blocks || !blocksLayout?.items) throw new Error('No blocks found');
 
-  // Strip HTML tags from the replacement text (gateway may wrap in <p>, <br>, etc.)
   const cleanText = newText.replace(/<[^>]+>/g, '').trim();
 
   const updatedBlocks = { ...blocks };
   let modified = false;
 
-  // Try to find and replace in any block's Slate value fields
   const slateFields = ['value', 'description', 'title'];
 
   for (const blockId of blocksLayout.items) {
@@ -862,7 +836,6 @@ export const computeBlocksWithReplacement = async (
     if (!block) continue;
     if (modified) break;
 
-    // Search all known Slate array fields
     for (const field of slateFields) {
       const slateValue = block[field];
       if (!Array.isArray(slateValue)) continue;
@@ -879,7 +852,6 @@ export const computeBlocksWithReplacement = async (
       }
     }
 
-    // Also check plain string fields (title, description, head_title, etc.)
     if (!modified) {
       const stringFields = ['plaintext', 'head_title', 'citation'];
       for (const field of stringFields) {
@@ -891,7 +863,6 @@ export const computeBlocksWithReplacement = async (
           modified = true;
           break;
         }
-        // Normalised fallback for string fields
         if (
           typeof block[field] === 'string' &&
           normalizeWhitespace(block[field]).includes(normalizeWhitespace(originalText))
@@ -910,7 +881,6 @@ export const computeBlocksWithReplacement = async (
     }
   }
 
-  // Multi-block: selection spans multiple paragraphs / blocks
   if (!modified) {
     const origParagraphs = originalText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
     const newParagraphs = cleanText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
@@ -964,13 +934,6 @@ export const computeBlocksWithReplacement = async (
   return { blocks: updatedBlocks };
 };
 
-// ---------------------------------------------------------------------------
-// Edit Mode — external backend
-// ---------------------------------------------------------------------------
-
-/**
- * Resolves listing block items via Plone's @querystring-search endpoint.
- */
 export const resolveListingBlockItems = async (
   querystring: Record<string, any>,
   contextPath: string,
@@ -998,9 +961,6 @@ export const resolveListingBlockItems = async (
   }));
 };
 
-/**
- * Recursively resolves listing block items in a blocks dict.
- */
 const resolveListingsInBlocks = async (
   blocks: Record<string, any>,
   layoutItems: string[],
@@ -1013,13 +973,11 @@ const resolveListingsInBlocks = async (
     const block = blocks[id];
     if (!block) continue;
 
-    // Resolve listing block items
     if (block['@type'] === 'listing' && block.querystring) {
       const items = await resolveListingBlockItems(block.querystring, contextPath, token);
       resolved[id] = { ...block, items };
     }
 
-    // Recurse into container blocks
     if (block.blocks && block.blocks_layout?.items) {
       const nested = await resolveListingsInBlocks(
         block.blocks, block.blocks_layout.items, contextPath, token,
@@ -1040,9 +998,6 @@ const resolveListingsInBlocks = async (
   return resolved;
 };
 
-/**
- * Fetches page blocks and resolves listing items for edit mode.
- */
 export const prepareBlocksForEditMode = async (
   pageUrl: string,
   token?: string,
@@ -1086,10 +1041,6 @@ export const prepareBlocksForEditMode = async (
     subjects: data.subjects || [],
   };
 };
-
-// ---------------------------------------------------------------------------
-// Layout Agent API — proxied through Plone backend (/@ai-edit-*)
-// ---------------------------------------------------------------------------
 
 export type LayoutJobStatus =
   | { status: 'running'; progress?: string }

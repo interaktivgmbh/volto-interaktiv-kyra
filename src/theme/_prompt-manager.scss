@@ -27,7 +27,6 @@
     font-weight: 600;
   }
 
-  // --- Dropzone ---
   &__dropzone-wrapper {
     margin-top: 1.5rem;
     margin-bottom: 1rem;
@@ -63,7 +62,6 @@
     display: none;
   }
 
-  // --- File grid (new uploads preview) ---
   &__file-grid {
     display: flex;
     flex-wrap: wrap;
@@ -112,7 +110,6 @@
     }
   }
 
-  // --- Attached files table ---
   &__attached-table {
     margin-top: 1rem;
 
@@ -125,7 +122,6 @@
   }
 }
 
-// --- File preview ---
 .prompt-file-preview {
   margin-top: 1rem;
 
@@ -155,7 +151,6 @@
   }
 }
 
-// --- Centered modal ---
 .ui.modal.kyra-centered-modal {
   position: fixed !important;
   top: 50% !important;

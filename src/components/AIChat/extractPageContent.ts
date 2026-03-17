@@ -1,8 +1,3 @@
-/**
- * Extracts structured, readable text from a Volto content object
- * for sending as page_content to the AI chat backend.
- */
-
 const MAX_LENGTH = 15000;
 
 type SlateNode = {
@@ -55,7 +50,6 @@ type ContentData = {
   [key: string]: any;
 };
 
-/** Recursively extract plain text from Slate JSON nodes. */
 function slateToText(nodes: SlateNode | SlateNode[]): string {
   const arr = Array.isArray(nodes) ? nodes : [nodes];
   return arr
@@ -67,14 +61,11 @@ function slateToText(nodes: SlateNode | SlateNode[]): string {
     .join('');
 }
 
-/** Extract text from a single Volto block. */
 function extractBlockText(block: ContentBlock): string {
   const type = block['@type'];
 
-  // Skip title/description blocks — already in metadata header
   if (type === 'title' || type === 'description') return '';
 
-  // Slate / text blocks
   if (type === 'slate' || type === 'text') {
     if (block.plaintext) return block.plaintext.trim();
     if (block.value) {
@@ -84,13 +75,11 @@ function extractBlockText(block: ContentBlock): string {
     return '';
   }
 
-  // Image blocks
   if (type === 'image') {
     const label = block.alt || block.caption || block.title || '';
     return label ? `[Image: ${label}]` : '';
   }
 
-  // Table blocks
   if (type === 'table' && block.table?.rows) {
     const rows = block.table.rows;
     const textRows = rows.map((row) => {
@@ -107,7 +96,6 @@ function extractBlockText(block: ContentBlock): string {
     return textRows.join('\n');
   }
 
-  // Container: columns
   if (type === 'columnsBlock' && block.columns) {
     return block.columns
       .map((col) => extractFromBlocksLayout(col.blocks, col.blocks_layout))
@@ -115,7 +103,6 @@ function extractBlockText(block: ContentBlock): string {
       .join('\n\n');
   }
 
-  // Container: tabs / accordion
   if ((type === 'tabs' || type === 'accordion') && block.tabs) {
     return block.tabs
       .map((tab) => {
@@ -127,24 +114,20 @@ function extractBlockText(block: ContentBlock): string {
       .join('\n\n');
   }
 
-  // Generic container with nested data.blocks
   if (block.data?.blocks && block.data?.blocks_layout) {
     return extractFromBlocksLayout(block.data.blocks, block.data.blocks_layout);
   }
 
-  // Generic container with nested blocks
   if (block.blocks && block.blocks_layout) {
     return extractFromBlocksLayout(block.blocks, block.blocks_layout);
   }
 
-  // Fallback: try common text fields
   if (block.plaintext) return block.plaintext.trim();
   if (typeof block.text === 'string') return block.text.trim();
 
   return '';
 }
 
-/** Extract text from blocks in layout order. */
 function extractFromBlocksLayout(
   blocks?: Record<string, ContentBlock>,
   blocksLayout?: { items?: string[] },
@@ -160,13 +143,11 @@ function extractFromBlocksLayout(
     .join('\n\n');
 }
 
-/** Main entry: extract structured page text from Volto content data. */
 export function extractPageContent(content: ContentData | null | undefined): string {
   if (!content) return '';
 
   const parts: string[] = [];
 
-  // Metadata header
   const title = content.title || content.Title || '';
   const type = content['@type'] || '';
   const description = content.description || content.Description || '';
@@ -177,7 +158,6 @@ export function extractPageContent(content: ContentData | null | undefined): str
 
   if (parts.length > 0) parts.push('---');
 
-  // Body blocks
   const body = extractFromBlocksLayout(content.blocks, content.blocks_layout);
   if (body) parts.push(body);
 
