@@ -27,6 +27,7 @@
     "release-alpha": "release-it --preRelease=alpha"
   },
   "addons": [
+    "@interaktiv.de/volto-interaktiv-kyra",
     "@kitconcept/volto-light-theme",
     "@kitconcept/volto-bm3-compat",
     "@kitconcept/volto-button-block",
@@ -42,6 +43,7 @@
   ],
   "theme": "",
   "dependencies": {
+    "@interaktiv.de/volto-interaktiv-kyra": "workspace:*",
     "@kitconcept/volto-light-theme": "8.0.0-alpha.4",
     "@kitconcept/volto-bm3-compat": "^1.0.0-alpha.1",
     "@kitconcept/volto-button-block": "^3.0.3",
