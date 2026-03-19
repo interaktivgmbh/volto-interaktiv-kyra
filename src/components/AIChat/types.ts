@@ -35,11 +35,52 @@ export type ChatConversation = {
   archived?: boolean;
 };
 
+export type ChatPermissions = {
+  chat: boolean;
+  translate: boolean;
+  manage_glossary: boolean;
+  manage_tag_mappings: boolean;
+  manage_prompts: boolean;
+  manage_settings: boolean;
+  assistant_run: boolean;
+};
+
+export type ChatModules = {
+  chat: boolean;
+  translate: boolean;
+  manage_glossary: boolean;
+  manage_tag_mappings: boolean;
+  manage_prompts: boolean;
+  assistant_run: boolean;
+};
+
 export type ChatCapabilities = {
   is_anonymous: boolean;
   can_edit: boolean;
+  is_admin?: boolean;
   features: string[];
+  permissions?: ChatPermissions;
+  modules?: ChatModules;
 };
+
+export function hasPermission(
+  caps: ChatCapabilities,
+  perm: keyof ChatPermissions,
+): boolean {
+  if (caps.permissions) return caps.permissions[perm] ?? false;
+  // Fallback for old backend without fine-grained permissions
+  if (perm === 'chat') return true;
+  return caps.can_edit;
+}
+
+/** Check if a module is globally enabled in the control panel. */
+export function isModuleEnabled(
+  caps: ChatCapabilities,
+  mod: keyof ChatModules,
+): boolean {
+  if (caps.modules) return caps.modules[mod] ?? true;
+  return true; // fallback: enabled
+}
 
 export type AiAction = {
   type: string;

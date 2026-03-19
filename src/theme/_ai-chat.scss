@@ -1831,8 +1831,13 @@ body.has-ai-panel-docked {
   text-align: left;
 }
 
-.kyra-ai-chat__header-menu-panel button:hover {
+.kyra-ai-chat__header-menu-panel button:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__header-menu-panel button.kyra-ai-chat__menu-item--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .kyra-ai-chat__header-menu-panel button .icon svg {
@@ -2845,4 +2850,118 @@ body.has-ai-panel-docked {
   color: #94a3b8;
   margin-top: 3px;
   line-height: 1.4;
+}
+
+/* ── Permission Matrix ── */
+.kyra-ai-chat__permission-matrix {
+  position: absolute;
+  inset: 0;
+  background: var(--ai-chat-bg-alt, #fff);
+  display: flex;
+  flex-direction: column;
+  z-index: 1400;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.kyra-ai-chat__permission-matrix-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.kyra-ai-chat__permission-matrix-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__permission-matrix-desc {
+  font-size: 12px;
+  color: var(--ai-chat-muted);
+  margin-top: 2px;
+}
+
+.kyra-ai-chat__permission-matrix-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.kyra-ai-chat__permission-matrix-loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--ai-chat-muted);
+  font-size: 13px;
+}
+
+.kyra-ai-chat__permission-matrix-table-wrap {
+  overflow-x: auto;
+}
+
+.kyra-ai-chat__permission-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.kyra-ai-chat__permission-matrix-table th,
+.kyra-ai-chat__permission-matrix-table td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.kyra-ai-chat__permission-matrix-table th {
+  font-weight: 600;
+  color: var(--ai-chat-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.kyra-ai-chat__permission-matrix-group-label {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  display: inline-block;
+  max-height: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kyra-ai-chat__permission-matrix-feature-label {
+  text-align: left !important;
+  font-weight: 500;
+  color: var(--ai-chat-text);
+  white-space: nowrap;
+  padding-right: 12px !important;
+}
+
+.kyra-ai-chat__permission-matrix-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--ai-chat-accent, #3b82f6);
+}
+
+.kyra-ai-chat__permission-matrix-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.kyra-ai-chat__permission-matrix-status {
+  font-size: 12px;
+}
+
+.kyra-ai-chat__permission-matrix-status--ok {
+  color: #22c55e;
+}
+
+.kyra-ai-chat__permission-matrix-status--error {
+  color: #ef4444;
 }

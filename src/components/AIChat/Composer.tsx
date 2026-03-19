@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import { Icon } from '@plone/volto/components';
 import { translateSVG } from '../../helpers/icons';
+import type { ChatCapabilities } from './types';
+import { hasPermission } from './types';
 
 type Props = {
   onSend?: (text: string) => void;
@@ -14,6 +16,7 @@ type Props = {
   contextMode?: 'page' | 'site' | 'selection';
   contextLabel?: string | null;
   onDismissContext?: () => void;
+  capabilities?: ChatCapabilities;
 };
 
 const getComposerLabels = (lang?: string) => {
@@ -36,6 +39,8 @@ const getComposerLabels = (lang?: string) => {
   };
 };
 
+const DEFAULT_CAPS: ChatCapabilities = { is_anonymous: true, can_edit: false, features: [] };
+
 const Composer: React.FC<Props> = ({
   onSend,
   onTranslateClick,
@@ -47,6 +52,7 @@ const Composer: React.FC<Props> = ({
   contextMode,
   contextLabel,
   onDismissContext,
+  capabilities = DEFAULT_CAPS,
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [text, setText] = useState('');
@@ -121,16 +127,18 @@ const Composer: React.FC<Props> = ({
           </button>
           {showPlusMenu && (
             <div className="kyra-ai-chat__composer-plus-panel">
-              <button
-                type="button"
-                onClick={() => {
-                  onTranslateClick?.();
-                  setShowPlusMenu(false);
-                }}
-              >
-                <Icon name={translateSVG} size="20px" />
-                <span>{t.translate}</span>
-              </button>
+              {hasPermission(capabilities, 'translate') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onTranslateClick?.();
+                    setShowPlusMenu(false);
+                  }}
+                >
+                  <Icon name={translateSVG} size="20px" />
+                  <span>{t.translate}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -147,7 +155,7 @@ const Composer: React.FC<Props> = ({
                 </svg>
                 <span>{t.prompts}</span>
               </button>
-              {outdatedCount > 0 && (
+              {hasPermission(capabilities, 'translate') && outdatedCount > 0 && (
                 <button
                   type="button"
                   onClick={() => {
