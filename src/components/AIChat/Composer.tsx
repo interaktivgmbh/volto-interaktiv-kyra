@@ -17,6 +17,9 @@ type Props = {
   contextLabel?: string | null;
   onDismissContext?: () => void;
   capabilities?: ChatCapabilities;
+  editModeActive?: boolean;
+  editBackendUrl?: string;
+  onEditModeToggle?: () => void;
 };
 
 const getComposerLabels = (lang?: string) => {
@@ -28,6 +31,9 @@ const getComposerLabels = (lang?: string) => {
       prompts: 'Gespeicherte Prompts',
       placeholder: 'Nachricht eingeben\u2026',
       send: 'Senden',
+      edit: 'Bearbeiten',
+      editActive: 'Bearbeiten (aktiv)',
+      editModeTag: 'Bearbeiten-Modus',
     };
   }
   return {
@@ -36,6 +42,9 @@ const getComposerLabels = (lang?: string) => {
     prompts: 'Saved Prompts',
     placeholder: 'Type a message\u2026',
     send: 'Send',
+    edit: 'Edit',
+    editActive: 'Edit (active)',
+    editModeTag: 'Edit mode',
   };
 };
 
@@ -53,6 +62,9 @@ const Composer: React.FC<Props> = ({
   contextLabel,
   onDismissContext,
   capabilities = DEFAULT_CAPS,
+  editModeActive,
+  editBackendUrl,
+  onEditModeToggle,
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [text, setText] = useState('');
@@ -80,35 +92,60 @@ const Composer: React.FC<Props> = ({
 
   return (
     <div className="kyra-ai-chat__composer">
-      {contextLabel && (
+      {(contextLabel || editModeActive) && (
         <div className="kyra-ai-chat__composer-context">
-          <span
-            className={`kyra-ai-chat__context-tag${
-              contextMode === 'selection'
-                ? ' kyra-ai-chat__context-tag--selection'
-                : ''
-            }`}
-          >
-            <button
-              type="button"
-              onClick={onDismissContext}
-              aria-label="Remove context"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
+          {editModeActive && (
+            <span className="kyra-ai-chat__context-tag kyra-ai-chat__context-tag--edit">
+              <button
+                type="button"
+                onClick={onEditModeToggle}
+                aria-label="Disable edit mode"
               >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-            <span>{contextLabel}</span>
-          </span>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+              <span>{t.editModeTag}</span>
+            </span>
+          )}
+          {contextLabel && (
+            <span
+              className={`kyra-ai-chat__context-tag${
+                contextMode === 'selection'
+                  ? ' kyra-ai-chat__context-tag--selection'
+                  : ''
+              }`}
+            >
+              <button
+                type="button"
+                onClick={onDismissContext}
+                aria-label="Remove context"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+              <span>{contextLabel}</span>
+            </span>
+          )}
         </div>
       )}
       <div className="kyra-ai-chat__composer-row">
@@ -155,6 +192,22 @@ const Composer: React.FC<Props> = ({
                 </svg>
                 <span>{t.prompts}</span>
               </button>
+              {editBackendUrl && (
+                <button
+                  type="button"
+                  className={`kyra-ai-chat__composer-plus-item${editModeActive ? ' kyra-ai-chat__composer-plus-item--active' : ''}`}
+                  onClick={() => {
+                    onEditModeToggle?.();
+                    setShowPlusMenu(false);
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span>{editModeActive ? t.editActive : t.edit}</span>
+                </button>
+              )}
               {hasPermission(capabilities, 'translate') && outdatedCount > 0 && (
                 <button
                   type="button"

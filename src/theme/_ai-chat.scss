@@ -2039,6 +2039,20 @@ body.has-ai-panel-docked {
   color: #000;
 }
 
+.kyra-ai-chat__context-tag--edit {
+  background-color: rgba(168, 85, 247, 0.12);
+  color: #6b21a8;
+}
+
+.kyra-ai-chat__context-tag--edit > button {
+  color: #6b21a8;
+}
+
+.kyra-ai-chat__composer-plus-item--active {
+  background-color: rgba(168, 85, 247, 0.1);
+  color: #6b21a8;
+}
+
 /* ── Composer row layout ── */
 .kyra-ai-chat__composer-row {
   display: flex;

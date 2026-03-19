@@ -12,7 +12,13 @@ import {
   postAiActionsPlan,
   postAiActionsApply,
   computeBlocksWithReplacement,
+  prepareBlocksForEditMode,
+  createLayoutConversation,
+  sendLayoutMessage,
+  pollLayoutJob,
+  cancelLayoutJob,
 } from './api';
+import type { LayoutJobStatus } from './api';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
 import { extractPageContent } from './extractPageContent';
 import {
@@ -168,11 +174,16 @@ const ChatWidgetProvider: React.FC = () => {
   const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editModeActive, setEditModeActive] = useState(false);
+  const editModeActiveRef = useRef(false);
+  const [editBackendUrl, setEditBackendUrl] = useState('');
   const contextModeRef = useRef<'page' | 'site' | 'selection'>('page');
   const selectionTextRef = useRef('');
   const manualSiteModeRef = useRef(false);
   const conversationRef = useRef<ChatConversation | null>(null);
   const streamControllerRef = useRef<AbortController | null>(null);
+  const layoutConversationIdRef = useRef<string | null>(null);
+  const layoutJobAbortRef = useRef<(() => void) | null>(null);
   const fallbackLanguage = useMemo(() => {
     if (typeof document !== 'undefined') {
       const docLang = document.documentElement?.lang;
@@ -289,6 +300,9 @@ const ChatWidgetProvider: React.FC = () => {
             ...response,
             features: response.features || prev.features || [],
           }));
+          if (response.edit_backend_url) {
+            setEditBackendUrl(response.edit_backend_url);
+          }
         }
       } catch (_error) {
         // Ignore capability fetch errors.
@@ -330,11 +344,18 @@ const ChatWidgetProvider: React.FC = () => {
     setSelectionText(text);
   };
 
+  const updateEditMode = (active: boolean) => {
+    editModeActiveRef.current = active;
+    setEditModeActive(active);
+  };
+
   // Reset context mode when navigating to a different page
   useEffect(() => {
     updateContextMode('page');
     manualSiteModeRef.current = false;
     updateSelectionText('');
+    updateEditMode(false);
+    layoutConversationIdRef.current = null;
   }, [content?.UID]);
 
   // Listen for text selection on the page (outside chat)
@@ -562,6 +583,177 @@ const ChatWidgetProvider: React.FC = () => {
       };
     }
     updateConversationState(workingConversation, true);
+
+    if (editModeActiveRef.current && editBackendUrl) {
+      const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+      const editAssistantId = generateId();
+      const editAssistantMsg: ChatMessage = {
+        id: editAssistantId,
+        role: 'assistant',
+        content: isDe ? 'Bereite Seiten-Daten vor\u2026' : 'Preparing page data\u2026',
+        createdAt: new Date().toISOString(),
+        status: 'streaming',
+      };
+      updateConversationState(
+        { ...workingConversation, messages: [...workingConversation.messages, editAssistantMsg], updatedAt: now },
+        false,
+      );
+      setIsSending(true);
+
+      const aborted = { current: false };
+      layoutJobAbortRef.current = () => { aborted.current = true; };
+
+      try {
+        const pageUrl = content?.['@id'] || '';
+        const { blocks, blocks_layout, title, description, preview_image, subjects } = await prepareBlocksForEditMode(pageUrl, token);
+        const pageState: Record<string, any> = { blocks, blocks_layout };
+        if (title) pageState.title = title;
+        if (description) pageState.description = description;
+        if (preview_image) pageState.preview_image = preview_image;
+        if (subjects && subjects.length > 0) pageState.subjects = subjects;
+
+        if (!layoutConversationIdRef.current) {
+          applyAssistantUpdate(editAssistantId, (m) => ({
+            ...m,
+            content: isDe ? 'Erstelle Konversation\u2026' : 'Creating conversation\u2026',
+          }));
+          const convResponse = await createLayoutConversation(
+            editBackendUrl,
+            {
+              schema: 'volto',
+              version: 'vanilla',
+              state: pageState,
+              permissions: ['update', 'create', 'delete', 'move'],
+            },
+            token,
+          );
+          layoutConversationIdRef.current = convResponse.conversation_id;
+        }
+
+        applyAssistantUpdate(editAssistantId, (m) => ({
+          ...m,
+          content: isDe ? 'Sende an Bearbeiten-Backend\u2026' : 'Sending to edit backend\u2026',
+        }));
+
+        let jobId: string;
+        try {
+          const msgResponse = await sendLayoutMessage(
+            editBackendUrl,
+            layoutConversationIdRef.current,
+            { message: contentText },
+            token,
+          );
+          jobId = msgResponse.job_id;
+        } catch (sendErr: any) {
+          const debugPayload = { schema: 'volto', version: 'vanilla', state: pageState, message: contentText };
+          const blob = new Blob([JSON.stringify(debugPayload, null, 2)], { type: 'application/json' });
+          const downloadUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `edit-payload-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+          layoutConversationIdRef.current = null;
+          finalizeAssistant(editAssistantId, {
+            content: isDe
+              ? `Backend nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als JSON-Datei heruntergeladen.`
+              : `Backend not reachable (${sendErr?.message || 'network error'}). The payload has been downloaded as a JSON file.`,
+            status: 'done',
+          });
+          return;
+        }
+
+        const pollUntilDone = async (): Promise<LayoutJobStatus> => {
+          while (!aborted.current) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+            if (aborted.current) break;
+            const status = await pollLayoutJob(editBackendUrl, jobId, token);
+            if (status.status === 'running') {
+              if (status.progress) {
+                applyAssistantUpdate(editAssistantId, (m) => ({
+                  ...m,
+                  content: status.progress!,
+                }));
+              }
+              continue;
+            }
+            return status;
+          }
+          await cancelLayoutJob(editBackendUrl, jobId, token).catch(() => {});
+          return { status: 'cancelled' };
+        };
+
+        const result = await pollUntilDone();
+        layoutJobAbortRef.current = null;
+
+        if (result.status === 'cancelled') {
+          finalizeAssistant(editAssistantId, {
+            content: isDe ? 'Abgebrochen.' : 'Cancelled.',
+            status: 'done',
+          });
+          return;
+        }
+
+        if (result.status === 'failed') {
+          finalizeAssistant(editAssistantId, {
+            content: isDe
+              ? `Fehler: ${result.error || 'Unbekannter Fehler'}`
+              : `Error: ${result.error || 'Unknown error'}`,
+            status: 'error',
+          });
+          return;
+        }
+
+        const hasBlocks = result.state?.blocks && Object.keys(result.state.blocks).length > 0;
+        const hasMetadata = result.state?.title !== undefined
+          || result.state?.description !== undefined
+          || result.state?.preview_image !== undefined
+          || result.state?.subjects !== undefined;
+        const hasChanges = hasBlocks || hasMetadata;
+        if (hasChanges) {
+          applyAssistantUpdate(editAssistantId, (m) => ({
+            ...m,
+            content: isDe ? 'Wende \u00c4nderungen an\u2026' : 'Applying changes\u2026',
+          }));
+          const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+          const patch: Record<string, any> = {};
+          if (hasBlocks) {
+            patch.blocks = result.state!.blocks;
+            if (result.state!.blocks_layout) {
+              patch.blocks_layout = result.state!.blocks_layout;
+            }
+          }
+          if (result.state!.title !== undefined) patch.title = result.state!.title;
+          if (result.state!.description !== undefined) patch.description = result.state!.description;
+          if (result.state!.preview_image !== undefined) patch.preview_image = result.state!.preview_image;
+          if (result.state!.subjects !== undefined) patch.subjects = result.state!.subjects;
+          try { await (dispatch as any)(unlockContent(contentPath, true)); } catch (_) {}
+          await (dispatch as any)(updateContent(contentPath, patch));
+          try { await (dispatch as any)(lockContent(contentPath)); } catch (_) {}
+        }
+
+        const successMsg = result.message
+          || (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.');
+        finalizeAssistant(editAssistantId, { content: successMsg, status: 'done' });
+
+        if (hasBlocks) {
+          setTimeout(() => window.location.reload(), 800);
+        }
+      } catch (err: any) {
+        finalizeAssistant(editAssistantId, {
+          content: isDe
+            ? `Fehler: ${err?.message || 'Unbekannter Fehler'}`
+            : `Error: ${err?.message || 'Unknown error'}`,
+          status: 'error',
+        });
+      } finally {
+        layoutJobAbortRef.current = null;
+        setIsSending(false);
+      }
+      return;
+    }
 
     // Read from refs to survive selection-clear during click events
     // Use contextOverrides.selection_text as fallback (e.g. re-run with stored original)
@@ -1448,7 +1640,7 @@ const ChatWidgetProvider: React.FC = () => {
         history={history}
         onClose={() => setIsOpen(false)}
         onToggleHistory={() => setShowHistory((value) => !value)}
-        onSend={handleApplyPrompt}
+        onSend={editModeActive ? (text: string) => handleSend(text) : handleApplyPrompt}
         onStartTranslation={startTranslationWizard}
         onStartSync={startSyncWizard}
         onPromptsClick={() => {}}
@@ -1469,6 +1661,9 @@ const ChatWidgetProvider: React.FC = () => {
         editingMessageId={editingMessageId}
         onEditAndResend={handleEditAndResend}
         onCancelEdit={handleCancelEdit}
+        editModeActive={editModeActive}
+        editBackendUrl={editBackendUrl}
+        onEditModeToggle={() => updateEditMode(!editModeActive)}
       />
       {!isOpen && token && (
         <LauncherButton

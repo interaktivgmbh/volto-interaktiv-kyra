@@ -61,6 +61,7 @@ export type ChatCapabilities = {
   features: string[];
   permissions?: ChatPermissions;
   modules?: ChatModules;
+  edit_backend_url?: string;
 };
 
 export function hasPermission(

@@ -27,12 +27,14 @@
     "release-alpha": "release-it --preRelease=alpha"
   },
   "addons": [],
-  "dependencies": {},
+  "dependencies": {
+    "react-color": "^2.19.3"
+  },
   "peerDependencies": {
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
     "@plone/registry": "workspace:*",
-    "@plone/types": "workspace:*"
+    "@plone/types": "workspace:*",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@plone/scripts": "workspace:*",

@@ -90,6 +90,9 @@ type Props = {
   editingMessageId: string | null;
   onEditAndResend: (messageId: string, newText: string) => void;
   onCancelEdit: () => void;
+  editModeActive?: boolean;
+  editBackendUrl?: string;
+  onEditModeToggle?: () => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -131,6 +134,9 @@ const ChatPanel: React.FC<Props> = ({
   editingMessageId,
   onEditAndResend,
   onCancelEdit,
+  editModeActive,
+  editBackendUrl,
+  onEditModeToggle,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -328,6 +334,9 @@ const ChatPanel: React.FC<Props> = ({
         contextLabel={contextLabel}
         onDismissContext={onDismissContext}
         capabilities={capabilities}
+        editModeActive={editModeActive}
+        editBackendUrl={editBackendUrl}
+        onEditModeToggle={onEditModeToggle}
       />
       <HistoryDrawer
         open={showHistory}

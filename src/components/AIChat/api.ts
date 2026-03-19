@@ -963,3 +963,203 @@ export const computeBlocksWithReplacement = async (
 
   return { blocks: updatedBlocks };
 };
+
+export const resolveListingBlockItems = async (
+  querystring: Record<string, any>,
+  contextPath: string,
+  token?: string,
+): Promise<any[]> => {
+  const response = await fetch(buildApiUrl(`${contextPath}/@querystring-search`), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(querystring),
+  });
+
+  if (!response.ok) return [];
+
+  const data = await response.json();
+  return (data.items || []).map((item: any) => ({
+    '@id': item['@id'],
+    '@type': item['@type'],
+    title: item.title,
+    description: item.description,
+    preview_image: item.preview_image || item.image || null,
+  }));
+};
+
+const resolveListingsInBlocks = async (
+  blocks: Record<string, any>,
+  layoutItems: string[],
+  contextPath: string,
+  token?: string,
+): Promise<Record<string, any>> => {
+  const resolved = { ...blocks };
+
+  for (const id of layoutItems) {
+    const block = blocks[id];
+    if (!block) continue;
+
+    if (block['@type'] === 'listing' && block.querystring) {
+      const items = await resolveListingBlockItems(block.querystring, contextPath, token);
+      resolved[id] = { ...block, items };
+    }
+
+    if (block.blocks && block.blocks_layout?.items) {
+      const nested = await resolveListingsInBlocks(
+        block.blocks, block.blocks_layout.items, contextPath, token,
+      );
+      resolved[id] = { ...resolved[id], blocks: nested };
+    }
+    if (block.data?.blocks && block.data?.blocks_layout?.items) {
+      const nested = await resolveListingsInBlocks(
+        block.data.blocks, block.data.blocks_layout.items, contextPath, token,
+      );
+      resolved[id] = {
+        ...resolved[id],
+        data: { ...block.data, blocks: nested },
+      };
+    }
+  }
+
+  return resolved;
+};
+
+export const prepareBlocksForEditMode = async (
+  pageUrl: string,
+  token?: string,
+): Promise<{
+  blocks: Record<string, any>;
+  blocks_layout: { items: string[] };
+  title?: string;
+  description?: string;
+  preview_image?: string;
+  subjects?: string[];
+}> => {
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const response = await fetch(buildApiUrl(path), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) throw new Error('Failed to fetch page content');
+  const data = await response.json();
+
+  const blocks = data.blocks || {};
+  const blocksLayout = data.blocks_layout || { items: [] };
+
+  const resolved = await resolveListingsInBlocks(blocks, blocksLayout.items, path, token);
+
+  const previewImage = data.preview_image?.[0]?.['@id']
+    || data.preview_image?.download
+    || data.preview_image
+    || '';
+
+  return {
+    blocks: resolved,
+    blocks_layout: blocksLayout,
+    title: data.title || '',
+    description: data.description || '',
+    preview_image: typeof previewImage === 'string' ? previewImage : '',
+    subjects: data.subjects || [],
+  };
+};
+
+export type LayoutJobStatus =
+  | { status: 'running'; progress?: string }
+  | { status: 'completed'; message?: string; state?: Record<string, any> }
+  | { status: 'failed'; error?: string }
+  | { status: 'cancelled' };
+
+export const createLayoutConversation = async (
+  _baseUrl: string,
+  payload: { schema: string; version: string; state: Record<string, any>; permissions?: string[] },
+  token?: string,
+): Promise<{ conversation_id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-edit-conversations'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to create layout conversation');
+  }
+
+  return response.json();
+};
+
+export const sendLayoutMessage = async (
+  _baseUrl: string,
+  conversationId: string,
+  payload: { message: string; state?: Record<string, any> },
+  token?: string,
+): Promise<{ job_id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-edit-messages'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify({ ...payload, conversation_id: conversationId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to send layout message');
+  }
+
+  return response.json();
+};
+
+export const pollLayoutJob = async (
+  _baseUrl: string,
+  jobId: string,
+  token?: string,
+): Promise<LayoutJobStatus> => {
+  const response = await fetch(
+    buildApiUrl(`/@ai-edit-jobs?job_id=${encodeURIComponent(jobId)}`),
+    {
+      method: 'GET',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to poll layout job');
+  }
+
+  return response.json();
+};
+
+export const cancelLayoutJob = async (
+  _baseUrl: string,
+  jobId: string,
+  token?: string,
+): Promise<{ status: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-edit-job-cancel'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify({ job_id: jobId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to cancel layout job');
+  }
+
+  return response.json();
+};
