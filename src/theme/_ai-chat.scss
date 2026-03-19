@@ -1547,16 +1547,98 @@
   padding: 0;
   overflow: hidden;
   background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.kyra-ai-chat__settings-color-picker::-webkit-color-swatch-wrapper {
-  padding: 0;
+.kyra-ai-chat__settings-color-picker:hover {
+  transform: scale(1.15);
 }
 
-.kyra-ai-chat__settings-color-picker::-webkit-color-swatch {
-  border: none;
-  border-radius: 50%;
-  opacity: 0;
+.kyra-ai-chat__settings-picker-popover {
+  position: absolute;
+  z-index: 10;
+  right: 0;
+  top: 36px;
+  animation: ai-chat-picker-in 0.15s ease;
+
+  // Override react-color SketchPicker default styles
+  .sketch-picker {
+    border-radius: 12px !important;
+    box-shadow:
+      0 8px 30px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    font-family: inherit !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    background: #fff !important;
+    padding: 12px 12px 8px !important;
+  }
+
+  // Saturation area
+  .sketch-picker > div:first-child {
+    border-radius: 8px !important;
+    overflow: hidden;
+  }
+
+  // Sliders section (hue + color preview)
+  .sketch-picker .flexbox-fix {
+    // Hue slider
+    > div:first-child > div:first-child > div {
+      border-radius: 6px !important;
+      overflow: hidden;
+    }
+    // Color preview circle
+    > div:last-child > div {
+      border-radius: 50% !important;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    }
+  }
+
+  // Hex/RGB input fields
+  .sketch-picker input {
+    border-radius: 6px !important;
+    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+    font-size: 11px !important;
+    box-shadow: none !important;
+    padding: 4px 6px !important;
+
+    &:focus {
+      border-color: var(--ai-chat-accent, #3b97d4) !important;
+      outline: none !important;
+    }
+  }
+
+  // Preset color circles at bottom
+  .sketch-picker > div:last-child {
+    border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+    margin: 0 -12px !important;
+    padding: 8px 12px 4px !important;
+
+    > div > span > div {
+      border-radius: 50% !important;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+      transition: transform 0.1s ease !important;
+
+      &:hover {
+        transform: scale(1.2) !important;
+      }
+    }
+  }
+}
+
+.kyra-ai-chat__settings-picker-cover {
+  position: fixed;
+  inset: 0;
+}
+
+@keyframes ai-chat-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes ai-chat-float-in {
@@ -1749,8 +1831,13 @@ body.has-ai-panel-docked {
   text-align: left;
 }
 
-.kyra-ai-chat__header-menu-panel button:hover {
+.kyra-ai-chat__header-menu-panel button:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.06);
+}
+
+.kyra-ai-chat__header-menu-panel button.kyra-ai-chat__menu-item--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .kyra-ai-chat__header-menu-panel button .icon svg {
@@ -1890,11 +1977,129 @@ body.has-ai-panel-docked {
   flex-shrink: 0;
 }
 
+/* ── Context tag above composer ── */
+.kyra-ai-chat__composer-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.kyra-ai-chat__context-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #e1e1e1;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 13px 11px 11px;
+  font-family: Helvetica;
+  font-size: 12px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  color: #5c5c5c;
+  max-width: 100%;
+}
+
+.kyra-ai-chat__context-tag > button {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: #5c5c5c;
+  transition: background 0.15s ease;
+}
+
+.kyra-ai-chat__context-tag > button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.kyra-ai-chat__context-tag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kyra-ai-chat__context-tag--selection {
+  background-color: rgba(0, 107, 248, 0.1);
+  color: #000;
+}
+
+.kyra-ai-chat__context-tag--selection > button {
+  color: #000;
+}
+
 /* ── Composer row layout ── */
 .kyra-ai-chat__composer-row {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.kyra-ai-chat__composer-input {
+  flex: 1;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  background: rgba(248, 250, 252, 0.9);
+  min-height: 38px;
+  max-height: 120px;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+.kyra-ai-chat__composer-input:focus {
+  border-color: var(--ai-chat-accent, #007bff);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08),
+    0 0 0 2px rgba(0, 123, 255, 0.12);
+}
+
+.kyra-ai-chat__composer-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.kyra-ai-chat__composer-send-button {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ai-chat-text, #1a1a1a);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.kyra-ai-chat__composer-send-button:hover {
+  opacity: 0.8;
+}
+
+.kyra-ai-chat__composer-send-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.kyra-ai-chat__composer-send-button svg {
+  stroke: #fff;
 }
 
 /* ── Plus-button dropdown menu ── */
@@ -2049,6 +2254,114 @@ body.has-ai-panel-docked {
 
 .kyra-ai-chat__message-wizard-btn--ghost:hover {
   background: rgba(0, 0, 0, 0.04);
+}
+
+/* Prompt comparison view */
+.kyra-ai-chat__prompt-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kyra-ai-chat__prompt-comparison-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+.kyra-ai-chat__prompt-comparison--original {
+  color: #999;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.kyra-ai-chat__prompt-comparison-divider {
+  border-top: 1px solid var(--ai-chat-border, #e0e0e0);
+  margin: 4px 0;
+}
+
+.kyra-ai-chat__prompt-comparison--result {
+  color: #1a1a1a;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 450;
+}
+
+.kyra-ai-chat__prompt-comparison--placeholder {
+  color: #aaa;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.kyra-ai-chat__thinking-dots--inline {
+  display: inline-flex;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* Inline editing */
+.kyra-ai-chat__message-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.kyra-ai-chat__message-edit-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--ai-chat-accent, #007bff);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.kyra-ai-chat__message-edit-textarea:focus {
+  border-color: var(--ai-chat-accent-strong, #0056b3);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+.kyra-ai-chat__message-edit-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.kyra-ai-chat__message-edit-btn {
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.kyra-ai-chat__message-edit-btn--send {
+  background: var(--ai-chat-accent, #007bff);
+  color: #fff;
+}
+
+.kyra-ai-chat__message-edit-btn--send:hover {
+  background: var(--ai-chat-accent-strong, #0056b3);
+}
+
+.kyra-ai-chat__message-edit-btn--cancel {
+  background: transparent;
+  color: #666;
+}
+
+.kyra-ai-chat__message-edit-btn--cancel:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Tag Mappings Panel */
@@ -2229,4 +2542,426 @@ body.has-ai-panel-docked {
       cursor: not-allowed;
     }
   }
+}
+
+/* ── Prompts Panel ── */
+.kyra-ai-chat__prompts-freetext {
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(48, 125, 176, 0.06), rgba(59, 151, 212, 0.05));
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 12px;
+}
+
+.kyra-ai-chat__prompts-freetext-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ai-chat-text);
+  margin-bottom: 4px;
+}
+
+.kyra-ai-chat__prompts-textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.kyra-ai-chat__prompts-divider {
+  height: 1px;
+  background: var(--ai-chat-border);
+  margin: 16px 0;
+}
+
+.kyra-ai-chat__prompts-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kyra-ai-chat__prompts-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.kyra-ai-chat__prompts-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.kyra-ai-chat__prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kyra-ai-chat__prompts-item {
+  padding: 10px 12px;
+  border: 1px solid var(--ai-chat-border);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+
+.kyra-ai-chat__prompts-item:hover {
+  border-color: rgba(59, 151, 212, 0.4);
+}
+
+.kyra-ai-chat__prompts-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kyra-ai-chat__prompts-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__prompts-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.kyra-ai-chat__prompts-item-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--ai-chat-border);
+  background: transparent;
+  color: var(--ai-chat-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.kyra-ai-chat__prompts-item-btn:hover {
+  color: var(--ai-chat-accent);
+  border-color: var(--ai-chat-accent);
+  background: rgba(59, 151, 212, 0.06);
+}
+
+.kyra-ai-chat__prompts-item-btn--danger:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.kyra-ai-chat__prompts-item-desc {
+  font-size: 12px;
+  color: var(--ai-chat-muted);
+  margin-top: 2px;
+}
+
+.kyra-ai-chat__prompts-item-text {
+  font-size: 12px;
+  color: var(--ai-chat-text);
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  max-height: 80px;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.kyra-ai-chat__prompts-item-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.kyra-ai-chat__prompts-cat-badge {
+  background: rgba(48, 125, 176, 0.1);
+  color: var(--ai-chat-accent-strong);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── Slate AI Assistant Toolbar Buttons ── */
+
+.ai-slate-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ai-toolbar-button--running {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.kyra-ai-send-icon svg {
+  fill: white;
+}
+
+.kyra-ai-menu {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.kyra-ai-menu-categories button:hover {
+  background: rgba(0, 123, 148, 0.06) !important;
+}
+
+.kyra-ai-menu-prompts button:hover {
+  background: #f0f0f0 !important;
+  border-color: #ccc !important;
+}
+
+/* ── Prompt Picker (inline in chat body) ── */
+
+.kyra-ai-chat__prompt-picker-inline {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ai-chat-accent) rgba(237, 242, 247, 0.9);
+}
+
+.kyra-ai-chat__prompt-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.kyra-ai-chat__prompt-picker-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #334155;
+  }
+}
+
+.kyra-ai-chat__prompt-picker-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.kyra-ai-chat__prompt-picker-status {
+  font-size: 13px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.kyra-ai-chat__prompt-picker-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.kyra-ai-chat__prompt-picker-cat {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #64748b;
+
+  &:hover {
+    background: rgba(0, 123, 148, 0.06);
+    border-color: rgba(0, 123, 148, 0.3);
+  }
+
+  &--active {
+    background: linear-gradient(135deg, var(--ai-chat-accent) 0%, var(--ai-chat-accent-strong) 100%);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+  }
+}
+
+.kyra-ai-chat__prompt-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kyra-ai-chat__prompt-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: var(--ai-chat-accent);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.kyra-ai-chat__prompt-picker-item-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.kyra-ai-chat__prompt-picker-item-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* ── Permission Matrix ── */
+.kyra-ai-chat__permission-matrix {
+  position: absolute;
+  inset: 0;
+  background: var(--ai-chat-bg-alt, #fff);
+  display: flex;
+  flex-direction: column;
+  z-index: 1400;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.kyra-ai-chat__permission-matrix-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.kyra-ai-chat__permission-matrix-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ai-chat-text);
+}
+
+.kyra-ai-chat__permission-matrix-desc {
+  font-size: 12px;
+  color: var(--ai-chat-muted);
+  margin-top: 2px;
+}
+
+.kyra-ai-chat__permission-matrix-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.kyra-ai-chat__permission-matrix-loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--ai-chat-muted);
+  font-size: 13px;
+}
+
+.kyra-ai-chat__permission-matrix-table-wrap {
+  overflow-x: auto;
+}
+
+.kyra-ai-chat__permission-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.kyra-ai-chat__permission-matrix-table th,
+.kyra-ai-chat__permission-matrix-table td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.kyra-ai-chat__permission-matrix-table th {
+  font-weight: 600;
+  color: var(--ai-chat-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.kyra-ai-chat__permission-matrix-group-label {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  display: inline-block;
+  max-height: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kyra-ai-chat__permission-matrix-feature-label {
+  text-align: left !important;
+  font-weight: 500;
+  color: var(--ai-chat-text);
+  white-space: nowrap;
+  padding-right: 12px !important;
+}
+
+.kyra-ai-chat__permission-matrix-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--ai-chat-accent, #3b82f6);
+}
+
+.kyra-ai-chat__permission-matrix-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.kyra-ai-chat__permission-matrix-status {
+  font-size: 12px;
+}
+
+.kyra-ai-chat__permission-matrix-status--ok {
+  color: #22c55e;
+}
+
+.kyra-ai-chat__permission-matrix-status--error {
+  color: #ef4444;
 }

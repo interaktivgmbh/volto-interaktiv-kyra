@@ -1,0 +1,185 @@
+.prompt-manager {
+  &__intro {
+    margin-top: 1rem;
+  }
+
+  &__progress {
+    margin-bottom: 1.5rem;
+  }
+
+  &__toggle-button {
+    margin-bottom: 2rem;
+  }
+
+  &__existing-header {
+    margin-top: 2rem;
+  }
+
+  &__field-error {
+    color: #9f3a38;
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  // --- Dropzone ---
+  &__dropzone-wrapper {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  &__dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+
+    &:hover,
+    &--active {
+      border-color: #2185d0;
+      background-color: #f0f7ff;
+    }
+
+    .icon {
+      font-size: 2rem;
+      color: #999;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  &__dropzone-text {
+    color: #666;
+    margin: 0;
+  }
+
+  &__file-input {
+    display: none;
+  }
+
+  // --- File grid (new uploads preview) ---
+  &__file-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  &__file-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px;
+    text-align: center;
+
+    span {
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__file-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+  }
+
+  &__file-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+
+    .icon {
+      font-size: 2rem;
+      color: #999;
+    }
+  }
+
+  // --- Attached files table ---
+  &__attached-table {
+    margin-top: 1rem;
+
+    .prompt-manager__thumb {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+  }
+}
+
+// --- File preview ---
+.prompt-file-preview {
+  margin-top: 1rem;
+
+  &__image {
+    max-width: 100%;
+    max-height: 500px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+  }
+
+  &__frame {
+    width: 100%;
+    height: 500px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  &__text {
+    max-height: 400px;
+    overflow: auto;
+    background: #f8f8f8;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+  }
+}
+
+// --- Centered modal ---
+.ui.modal.kyra-centered-modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: 80% !important;
+  max-width: 1100px !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+}
+
+.ui.modal.kyra-centered-modal > .content.scrolling {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 180px) !important;
+}
+
+.ui.modal.kyra-centered-modal > .actions {
+  padding: 1rem 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+  .ui.modal.kyra-centered-modal {
+    width: 95% !important;
+  }
+}

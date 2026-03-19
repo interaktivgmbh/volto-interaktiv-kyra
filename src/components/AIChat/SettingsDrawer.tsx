@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+// @ts-ignore
+import { SketchPicker } from 'react-color';
 
 import { Icon } from '@plone/volto/components';
 import { robotSVG } from '../../helpers/icons';
@@ -111,6 +113,9 @@ const SettingsDrawer: React.FC<Props> = ({
   const [draftIconColor, setDraftIconColor] = useState(currentIconColor);
   const [draftAccent, setDraftAccent] = useState(currentAccentColor);
   const [draftName, setDraftName] = useState(currentChatName);
+  const [showAccentPicker, setShowAccentPicker] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const accentPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -118,6 +123,9 @@ const SettingsDrawer: React.FC<Props> = ({
       setDraftIconColor(currentIconColor);
       setDraftAccent(currentAccentColor);
       setDraftName(currentChatName);
+    } else {
+      setShowAccentPicker(false);
+      setShowIconPicker(false);
     }
   }, [open, currentCustomIcon, currentIconColor, currentAccentColor, currentChatName]);
 
@@ -221,12 +229,33 @@ const SettingsDrawer: React.FC<Props> = ({
                 aria-label={color}
               />
             ))}
-            <input
-              type="color"
-              className="kyra-ai-chat__settings-color-picker"
-              value={draftAccent || '#3b97d4'}
-              onChange={(e) => setDraftAccent(e.target.value)}
-            />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <button
+                type="button"
+                className="kyra-ai-chat__settings-color-picker"
+                onClick={() => setShowAccentPicker(!showAccentPicker)}
+                aria-label="Custom color"
+              />
+              {showAccentPicker && (
+                <div
+                  ref={accentPickerRef}
+                  className="kyra-ai-chat__settings-picker-popover"
+                >
+                  <div
+                    className="kyra-ai-chat__settings-picker-cover"
+                    onClick={() => setShowAccentPicker(false)}
+                  />
+                  <SketchPicker
+                    color={draftAccent || '#3b97d4'}
+                    disableAlpha
+                    presetColors={ACCENT_PRESETS}
+                    onChangeComplete={(color: any) =>
+                      setDraftAccent(color.hex)
+                    }
+                  />
+                </div>
+              )}
+            </div>
           </div>
           {draftAccent && (
             <button
@@ -313,12 +342,30 @@ const SettingsDrawer: React.FC<Props> = ({
                     aria-label={color}
                   />
                 ))}
-                <input
-                  type="color"
-                  className="kyra-ai-chat__settings-color-picker"
-                  value={draftIconColor}
-                  onChange={(e) => setDraftIconColor(e.target.value)}
-                />
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <button
+                    type="button"
+                    className="kyra-ai-chat__settings-color-picker"
+                    onClick={() => setShowIconPicker(!showIconPicker)}
+                    aria-label="Custom color"
+                  />
+                  {showIconPicker && (
+                    <div className="kyra-ai-chat__settings-picker-popover">
+                      <div
+                        className="kyra-ai-chat__settings-picker-cover"
+                        onClick={() => setShowIconPicker(false)}
+                      />
+                      <SketchPicker
+                        color={draftIconColor}
+                        disableAlpha
+                        presetColors={PRESET_COLORS}
+                        onChangeComplete={(color: any) =>
+                          setDraftIconColor(color.hex)
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

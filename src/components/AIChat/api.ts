@@ -10,6 +10,7 @@ import type {
   AiChatTranslations,
   TranslationOptions,
   TranslationStatus,
+  Prompt,
 } from './types';
 import type { AiChatUploadResponse } from './types';
 
@@ -533,4 +534,432 @@ export const importGlossaryCsv = async (
   }
 
   return response.json();
+};
+
+// ---------------------------------------------------------------------------
+// Prompt Files
+// ---------------------------------------------------------------------------
+
+export const getPromptFiles = async (
+  promptId: string,
+  token?: string,
+): Promise<{ files: any[] }> => {
+  const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}`), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { files: [] };
+  }
+
+  return response.json();
+};
+
+export const getPromptFile = async (
+  promptId: string,
+  fileId: string,
+  token?: string,
+): Promise<any> => {
+  const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}/${fileId}`), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to load file');
+  }
+
+  return response.json();
+};
+
+export const uploadPromptFiles = async (
+  promptId: string,
+  files: File[],
+  token?: string,
+): Promise<any[]> => {
+  const results: any[] = [];
+
+  for (const file of files) {
+    const form = new FormData();
+    form.append('file', file);
+
+    const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}`), {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: 'same-origin',
+      body: form,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'File upload failed');
+    }
+
+    const result = await response.json();
+    results.push(result);
+  }
+
+  return results;
+};
+
+export const deletePromptFile = async (
+  promptId: string,
+  fileId: string,
+  token?: string,
+): Promise<{ result: string; id: string }> => {
+  const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}/${fileId}`), {
+    method: 'DELETE',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'File deletion failed');
+  }
+
+  return response.json();
+};
+
+// ---------------------------------------------------------------------------
+// Prompts
+// ---------------------------------------------------------------------------
+
+export const getPrompts = async (
+  token?: string,
+): Promise<{ prompts: Prompt[] }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    return { prompts: [] };
+  }
+
+  return response.json();
+};
+
+export const createPrompt = async (
+  payload: { name: string; text: string; description?: string; categories?: string[]; actionType?: string },
+  token?: string,
+): Promise<{ result: string; prompt: Prompt }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'POST',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Prompt creation failed');
+  }
+
+  return response.json();
+};
+
+export const updatePrompt = async (
+  payload: { id: string; name?: string; text?: string; description?: string; categories?: string[]; actionType?: string },
+  token?: string,
+): Promise<{ result: string; prompt: Prompt }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'PATCH',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Prompt update failed');
+  }
+
+  return response.json();
+};
+
+export const deletePrompt = async (
+  payload: { id: string },
+  token?: string,
+): Promise<{ result: string; id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-prompts'), {
+    method: 'DELETE',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Prompt deletion failed');
+  }
+
+  return response.json();
+};
+
+// ---------------------------------------------------------------------------
+// Replace selected text in page blocks
+// ---------------------------------------------------------------------------
+
+function extractSlateText(nodes: any[]): string {
+  return nodes
+    .map((node) => {
+      if (typeof node.text === 'string') return node.text;
+      if (node.children) return extractSlateText(node.children);
+      return '';
+    })
+    .join('');
+}
+
+const normalizeWhitespace = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+function replaceInSlateNodes(
+  nodes: any[],
+  original: string,
+  replacement: string,
+): { result: any[]; replaced: boolean } {
+  const fullText = extractSlateText(nodes);
+  let idx = fullText.indexOf(original);
+  // Fallback: normalised whitespace comparison
+  if (idx === -1) {
+    const normFull = normalizeWhitespace(fullText);
+    const normOrig = normalizeWhitespace(original);
+    const normIdx = normFull.indexOf(normOrig);
+    if (normIdx === -1) return { result: nodes, replaced: false };
+    // Map normalised index back to original text position
+    let ni = 0;
+    let oi = 0;
+    while (ni < normIdx && oi < fullText.length) {
+      if (/\s/.test(fullText[oi])) {
+        while (oi < fullText.length && /\s/.test(fullText[oi])) oi++;
+        ni++; // single space in normalised
+      } else {
+        oi++;
+        ni++;
+      }
+    }
+    const startOi = oi;
+    let remaining = normOrig.length;
+    while (remaining > 0 && oi < fullText.length) {
+      if (/\s/.test(fullText[oi])) {
+        while (oi < fullText.length && /\s/.test(fullText[oi])) oi++;
+        remaining--; // single space in normalised
+      } else {
+        oi++;
+        remaining--;
+      }
+    }
+    // Use the mapped range in the original text
+    original = fullText.substring(startOi, oi);
+    idx = startOi;
+  }
+
+  const cloned: any[] = JSON.parse(JSON.stringify(nodes));
+
+  type Leaf = { node: any; start: number; end: number };
+  const leaves: Leaf[] = [];
+  let pos = 0;
+
+  const walk = (list: any[]) => {
+    for (const n of list) {
+      if (typeof n.text === 'string') {
+        leaves.push({ node: n, start: pos, end: pos + n.text.length });
+        pos += n.text.length;
+      } else if (n.children) {
+        walk(n.children);
+      }
+    }
+  };
+  walk(cloned);
+
+  const matchEnd = idx + original.length;
+  let inserted = false;
+
+  for (const leaf of leaves) {
+    if (leaf.end <= idx || leaf.start >= matchEnd) continue;
+
+    const before =
+      leaf.start < idx ? leaf.node.text.substring(0, idx - leaf.start) : '';
+    const after =
+      leaf.end > matchEnd
+        ? leaf.node.text.substring(matchEnd - leaf.start)
+        : '';
+
+    if (!inserted) {
+      leaf.node.text = before + replacement + after;
+      inserted = true;
+    } else {
+      leaf.node.text = after;
+    }
+  }
+
+  return { result: cloned, replaced: true };
+}
+
+/**
+ * Fetches the page content and computes updated blocks with the text replaced.
+ * Returns { blocks } ready to be PATCHed via Volto's updateContent action.
+ */
+export const computeBlocksWithReplacement = async (
+  pageUrl: string,
+  originalText: string,
+  newText: string,
+  token?: string,
+): Promise<{ blocks: Record<string, any> }> => {
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const getResponse = await fetch(buildApiUrl(path), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!getResponse.ok) throw new Error('Failed to fetch page content');
+  const pageData = await getResponse.json();
+
+  const blocks = pageData.blocks;
+  const blocksLayout = pageData.blocks_layout;
+  if (!blocks || !blocksLayout?.items) throw new Error('No blocks found');
+
+  // Strip HTML tags from the replacement text (gateway may wrap in <p>, <br>, etc.)
+  const cleanText = newText.replace(/<[^>]+>/g, '').trim();
+
+  const updatedBlocks = { ...blocks };
+  let modified = false;
+
+  // Try to find and replace in any block's Slate value fields
+  const slateFields = ['value', 'description', 'title'];
+
+  for (const blockId of blocksLayout.items) {
+    const block = blocks[blockId];
+    if (!block) continue;
+    if (modified) break;
+
+    // Search all known Slate array fields
+    for (const field of slateFields) {
+      const slateValue = block[field];
+      if (!Array.isArray(slateValue)) continue;
+
+      const { result, replaced } = replaceInSlateNodes(
+        slateValue,
+        originalText,
+        cleanText,
+      );
+      if (replaced) {
+        updatedBlocks[blockId] = { ...block, [field]: result };
+        modified = true;
+        break;
+      }
+    }
+
+    // Also check plain string fields (title, description, head_title, etc.)
+    if (!modified) {
+      const stringFields = ['plaintext', 'head_title', 'citation'];
+      for (const field of stringFields) {
+        if (typeof block[field] === 'string' && block[field].includes(originalText)) {
+          updatedBlocks[blockId] = {
+            ...block,
+            [field]: block[field].replace(originalText, cleanText),
+          };
+          modified = true;
+          break;
+        }
+        // Normalised fallback for string fields
+        if (
+          typeof block[field] === 'string' &&
+          normalizeWhitespace(block[field]).includes(normalizeWhitespace(originalText))
+        ) {
+          updatedBlocks[blockId] = {
+            ...block,
+            [field]: block[field].replace(
+              new RegExp(originalText.replace(/\s+/g, '\\s+').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+              cleanText,
+            ),
+          };
+          modified = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // Multi-block: selection spans multiple paragraphs / blocks
+  if (!modified) {
+    const origParagraphs = originalText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+    const newParagraphs = cleanText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+
+    if (origParagraphs.length > 1) {
+      const replacements: { blockId: string; field: string; origPara: string; newPara: string }[] = [];
+
+      for (let i = 0; i < origParagraphs.length; i++) {
+        const origPara = origParagraphs[i];
+        const newPara = i < newParagraphs.length ? newParagraphs[i] : '';
+        let found = false;
+
+        for (const blockId of blocksLayout.items) {
+          const block = updatedBlocks[blockId];
+          if (!block) continue;
+
+          for (const field of slateFields) {
+            const slateValue = block[field];
+            if (!Array.isArray(slateValue)) continue;
+            const blockText = extractSlateText(slateValue);
+            if (
+              blockText.includes(origPara) ||
+              normalizeWhitespace(blockText).includes(normalizeWhitespace(origPara))
+            ) {
+              replacements.push({ blockId, field, origPara, newPara });
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+      }
+
+      if (replacements.length > 0) {
+        for (const rep of replacements) {
+          const block = updatedBlocks[rep.blockId];
+          const slateValue = block[rep.field];
+          if (!Array.isArray(slateValue)) continue;
+          const { result, replaced } = replaceInSlateNodes(slateValue, rep.origPara, rep.newPara);
+          if (replaced) {
+            updatedBlocks[rep.blockId] = { ...block, [rep.field]: result };
+            modified = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!modified) throw new Error('Original text not found in page blocks');
+
+  return { blocks: updatedBlocks };
 };

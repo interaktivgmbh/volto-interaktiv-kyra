@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 
 import { postAiActionsApply, postAiActionsPlan } from './api';
-import type { ChatContextPayload, TranslationOptions, TranslationStatus } from './types';
+import type { ChatCapabilities, ChatContextPayload, TranslationOptions, TranslationStatus } from './types';
+import { hasPermission } from './types';
 
 type Props = {
   canEdit: boolean;
+  capabilities?: ChatCapabilities;
   pageContext?: ChatContextPayload;
   onApplied?: (result: { reload?: boolean }) => void;
   uiLanguage?: string;
@@ -57,7 +59,9 @@ const LANGUAGE_NAMES: Record<string, string> = {
   de: 'Deutsch',
 };
 
-const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLanguage, translationStatus, onRefetchTranslationStatus }) => {
+const DEFAULT_CAPS: ChatCapabilities = { is_anonymous: true, can_edit: false, features: [] };
+
+const ActionsTab: React.FC<Props> = ({ canEdit, capabilities = DEFAULT_CAPS, pageContext, onApplied, uiLanguage, translationStatus, onRefetchTranslationStatus }) => {
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,7 +71,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
   const [syncingLang, setSyncingLang] = useState<string | null>(null);
   const t = getLabels(uiLanguage);
 
-  if (!canEdit) {
+  if (!hasPermission(capabilities, 'translate')) {
     return (
       <div className="kyra-ai-chat__actions">
         <p>Actions are available for editors with permissions.</p>
