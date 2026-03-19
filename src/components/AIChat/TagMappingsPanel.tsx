@@ -86,7 +86,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setNewTag('');
       setNewTranslated('');
     } catch (_err) {
-      // ignore
+      // Same silent error pattern. See PromptsPanel.tsx.
     }
   };
 

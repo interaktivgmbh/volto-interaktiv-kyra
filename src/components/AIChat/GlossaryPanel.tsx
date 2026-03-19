@@ -116,7 +116,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setNewSource('');
       setNewTarget('');
     } catch (_err) {
-      // ignore
+      // Same pattern as PromptsPanel — all operations silently swallow errors. See comment there.
     }
   };
 
@@ -236,7 +236,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
             {rows.map(([src, tgt]) => (
               <div key={src} className="kyra-ai-chat__tag-mappings-row kyra-ai-chat__glossary-row">
                 <div>{src}</div>
-                <div>{tgt}</div>
+                <div>{tgt}</div> // TS2322
                 <div>
                   <button
                     type="button"

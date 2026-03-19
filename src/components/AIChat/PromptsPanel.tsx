@@ -106,7 +106,7 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       const res = await getPrompts(token);
       setPrompts(res.prompts || []);
     } catch (_err) {
-      // ignore
+      // All CRUD operations silently swallow errors. Users get no feedback on failure. Add error state + UI message.
     } finally {
       setLoading(false);
     }

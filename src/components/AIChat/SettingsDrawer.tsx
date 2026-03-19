@@ -324,6 +324,7 @@ const SettingsDrawer: React.FC<Props> = ({
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setDraftIconColor(color)}
+                    // Same hex-as-aria-label issue as line 229.
                     aria-label={color}
                   />
                 ))}

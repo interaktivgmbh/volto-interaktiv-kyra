@@ -112,6 +112,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
       await onRefetchTranslationStatus?.();
       onApplied?.(result);
     } catch (_error) {
+      // Same direct language check — see comment at line 108.
       setError(
         uiLanguage?.startsWith('de')
           ? 'Übersetzung fehlgeschlagen.'
