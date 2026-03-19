@@ -282,6 +282,7 @@ const MessageList: React.FC<Props> = ({
                     {useMarkdown ? (
                       <div
                         className="kyra-ai-chat__message-content kyra-ai-chat__message-content--markdown"
+                        // Same dangerouslySetInnerHTML risk as line 258.
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
                       />
                     ) : (
@@ -331,6 +332,7 @@ const MessageList: React.FC<Props> = ({
                 <ul>
                   {message.citations.map((citation) => (
                     <li key={citation.source_id}>
+                      {/* TODO: Check if validation makes sense here */}
                       <a href={citation.url} target="_blank" rel="noreferrer">
                         {citation.label || citation.url}
                       </a>
