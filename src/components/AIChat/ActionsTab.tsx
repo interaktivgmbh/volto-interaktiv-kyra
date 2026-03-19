@@ -12,6 +12,7 @@ type Props = {
   onRefetchTranslationStatus?: () => Promise<void>;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -104,7 +105,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
         translation,
       });
       setSuccess(
-        uiLanguage?.startsWith('de')
+        uiLanguage?.startsWith('de') // Direct language checks bypass the labels object (lines 15-53). Same pattern on lines 115, 149, 157. Use the labels object consistently.
           ? `Übersetzung nach ${LANGUAGE_NAMES[targetLanguage] || targetLanguage} erfolgreich.`
           : `Translation to ${LANGUAGE_NAMES[targetLanguage] || targetLanguage} completed successfully.`,
       );

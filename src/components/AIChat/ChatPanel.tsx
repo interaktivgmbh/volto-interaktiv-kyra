@@ -15,6 +15,7 @@ import type {
 import { Icon } from '@plone/volto/components';
 import { historySVG, newchatSVG, settingsSVG } from '../../helpers/icons';
 
+// Translations in Volto should be using react-intl instead of custom code. (https://6.docs.plone.org/volto/development/i18n.html)
 const getChatLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -47,6 +48,7 @@ const getChatLabels = (lang?: string) => {
   };
 };
 
+// Lots of props for a single component
 type Props = {
   isOpen: boolean;
   isDocked: boolean;
@@ -62,7 +64,7 @@ type Props = {
   customIconColor: string;
   accentColor: string | null;
   chatName: string | null;
-  onSaveSettings: (draft: import('./SettingsDrawer').SettingsDraft) => void;
+  onSaveSettings: (draft: import('./SettingsDrawer').SettingsDraft) => void; // Imports should be at the top of each file
   onClearHistory: () => void;
   onClose: () => void;
   onToggleHistory: () => void;
@@ -113,7 +115,7 @@ const ChatPanel: React.FC<Props> = ({
   onSend,
   onStartTranslation,
   onStartSync,
-  onPromptsClick,
+  onPromptsClick, // Appears to be unused
   onApplyPrompt,
   onWizardAction,
   outdatedCount,
@@ -133,6 +135,9 @@ const ChatPanel: React.FC<Props> = ({
   editModeActive,
   editBackendUrl,
   onEditModeToggle,
+    // If components take this many props they might be doing too much at one.
+    // Possibly use React Context instead of prop drilling where applicable.
+    // Read more: https://react.dev/learn/passing-data-deeply-with-context
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -141,6 +146,8 @@ const ChatPanel: React.FC<Props> = ({
   const [showPromptPicker, setShowPromptPicker] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // We are handling events manually instead of using React's events.
+  // This might be a good use case for useRef + onBlur
   useEffect(() => {
     if (!showMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -177,6 +184,7 @@ const ChatPanel: React.FC<Props> = ({
               aria-label={t.menu}
               title={t.menu}
             >
+              {/*Components should not have svgs as hardcoded html. Instead import them like settingsSVG etc.*/}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <circle cx="5" cy="12" r="1.5" />
                 <circle cx="12" cy="12" r="1.5" />
@@ -195,6 +203,8 @@ const ChatPanel: React.FC<Props> = ({
                   <Icon name={settingsSVG} size="14px" />
                   <span>{t.settings}</span>
                 </button>
+                {/*capabilities.can_edit is repeated three times. This could be one condition with a fragment wrapping the buttons. https://react.dev/reference/react/Fragment*/}
+                {/*The buttons also appear to be almost the same with the only difference being the svg and <span> content. These could be a component instead*/}
                 {capabilities.can_edit && (
                   <button
                     type="button"

@@ -48,6 +48,7 @@ const ACCENT_PRESETS = [
   '#f97316',
 ];
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -225,7 +226,7 @@ const SettingsDrawer: React.FC<Props> = ({
                 onClick={() =>
                   setDraftAccent(color === '#3b97d4' ? null : color)
                 }
-                aria-label={color}
+                aria-label={color} // Hex color codes as aria-labels are not accessible. Use descriptive color names.
               />
             ))}
             <label

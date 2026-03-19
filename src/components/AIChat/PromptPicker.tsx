@@ -11,6 +11,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -36,7 +37,7 @@ const groupByCategory = (prompts: Prompt[]) => {
   for (const prompt of prompts) {
     const cats = prompt.categories && prompt.categories.length > 0
       ? prompt.categories
-      : ['Allgemein'];
+      : ['Allgemein']; // Hardcoded German string — should use labels object or react-intl for default category.
     for (const cat of cats) {
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(prompt);

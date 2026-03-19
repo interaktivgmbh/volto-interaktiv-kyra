@@ -16,6 +16,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getHistoryLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -146,7 +147,7 @@ const HistoryDrawer: React.FC<Props> = ({
     exitSelectMode();
   };
 
-  // Close header menu on outside click
+  // Same manual click-outside pattern — see ChatPanel.tsx.
   React.useEffect(() => {
     if (!headerMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -197,6 +198,7 @@ const HistoryDrawer: React.FC<Props> = ({
               aria-label={t.menu}
               title={t.menu}
             >
+              {/* Inline SVGs — same issue as ChatPanel.tsx. */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <circle cx="5" cy="12" r="1.5" />
                 <circle cx="12" cy="12" r="1.5" />

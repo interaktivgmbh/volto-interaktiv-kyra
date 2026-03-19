@@ -11,6 +11,7 @@ type Props = {
   onCancelEdit?: () => void;
 };
 
+// Same react-intl issue.
 const getMessageLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -143,7 +144,7 @@ const MessageList: React.FC<Props> = ({
   onEditAndResend,
   onCancelEdit,
 }) => {
-  const rendered = useMemo(() => messages, [messages]);
+  const rendered = useMemo(() => messages, [messages]); // This useMemo is a no-op — it returns the same reference.
   const containerRef = useRef<HTMLDivElement>(null);
   const [editText, setEditText] = useState('');
   const editRef = useRef<HTMLTextAreaElement>(null);
@@ -254,7 +255,7 @@ const MessageList: React.FC<Props> = ({
                       {rawContent ? (
                         <div
                           className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__message-content--markdown"
-                          dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }} // dangerouslySetInnerHTML is fragile — a change to renderMarkdown could introduce XSS. Consider react-markdown or DOMPurify.
                         />
                       ) : isStreaming ? (
                         <div className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__prompt-comparison--placeholder">

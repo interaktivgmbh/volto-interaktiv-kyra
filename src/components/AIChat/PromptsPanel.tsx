@@ -11,6 +11,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -76,6 +77,7 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
     (state: any) => state?.userSession?.token,
   ) as string | undefined;
 
+  // Many useState calls for form state — consider useReducer or grouping into form objects.
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -226,6 +228,7 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
             }}
             style={{ marginTop: 8 }}
           >
+            {/* Inline SVGs — same issue as ChatPanel.tsx. */}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
               <polygon points="5 3 19 12 5 21 5 3" />
             </svg>

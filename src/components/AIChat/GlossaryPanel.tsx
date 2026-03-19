@@ -10,6 +10,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -209,6 +210,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
             title={syncing ? t.syncing : t.sync}
             aria-label={t.sync}
           >
+            {/* Inline SVGs — same issue as ChatPanel.tsx. */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 4 23 10 17 10" />
               <polyline points="1 20 1 14 7 14" />
