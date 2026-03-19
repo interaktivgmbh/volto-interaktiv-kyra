@@ -1,273 +1,561 @@
-# volto-interaktiv-kyra
+<div align="center">
 
-Kyra AI for Volto — a modern, editor-first AI add-on for structured prompts, smart settings
-and seamless Slate workflows.
+# Kyra — AI Assistant for Volto
 
-volto-interaktiv-kyra brings Kyra’s AI features into Volto with a polished, production-ready UI.
-It empowers editors with a curated Prompt Manager, configurable AI Settings,
-and dedicated Slate toolbar entry points for both prompt-based assistance and optional free-text chat.
+**Intelligent content assistant for Plone/Volto editors**
+DeepL translation · AI chat · Edit mode · Layout agent · Prompt management · Widget customization
 
-Repositories
-- Frontend: https://github.com/interaktivgmbh/volto-interaktiv-kyra
-- Backend prerequisite: https://github.com/interaktivgmbh/interaktiv.kyra
+[![Version](https://img.shields.io/badge/version-2.0-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
+[![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](LICENSE)
+[![Plone](https://img.shields.io/badge/Plone-6-orange.svg)](https://plone.org)
+[![Volto](https://img.shields.io/badge/Volto-18+-purple.svg)](https://github.com/plone/volto)
 
-## Why Kyra for Volto?
+<br/>
 
-- editor-first UX with clear, separated workflows
-- curated prompts for consistent content quality
-- optional free-text chat for fast ad-hoc tasks
-- centralized configuration via backend-driven settings
-- clean integration into the Slate toolbar
+<img src="showcase/bot-showcase.gif" alt="Kyra AI Assistant — Animated Showcase" width="100%" />
 
----
+<sub>17 animated scenes — <a href="https://www.interaktiv.de/medien/svg/bot-showcase.svg/@@images/16c622ac-b240-4370-82ee-264fd1d449c8.svg">open interactive version</a></sub>
 
-## Showcase
-
-- AI Settings control panel
-  ![Kyra AI Settings](src/theme/assets/showcase/showcase-1.gif)
-
-- Prompt Manager UI
-  ![Kyra Prompt Manager - overview](src/theme/assets/showcase/showcase-2.gif)
-
-- Slate editor toolbar with two AI buttons
-  ![Slate toolbar Kyra buttons](src/theme/assets/showcase/showcase-3.gif)
+</div>
 
 ---
 
-## What this add-on provides
+## Contents
 
-The add-on focuses on three user-facing areas:
-
-1. AI Settings UI
-2. Prompt Manager UI
-3. Editor integrations (Slate), including:
-   - prompt-based insertion
-   - free-text chat
-
-It is designed to be usable in projects that want:
-- a curated, controlled prompt workflow for editors
-- a separate, more flexible chat workflow
-- centralized AI configuration in the Plone backend and exposed to Volto
+> **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Edit Mode](#edit-mode) · [Layout Agent](#layout-agent) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [Slate Integration](#slate-editor-integration) · [File Attachments](#prompt-file-attachments) · [History](#chat-history) · [Permissions](#permission-matrix) · [Customization](#customization)
+>
+> **Technical** — [Architecture](#architecture) · [API Endpoints](#api-endpoints) · [Installation](#installation) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting)
 
 ---
 
-## Key features
+## Features
 
-### 1) AI Settings UI
-
-A settings interface for Kyra-related configuration that is sourced from the backend.
-Depending on your backend configuration and permissions, this typically includes:
-
-- enabling/disabling Kyra features
-- choosing or configuring AI providers/gateways (backend-driven)
-- default behavior for prompt execution
-- UI-related toggles for editor features
-- language behavior defaults
-
-The settings UI is intended to map to the backend registry/configuration that interaktiv.kyra provides.
-This keeps the security and source of truth on the backend.
-
-Expected behavior:
-- editors and admins see only what they are allowed to configure
-- changes are persisted via backend REST endpoints
-- the Volto UI reflects these changes without custom project code whenever possible
-
-### 2) Prompt Manager
-
-A structured, editorial prompt management UI that supports:
-
-- listing prompts
-- creating new prompts
-- updating prompts
-- deleting prompts
-- categorization / grouping
-- optional prompt metadata fields (backend schema-driven)
-- file attachments per prompt
-
-In our implementation, the UI logic is backed by Redux actions such as:
-- getPrompts
-- createPrompt
-- updatePrompt
-- deletePrompt
-- uploadPromptFiles
-- deletePromptFile
-
-This enables workflows like:
-- building a curated prompt library for a site
-- maintaining reusable prompts per department or content type
-- adding example files or context documents to prompts
-
-UI expectations:
-- clear overview (categories, search/filter if enabled)
-- prompt detail editing
-- safe delete patterns
-- good loading and error states
-
-### 3) Free-text chat (optional, separate feature)
-
-A fast, flexible AI entry point for editors when a curated prompt is not enough.
-
-Important:
-- the chat is intentionally separate from the prompt manager UI
-- the chat entry point is exposed as its own icon in the Slate editor toolbar
-- it can be enabled/disabled via settings (backend-driven)
-
-Use cases:
-- quick rewrite/summarize tasks
-- brainstorming copy variants
-- short ad-hoc transformations
-
-### 4) Slate editor integration
-
-The add-on integrates Kyra into the Slate editor with two dedicated toolbar buttons:
-
-- Kyra Prompt Manager button
-  Opens the curated prompt UI and allows inserting AI-generated outputs into the editor.
-
-- Kyra Chat button
-  Opens a free-text AI modal for ad-hoc tasks, also allowing insertion into the editor.
-
-This dual approach helps editors choose:
-- structured and consistent workflows (prompts)
-- quick and flexible workflows (chat)
-
-UX highlights:
-- distinct icons for both features
-- clear modal separation
-- insertion flows that respect Slate structures
-- loading feedback while AI is working
-
-If your project wants to customize icons, placement, or restrictions,
-you can override the respective components or configuration hooks.
-
-### 5) i18n and language behavior
-
-The UI is designed to be bilingual-friendly.
-
-Typical behavior:
-- automatic DE/EN label switching based on the current Volto language
-- English as a safe default when a translation is not available
-
-If your project requires additional languages or custom message catalogs,
-extend the messages file and register additional translations.
+| Feature | Description |
+|:--------|:------------|
+| **DeepL Translation** | Translate pages or subtrees with glossary support |
+| **Translation Sync** | Detect and update outdated translations |
+| **AI Chat** | Streaming chat with citations and page context |
+| **Edit Mode** | Directly modify page content (headings, text, metadata) via chat |
+| **Layout Agent** | AI-driven page layout generation and block restructuring |
+| **Text Selection** | Select text on page as targeted AI context |
+| **Prompt Manager** | Curated prompt library with compare view — available in chat panel and as Slate editor toolbar buttons |
+| **Slate Editor Integration** | Prompt Manager and free-text prompts directly in the Slate rich-text editor toolbar |
+| **Prompt File Attachments** | Upload reference files to prompts for additional context |
+| **AI Assistant Run** | Execute prompts against selected text inline from the Slate toolbar |
+| **Chat History** | Pin, archive, rename conversations |
+| **Glossary** | DeepL glossary for consistent terminology |
+| **Tag Mappings** | Keyword translation mappings |
+| **Permission Matrix** | Fine-grained role-based access control per feature |
+| **Customization** | Custom icon, accent color and chat name |
+| **Audit Logging** | Server-side logging of all AI actions for compliance |
 
 ---
 
-## High level architecture
+## Translation
+
+Full DeepL integration in the editor workflow.
 
 ```mermaid
-flowchart TD
-    A[Editor in Volto] --> B[Slate toolbar]
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
+sequenceDiagram
+    participant Editor
+    participant Kyra
+    participant Plone
+    participant DeepL
 
-    B --> C1[Kyra Prompt Manager button]
-    B --> C2[Kyra Chat button]
-
-    C1 --> D1[Prompt Manager UI]
-    C2 --> D2[Chat modal UI]
-
-    D1 --> E[Kyra Redux state/actions]
-    D2 --> E
-
-    E --> F[Volto API client]
-
-    F --> G[Plone REST endpoints via interaktiv.kyra]
-    G --> H[Permissions + settings + prompt logic]
-    H --> I[AI Gateway / Provider adapter]
-    I --> J[LLM / AI service]
-
-    J --> I --> H --> G --> F
-
-    F --> K1[Generated text for prompt]
-    F --> K2[Generated text for chat]
-
-    K1 --> L[Insert into Slate editor]
-    K2 --> L
-
-    L --> M[Updated page content]
+    Editor->>Kyra: Click + → Translate
+    Kyra->>Editor: Scope? Page / Subtree
+    Editor->>Kyra: This page only
+    Kyra->>Editor: Target language?
+    Editor->>Kyra: English
+    Kyra->>Plone: POST translate
+    Plone->>DeepL: Translate blocks
+    DeepL-->>Plone: Translated content
+    Plone-->>Kyra: Result
+    Kyra->>Editor: Page updated
 ```
-The Kyra system is split into two layers:
 
-- Backend (interaktiv.kyra)
-  - exposes REST endpoints for settings, prompts, and chat
-  - handles permissions and security
-  - orchestrates AI gateway/provider logic
+- **Scope**: Single page or entire subtree with subpages
+- **Languages**: DE to EN (extensible)
+- **Modes**: Full overwrite or incremental (only changed blocks)
+- **Glossary**: DeepL glossary entries respected during translation
+- **Tag Mapping**: Keywords translated via configured mappings
+- **Progress**: Visual overlay on the page during translation
 
-- Frontend (volto-interaktiv-kyra)
-  - provides UI, editor integration, and Redux state
-  - calls backend endpoints
-  - inserts results into Slate
+### Glossary Management
 
-Indicative flow:
+Header menu, then **DeepL Glossary**: Add term pairs manually or bulk-import via CSV. Entries are synced to DeepL and used during all translations.
 
-1. Editor opens prompt manager or chat in Slate.
-2. Volto sends a request to the backend endpoints.
-3. Backend validates permissions and processes the request.
-4. Backend returns AI output.
-5. Volto inserts or displays the result.
+### Tag Mappings
+
+Header menu, then **Tag Mappings**: Define per-language keyword translations. Tags without mapping are excluded from translated output.
 
 ---
 
-## Requirements
+## Translation Sync
 
-### Mandatory backend dependency
+Automatic detection and resolution of outdated translations.
 
-> ❗ Backend prerequisite
->
-> This Volto add-on requires the Plone backend add-on interaktiv.kyra.
->
-> https://github.com/interaktivgmbh/interaktiv.kyra
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
+flowchart LR
+    A["Page modified"] --> B{"Translations\nexist?"}
+    B -->|Yes| C["Compare\ntimestamps"]
+    C --> D{"Outdated?"}
+    D -->|Yes| E["Badge on\nlauncher"]
+    E --> F["Sync card\nin chat"]
+    F --> G["Re-translate"]
+    D -->|No| I["Up to date"]
+    B -->|No| J["No action"]
 
-Ensure:
-- the add-on is installed in your Plone environment
-- the add-on is enabled in your site
-- the Kyra REST endpoints are available
-- roles/permissions are configured correctly
+    style A fill:#dbeafe,stroke:#2563eb,color:#111
+    style E fill:#fee2e2,stroke:#dc2626,color:#111
+    style G fill:#dbeafe,stroke:#2563eb,color:#111
+    style I fill:#dcfce7,stroke:#16a34a,color:#111
+    style J fill:#f1f5f9,stroke:#94a3b8,color:#111
+    style B fill:#fff,stroke:#475569,color:#111
+    style D fill:#fff,stroke:#475569,color:#111
+```
 
-### Frontend baseline
+1. The translation status endpoint compares modification timestamps
+2. Launcher button shows badge with outdated count
+3. Sync card lists stale translations with URLs
+4. One-click re-translation of affected pages
 
-- a Volto project
-- Node version compatible with your Volto version
-- pnpm or yarn (project preference)
+---
+
+## AI Chat
+
+Context-aware streaming chat with citations.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
+sequenceDiagram
+    participant Editor
+    participant Kyra
+    participant Plone
+    participant AI as AI Gateway
+
+    Editor->>Kyra: Sends message
+    Note over Kyra: Attaches page context<br/>or selected text
+    Kyra->>Plone: POST chat endpoint
+    Plone->>AI: Forward with context
+    AI-->>Plone: SSE stream tokens
+    Plone-->>Kyra: Token-by-token
+    Kyra->>Editor: Live rendering
+    Note over Kyra,Editor: Citations appended
+```
+
+- **Streaming** via Server-Sent Events with real-time rendering
+- **Citations** with source links and snippets
+- **Feedback** — rate responses with thumbs up or down
+- **File Upload** — attach documents (PDF, RTF) for additional context
+- **Context Modes** — current page content, selected text, or site-wide
+- **Abort** — cancel in-flight requests
+- **Wizard Actions** — interactive buttons in assistant responses for guided workflows
+- **Message Editing** — edit previously sent user messages inline
+
+---
+
+## Edit Mode
+
+Directly edit page content through AI instructions via the chat panel. Edit mode allows modifying headings, text blocks, metadata and other Volto block content without opening the Plone editor.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
+sequenceDiagram
+    participant Editor
+    participant Kyra
+    participant Plone
+
+    Editor->>Kyra: Activate Edit Mode (+ menu)
+    Note over Kyra: Loads current page blocks<br/>and resolves listing queries
+    Kyra->>Editor: Context tag "Edit Mode" shown
+    Editor->>Kyra: "Change the heading to ..."
+    Kyra->>Plone: Compute block replacement
+    Note over Kyra: Locates text in Slate nodes<br/>and replaces inline
+    Plone-->>Kyra: Updated blocks
+    Kyra->>Plone: PATCH page content
+    Kyra->>Editor: Page reloaded with changes
+```
+
+**How it works:**
+
+1. Editor activates edit mode via the `+` menu in the composer
+2. Current page blocks are loaded and prepared (including listing block resolution)
+3. Each chat message is processed as an edit instruction
+4. Text replacements are computed against Slate nodes with whitespace-normalized matching
+5. Changes are applied via `PATCH` to the Plone content API
+6. The page reloads automatically to reflect the changes
+
+**Capabilities:**
+- Modify text in any Slate-based block (paragraphs, headings, descriptions)
+- Replace content in string fields (`plaintext`, `head_title`, `citation`)
+- Multi-paragraph replacements across multiple blocks
+- Content locking during edit operations to prevent conflicts
+
+---
+
+## Layout Agent
+
+AI-driven page layout generation and restructuring through an external Layout Agent backend. The Layout Agent operates on the full Volto block structure and can create, rearrange, and modify blocks via natural language instructions.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
+sequenceDiagram
+    participant Editor
+    participant Kyra
+    participant Plone
+    participant Agent as Layout Agent
+
+    Editor->>Kyra: "Restructure page into 3 columns"
+    Kyra->>Plone: Prepare blocks for edit mode
+    Plone-->>Kyra: Current page state
+    Kyra->>Agent: Create conversation + send state
+    Agent-->>Kyra: Job ID
+    loop Poll until completed
+        Kyra->>Agent: Poll job status
+        Agent-->>Kyra: running / completed
+    end
+    Agent-->>Kyra: New block state
+    Kyra->>Plone: PATCH updated blocks
+    Kyra->>Editor: Page reloaded
+```
+
+**Architecture:**
+
+- Communication via a Plone proxy (`@ai-edit-*` endpoints) to an external Layout Agent API
+- Conversation-based: a layout conversation is created with the current page state, then messages are sent as edit instructions
+- Asynchronous job processing with polling and cancel support
+- The proxy handles authentication (static API key or Keycloak token)
+
+**Endpoints (proxied through Plone):**
+
+| Endpoint | Purpose |
+|:---------|:--------|
+| `@ai-edit-conversations` | Create a new layout conversation with page state |
+| `@ai-edit-messages` | Send an edit instruction to an existing conversation |
+| `@ai-edit-jobs` | Poll the status of a running layout job |
+| `@ai-edit-job-cancel` | Cancel a running layout job |
+
+---
+
+## Text Selection
+
+Select any text on the page to use it as targeted AI context.
+
+- Selection detected via mouseup events
+- Context tag **Selected Text** appears in the composer
+- Dismissible to reset to page context
+- Selected text sent alongside the prompt for targeted responses
+
+---
+
+## Prompt Management
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
+flowchart TD
+    A["Admin creates prompt"] --> B["Stored via Prompts API"]
+    B --> C["Prompt Picker\nin chat"]
+    B --> D["Prompt Manager\nControl Panel"]
+    B --> E["Slate Toolbar\nButtons"]
+    C --> F["Editor picks prompt"]
+    E --> F
+    F --> G["AI processes\nwith context"]
+    G --> H{"Compare View"}
+    H -->|"Apply"| I["Text replaced\non page"]
+    H -->|"Retry"| G
+    H -->|"Cancel"| J["Dismissed"]
+
+    style A fill:#dbeafe,stroke:#2563eb,color:#111
+    style B fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style C fill:#dbeafe,stroke:#2563eb,color:#111
+    style D fill:#dbeafe,stroke:#2563eb,color:#111
+    style E fill:#dbeafe,stroke:#2563eb,color:#111
+    style G fill:#e0e7ff,stroke:#4f46e5,color:#111
+    style H fill:#fef3c7,stroke:#d97706,color:#111
+    style I fill:#dcfce7,stroke:#16a34a,color:#111
+    style J fill:#f1f5f9,stroke:#94a3b8,color:#111
+```
+
+**Five ways to use prompts:**
+
+1. **Prompt Picker** — browse saved prompts by category in the chat panel
+2. **Slate Toolbar — Prompt Menu** — access the full Prompt Manager directly from the Slate editor toolbar while editing content
+3. **Slate Toolbar — Free-Text** — type any custom prompt directly from the Slate toolbar with a chat overlay
+4. **Prompt Manager** — full CRUD at Site Setup, AI Prompt Manager
+5. **Free-Text in Chat** — type any custom prompt directly in the chat panel
+
+**Compare View**: After processing, editors see Original vs. Result side-by-side with actions: Apply, Retry, Edit, Cancel.
+
+**Action Types**: Each prompt defines an `actionType` — either `replace` (swap selected text) or `append` (add after selection).
+
+### Prompt File Attachments
+
+Prompts can include file attachments for additional reference context. Files are managed per-prompt via the Prompt Manager control panel:
+
+- Upload multiple files per prompt (drag & drop or file picker)
+- Preview uploaded files inline
+- Files are stored server-side via the `@ai-prompt-files` API
+- Supported formats: any file type the backend can process
+
+---
+
+## Slate Editor Integration
+
+Two dedicated buttons are added to the Slate rich-text editor toolbar:
+
+1. **AI Prompt Menu** (`AIAssistantButton`) — dropdown showing prompt categories on the left, prompt list on the right. Selecting a prompt executes it against the current editor selection via the `@ai-assistant-run` endpoint.
+
+2. **AI Free-Text Chat** (`AIAssistantSlateButton`) — opens a chat overlay directly in the editor. Type any instruction, and the AI processes it against the selected text. Results can be applied (replace or append) or dismissed.
+
+Both buttons support:
+- Automatic extraction of the current Slate selection text
+- Status indicators (running, success, error)
+- HTML stripping from AI responses before insertion
+
+---
+
+## Chat History
+
+- Persistent per-user conversation history in localStorage
+- **Pin** important conversations to the top
+- **Archive** conversations without deleting
+- **Rename** conversation titles
+- **Bulk actions** for multi-select delete and archive
+- Auto-generated titles from first message content
+
+---
+
+## Permission Matrix
+
+Administrators can configure fine-grained, role-based access control for each Kyra feature via the header menu (**Permissions**). The matrix defines which user groups can access:
+
+| Feature | Description |
+|:--------|:------------|
+| **Chat** | Use the AI chat |
+| **Translate** | Translate pages and subtrees |
+| **Manage Glossary** | Edit DeepL glossary entries |
+| **Manage Tag Mappings** | Edit keyword translation mappings |
+| **Manage Prompts** | Create and edit prompts |
+| **Manage Settings** | Access the settings drawer |
+| **Assistant Run** | Execute prompts from the Slate toolbar |
+
+Changes are saved via the `@ai-permission-matrix` endpoint and take effect immediately. The permission matrix is only visible to site administrators.
+
+---
+
+## Customization
+
+Personalize via the settings drawer:
+
+| Option | Description |
+|:-------|:------------|
+| **Launcher Icon** | Upload custom image or SVG |
+| **Icon Color** | 8 preset colors |
+| **Accent Color** | 6 presets: blue, green, amber, red, purple, pink |
+| **Chat Name** | Replace default assistant name |
+
+---
+
+## Architecture
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
+flowchart TD
+    subgraph Frontend["Volto Frontend"]
+        L["Launcher Button"] --> P["Chat Panel"]
+        P --> Chat["Messages"]
+        P --> Comp["Composer"]
+        P --> Set["Settings"]
+        P --> Hist["History"]
+        P --> Gloss["Glossary"]
+        P --> Tags["Tag Mappings"]
+        P --> Prom["Prompt Picker"]
+        P --> Edit["Edit Mode"]
+        Slate["Slate Toolbar"] --> AIBtn["AI Prompt Menu"]
+        Slate --> AIChat["AI Free-Text"]
+    end
+
+    subgraph Backend["Plone Backend"]
+        C1["Chat API"]
+        C2["Translate API"]
+        C3["Prompts API"]
+        C4["Glossary API"]
+        C5["Tag Mappings API"]
+        C6["Translation Status"]
+        C7["Capabilities"]
+        C8["Assistant Run"]
+        C9["Prompt Files"]
+        C10["Edit Proxy"]
+        C11["Audit"]
+    end
+
+    subgraph Services["External Services"]
+        GW["AI Gateway"]
+        DL["DeepL API"]
+        KC["Keycloak"]
+        LA["Layout Agent"]
+    end
+
+    Chat <--> C1
+    Comp --> C2
+    Prom <--> C3
+    Gloss <--> C4
+    Tags <--> C5
+    L --> C6
+    L --> C7
+    AIBtn --> C8
+    AIChat --> C8
+    Prom --> C9
+    Edit --> C10
+    C1 --> GW
+    C1 --> KC
+    C2 --> DL
+    C8 --> GW
+    C10 --> LA
+
+    style L fill:#dbeafe,stroke:#2563eb,color:#111
+    style P fill:#dbeafe,stroke:#2563eb,color:#111
+    style Chat fill:#dbeafe,stroke:#2563eb,color:#111
+    style Comp fill:#dbeafe,stroke:#2563eb,color:#111
+    style Set fill:#dbeafe,stroke:#2563eb,color:#111
+    style Hist fill:#dbeafe,stroke:#2563eb,color:#111
+    style Gloss fill:#dbeafe,stroke:#2563eb,color:#111
+    style Tags fill:#dbeafe,stroke:#2563eb,color:#111
+    style Prom fill:#dbeafe,stroke:#2563eb,color:#111
+    style Edit fill:#dbeafe,stroke:#2563eb,color:#111
+    style Slate fill:#dbeafe,stroke:#2563eb,color:#111
+    style AIBtn fill:#dbeafe,stroke:#2563eb,color:#111
+    style AIChat fill:#dbeafe,stroke:#2563eb,color:#111
+    style C1 fill:#fff,stroke:#2563eb,color:#111
+    style C2 fill:#fff,stroke:#2563eb,color:#111
+    style C3 fill:#fff,stroke:#2563eb,color:#111
+    style C4 fill:#fff,stroke:#2563eb,color:#111
+    style C5 fill:#fff,stroke:#2563eb,color:#111
+    style C6 fill:#fff,stroke:#2563eb,color:#111
+    style C7 fill:#fff,stroke:#2563eb,color:#111
+    style C8 fill:#fff,stroke:#2563eb,color:#111
+    style C9 fill:#fff,stroke:#2563eb,color:#111
+    style C10 fill:#fff,stroke:#2563eb,color:#111
+    style C11 fill:#fff,stroke:#2563eb,color:#111
+    style GW fill:#dcfce7,stroke:#16a34a,color:#111
+    style DL fill:#dcfce7,stroke:#16a34a,color:#111
+    style KC fill:#dcfce7,stroke:#16a34a,color:#111
+    style LA fill:#dcfce7,stroke:#16a34a,color:#111
+```
+
+### Permissions
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569'}}}%%
+flowchart LR
+    subgraph Roles
+        ANON["Anonymous"]
+        EDITOR["Editor"]
+        ADMIN["Admin"]
+    end
+
+    subgraph Access
+        F1["Chat read-only"]
+        F2["Chat full access"]
+        F3["Translation"]
+        F4["Prompt Picker"]
+        F5["Prompt Manager"]
+        F6["Glossary"]
+        F7["Tag Mappings"]
+        F8["Settings Panel"]
+        F9["Edit Mode"]
+        F10["Layout Agent"]
+    end
+
+    ANON --> F1
+    EDITOR --> F2
+    EDITOR --> F3
+    EDITOR --> F4
+    EDITOR --> F9
+    EDITOR --> F10
+    ADMIN --> F5
+    ADMIN --> F6
+    ADMIN --> F7
+    ADMIN --> F8
+
+    style ANON fill:#f1f5f9,stroke:#94a3b8,color:#111
+    style EDITOR fill:#dbeafe,stroke:#2563eb,color:#111
+    style ADMIN fill:#dbeafe,stroke:#2563eb,color:#111
+    style F1 fill:#fff,stroke:#94a3b8,color:#111
+    style F2 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F3 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F4 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F5 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F6 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F7 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F8 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F9 fill:#dcfce7,stroke:#16a34a,color:#111
+    style F10 fill:#dcfce7,stroke:#16a34a,color:#111
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| `POST` | `/@ai-chat` | Send message, receive streaming response |
+| `POST` | `/@ai-chat-upload` | Upload file for chat context (PDF, RTF) |
+| `POST` | `/@ai-feedback` | Submit message rating |
+| `POST` | `/@ai-actions` | Translate page or subtree |
+| `GET` | `/@ai-translation-status` | Outdated translation report |
+| `GET/POST/PATCH/DELETE` | `/@ai-prompts` | Prompt CRUD |
+| `GET/POST/DELETE` | `/@ai-prompt-files` | Prompt file attachment management |
+| `POST` | `/@ai-assistant-run` | Execute prompt against selected text |
+| `GET/POST/DELETE` | `/@ai-glossary` | Glossary management |
+| `GET/POST/DELETE` | `/@ai-tag-mappings` | Tag mapping management |
+| `GET` | `/@ai-capabilities` | Feature flags and permissions |
+| `GET/POST` | `/@ai-permission-matrix` | Read/update role-based permission matrix |
+| `POST` | `/@ai-edit-conversations` | Create layout agent conversation |
+| `POST` | `/@ai-edit-messages` | Send layout edit instruction |
+| `GET` | `/@ai-edit-jobs` | Poll layout job status |
+| `POST` | `/@ai-edit-job-cancel` | Cancel running layout job |
 
 ---
 
 ## Installation
 
-### Development setup with mrs-developer
+### Prerequisites
 
-You can install the frontend repo into your Volto project using mrs-developer.
+- **Plone 6** with [interaktiv.kyra](https://github.com/interaktivgmbh/interaktiv.kyra) backend addon
+- **Volto 18+**
 
-Example `mrs.developer.json` extended:
+### Setup
 
-```json
-  "volto-interaktiv-kyra": {
-    "output": "packages",
-    "package": "volto-interaktiv-kyra",
-    "url": "git@github.com:interaktivgmbh/volto-interaktiv-kyra.git",
-    "https": "https://github.com/interaktivgmbh/volto-interaktiv-kyra.git",
-    "path": "src",
-    "branch": "main",
-    "develop": true
-  }
-```
-
-After setting up mrs-developer, make sure the add-on is also registered in your main Volto project's `package.json` so Volto loads it:
+**1.** Add to `mrs.developer.json`:
 
 ```json
 {
-  "addons": [
-    "@interaktiv.de/volto-interaktiv-kyra"
-  ]
+  "volto-interaktiv-kyra": {
+    "output": "packages",
+    "package": "@interaktiv.de/volto-interaktiv-kyra",
+    "url": "git@github.com:interaktivgmbh/volto-interaktiv-kyra.git",
+    "path": "src",
+    "branch": "main"
+  }
 }
 ```
 
-Then:
+**2.** Register in `package.json`:
 
-```bash
-make install
+```json
+{
+  "addons": ["@interaktiv.de/volto-interaktiv-kyra"],
+  "dependencies": {
+    "@interaktiv.de/volto-interaktiv-kyra": "workspace:*"
+  }
+}
 ```
 
-If your project doesn’t use a Makefile, the equivalent is usually:
+**3.** Install:
 
 ```bash
 pnpm install
@@ -277,125 +565,82 @@ pnpm install
 
 ## Configuration
 
-In most cases you only need:
+Navigate to **Site Setup, Kyra AI Settings**:
 
-- set your Volto backend URL to a Plone instance where interaktiv.kyra is enabled
-- ensure correct authentication/permissions
-
-No additional frontend config should be required unless your project:
-
-- uses custom proxy rules
-- restricts editor toolbar features
-- customizes icons or editor UI
-- extends the prompt schema
-
----
-
-## Project structure (typical)
-
-Your paths may vary, but the add-on usually contains:
-
-- applyConfig entry point
-  - registers routes, reducers, settings, icons, and editor hooks
-
-- redux
-  - actions for prompts/chat
-  - reducer for Kyra state
-
-- components
-  - Prompt Manager UI
-  - AI Settings UI
-  - Slate toolbar buttons and modals
-  - file preview/attachment UI
-
----
-
-## Usage
-
-### 1) Configure Kyra in the Control Panel
-
-Before editors use Kyra in the Slate editor, an admin should configure the AI setup in Plone:
-
-1. Open the Kyra AI Settings control panel.
-2. Set up and select the AI gateway/provider (backend-driven).
-3. Enable the required features (Prompt Manager, Chat, etc.).
-4. Save the configuration.
-
-This add-on reads these settings from the interaktiv.kyra backend.
-
-### 2) Use Kyra in the Slate editor
-
-After the settings are configured:
-
-1. Log in with an editor or admin role.
-2. Open a page that uses the Slate editor.
-3. Use:
-   - the Kyra Prompt Manager icon for curated prompts
-   - the Kyra Chat icon for free-text tasks (if enabled)
-4. Generate content and insert results directly into the editor.
-
-
----
-
-## UX conventions
-
-This add-on aims to provide:
-
-- clear separation between prompt-based and free-text workflows
-- editor-friendly insertion patterns
-- good loading feedback
-
-If your project uses custom loading styling (for example block highlights or icon animations),
-ensure those styles are available in your theme overrides.
+| Setting | Description |
+|:--------|:------------|
+| `gateway_url` | AI gateway endpoint (required) |
+| `keycloak_realms_url` | Keycloak auth URL (required) |
+| `keycloak_client_id` | OAuth client ID (required) |
+| `keycloak_client_secret` | OAuth client secret (required) |
+| `keycloak_token_expiration_time` | Token cache TTL in seconds, `0` = no caching |
+| `domain_id` | Domain identifier, default: `plone` |
+| `deepl_api_key` | DeepL API key for translations |
+| `edit_backend_url` | Layout Agent backend URL (leave empty to disable edit mode) |
+| `edit_backend_api_key` | API key for Layout Agent auth (leave empty for Keycloak fallback) |
 
 ---
 
 ## Troubleshooting
 
-Prompt Manager shows empty list:
-- check backend endpoint availability
-- verify permissions
-- confirm your site has stored prompts
+<details>
+<summary><strong>Launcher button not visible</strong></summary>
 
-Chat button does nothing:
-- verify chat feature is enabled in backend settings
-- check your network requests for blocked endpoints
+- Verify `interaktiv.kyra` is installed in Plone
+- Check `addons` in your project's `package.json`
 
-Requests fail with 401/403:
-- confirm editor role permissions in Plone
-- verify your authentication setup in Volto
+</details>
 
-Add-on not loaded:
-- ensure it is listed in addons (package.json or volto.config.js)
-- re-run install after changes
+<details>
+<summary><strong>Translation fails</strong></summary>
+
+- Check `deepl_api_key` in control panel
+- Ensure backend can reach `api.deepl.com`
+
+</details>
+
+<details>
+<summary><strong>Chat errors</strong></summary>
+
+- Verify `gateway_url` and Keycloak credentials
+- Check Plone instance logs
+
+</details>
+
+<details>
+<summary><strong>Edit mode / Layout Agent not working</strong></summary>
+
+- Verify `edit_backend_url` is set in the control panel
+- Ensure the Layout Agent backend is running and reachable from Plone
+- Check `edit_backend_api_key` or Keycloak token configuration
+- Review Plone logs for `[ai-edit-proxy]` messages
+
+</details>
+
+<details>
+<summary><strong>Slate toolbar buttons missing</strong></summary>
+
+- Ensure the `volto-interaktiv-kyra` addon is registered in `addons` and loaded
+- The toolbar buttons require `interaktiv.kyra.actions.apply` permission (Editor role)
+
+</details>
+
+<details>
+<summary><strong>Missing menu items</strong></summary>
+
+- Glossary, tag mappings and prompt manager require editor or admin permissions
+- Check capabilities endpoint response
+
+</details>
 
 ---
 
-## Contributing
+<div align="center">
 
-Contributions are welcome.
+**Built with** [Plone](https://plone.org) · [Volto](https://github.com/plone/volto) · [DeepL](https://www.deepl.com)
 
-Please:
-- open an issue describing the change
-- keep UI/UX behavior consistent with the existing patterns
-- update docs and screenshots when changing UI
-- add tests where applicable
+**Maintained by** [Interaktiv GmbH](https://www.interaktiv.de)
 
----
+Explore our other AI + Plone projects at [interaktiv.de/plone/ki-und-plone](https://www.interaktiv.de/plone/ki-und-plone)
 
-## License
-
-See LICENSE.
-
----
-
-## Maintainers
-
-Interaktiv GmbH
-
----
-
-## Related projects
-
-- interaktiv.kyra (Plone backend add-on)
-  https://github.com/interaktivgmbh/interaktiv.kyra
+</div>
