@@ -18,7 +18,7 @@ const LauncherButton: React.FC<Props> = ({
   customIconColor,
   badgeCount = 0,
 }) => {
-  return (
+  return ( // TS7016: Could not find a declaration file for module react/jsx-runtime.
     <button
       type="button"
       className={`kyra-ai-chat__launcher${

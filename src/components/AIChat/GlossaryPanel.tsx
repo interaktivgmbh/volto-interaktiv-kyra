@@ -172,6 +172,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
 
   const rows = Object.entries(entries).sort(([a], [b]) => a.localeCompare(b));
 
+  {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings kyra-ai-chat__glossary${

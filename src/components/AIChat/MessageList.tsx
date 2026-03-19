@@ -165,6 +165,7 @@ const MessageList: React.FC<Props> = ({
     }
   }, [editingMessageId, messages]);
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div className="kyra-ai-chat__messages" ref={containerRef}>
       {rendered.map((message) => {

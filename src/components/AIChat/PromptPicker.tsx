@@ -75,6 +75,7 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
     ? grouped[activeCategory] || []
     : prompts;
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div className="kyra-ai-chat__prompt-picker-inline">
       {/* Header */}

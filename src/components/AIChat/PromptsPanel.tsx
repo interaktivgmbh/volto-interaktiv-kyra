@@ -188,6 +188,7 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
     onClose();
   };
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings kyra-ai-chat__prompts${

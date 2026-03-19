@@ -157,6 +157,7 @@ const SettingsDrawer: React.FC<Props> = ({
     });
   };
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings${

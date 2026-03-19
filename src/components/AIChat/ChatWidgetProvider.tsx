@@ -1617,6 +1617,7 @@ const ChatWidgetProvider: React.FC = () => {
   // Don't render during SSR — avoids settings flash on hydration
   if (!mounted) return null;
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div className="kyra-ai-chat" style={accentStyles}>
       <ChatPanel

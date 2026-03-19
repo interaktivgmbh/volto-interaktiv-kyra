@@ -176,6 +176,7 @@ const HistoryDrawer: React.FC<Props> = ({
     filteredConversations.length > 0 &&
     filteredConversations.every((c) => selected.has(c.id));
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__history${

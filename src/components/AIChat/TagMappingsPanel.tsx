@@ -108,6 +108,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
   });
   rows.sort((a, b) => a.tag.localeCompare(b.tag) || a.language.localeCompare(b.language));
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings kyra-ai-chat__tag-mappings${
