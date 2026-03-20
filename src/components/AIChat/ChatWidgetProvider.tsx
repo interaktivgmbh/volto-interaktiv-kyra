@@ -157,7 +157,12 @@ const ChatWidgetProvider: React.FC = () => {
   const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('kyra.chatOpen') === '1';
+    }
+    return false;
+  });
   const isDocked = true;
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -178,8 +183,13 @@ const ChatWidgetProvider: React.FC = () => {
   const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editModeActive, setEditModeActive] = useState(false);
-  const editModeActiveRef = useRef(false);
+  const [editModeActive, setEditModeActive] = useState(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('kyra.editMode') === '1';
+    }
+    return false;
+  });
+  const editModeActiveRef = useRef(editModeActive);
   const [editBackendUrl, setEditBackendUrl] = useState('');
   const contextModeRef = useRef<'page' | 'site' | 'selection'>('page');
   const selectionTextRef = useRef('');
@@ -297,6 +307,10 @@ const ChatWidgetProvider: React.FC = () => {
   }, [conversation]);
 
   useEffect(() => {
+    try { sessionStorage.setItem('kyra.chatOpen', isOpen ? '1' : '0'); } catch (_) {}
+  }, [isOpen]);
+
+  useEffect(() => {
     const cls = 'has-ai-panel-docked';
     if (isOpen && isDocked) {
       document.body.classList.add(cls);
@@ -396,6 +410,7 @@ const ChatWidgetProvider: React.FC = () => {
   const updateEditMode = (active: boolean) => {
     editModeActiveRef.current = active;
     setEditModeActive(active);
+    try { sessionStorage.setItem('kyra.editMode', active ? '1' : '0'); } catch (_) {}
   };
 
   // Reset context mode when navigating to a different page
@@ -403,7 +418,6 @@ const ChatWidgetProvider: React.FC = () => {
     updateContextMode('page');
     manualSiteModeRef.current = false;
     updateSelectionText('');
-    updateEditMode(false);
     layoutConversationIdRef.current = null;
   }, [content?.UID]);
 
