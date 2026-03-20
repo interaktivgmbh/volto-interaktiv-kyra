@@ -1080,7 +1080,7 @@ export type LayoutJobStatus =
 
 export const createLayoutConversation = async (
   _baseUrl: string,
-  payload: { schema: string; version: string; state: Record<string, any>; permissions?: string[] },
+  payload: { schema: string; version: string; state: Record<string, any>; permissions?: string[]; language?: string },
   token?: string,
 ): Promise<{ conversation_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-conversations'), {

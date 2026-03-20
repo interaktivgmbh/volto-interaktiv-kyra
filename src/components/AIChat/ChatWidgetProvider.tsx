@@ -707,7 +707,7 @@ const ChatWidgetProvider: React.FC = () => {
       const editAssistantMsg: ChatMessage = {
         id: editAssistantId,
         role: 'assistant',
-        content: isDe ? 'Bereite Seiten-Daten vor\u2026' : 'Preparing page data\u2026',
+        content: isDe ? 'Seite wird analysiert\u2026' : 'Analyzing page\u2026',
         createdAt: new Date().toISOString(),
         status: 'streaming',
       };
@@ -732,7 +732,7 @@ const ChatWidgetProvider: React.FC = () => {
         if (!layoutConversationIdRef.current) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
-            content: isDe ? 'Erstelle Konversation\u2026' : 'Creating conversation\u2026',
+            content: isDe ? 'Verbinde mit KI\u2026' : 'Connecting to AI\u2026',
           }));
           const convResponse = await createLayoutConversation(
             editBackendUrl,
@@ -741,6 +741,7 @@ const ChatWidgetProvider: React.FC = () => {
               version: 'vanilla',
               state: pageState,
               permissions: ['update', 'create', 'delete', 'move'],
+              language: (preferredLanguage || 'de').slice(0, 2),
             },
             token,
           );
@@ -749,7 +750,7 @@ const ChatWidgetProvider: React.FC = () => {
 
         applyAssistantUpdate(editAssistantId, (m) => ({
           ...m,
-          content: isDe ? 'Sende an Bearbeiten-Backend\u2026' : 'Sending to edit backend\u2026',
+          content: isDe ? 'Deine Anfrage wird verarbeitet\u2026' : 'Processing your request\u2026',
         }));
 
         let jobId: string;
@@ -775,8 +776,8 @@ const ChatWidgetProvider: React.FC = () => {
           layoutConversationIdRef.current = null;
           finalizeAssistant(editAssistantId, {
             content: isDe
-              ? `Backend nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als JSON-Datei heruntergeladen.`
-              : `Backend not reachable (${sendErr?.message || 'network error'}). The payload has been downloaded as a JSON file.`,
+              ? `Die KI ist gerade nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als Datei gespeichert.`
+              : `AI is currently unreachable (${sendErr?.message || 'network error'}). The payload has been saved as a file.`,
             status: 'done',
           });
           return;
@@ -832,7 +833,7 @@ const ChatWidgetProvider: React.FC = () => {
         if (hasChanges) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
-            content: isDe ? 'Wende \u00c4nderungen an\u2026' : 'Applying changes\u2026',
+            content: isDe ? 'Änderungen werden auf der Seite übernommen\u2026' : 'Applying changes to the page\u2026',
           }));
           const contentPath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
           const patch: Record<string, any> = {};
