@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { Icon } from '@plone/volto/components';
 import { translateSVG } from '../../helpers/icons';
@@ -34,6 +34,8 @@ const getComposerLabels = (lang?: string) => {
       edit: 'Bearbeiten',
       editActive: 'Bearbeiten (aktiv)',
       editModeTag: 'Bearbeiten-Modus',
+      micStart: 'Spracheingabe starten',
+      micStop: 'Spracheingabe stoppen',
     };
   }
   return {
@@ -45,7 +47,14 @@ const getComposerLabels = (lang?: string) => {
     edit: 'Edit',
     editActive: 'Edit (active)',
     editModeTag: 'Edit mode',
+    micStart: 'Start voice input',
+    micStop: 'Stop voice input',
   };
+};
+
+const getSpeechRecognition = (): (new () => SpeechRecognition) | null => {
+  if (typeof window === 'undefined') return null;
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
 };
 
 const DEFAULT_CAPS: ChatCapabilities = { is_anonymous: true, can_edit: false, features: [] };
@@ -68,9 +77,14 @@ const Composer: React.FC<Props> = ({
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [text, setText] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const plusMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const textBeforeSpeechRef = useRef('');
   const t = getComposerLabels(uiLanguage);
+
+  const speechAvailable = !!getSpeechRecognition();
 
   const handleSubmit = () => {
     const trimmed = text.trim();
@@ -78,6 +92,69 @@ const Composer: React.FC<Props> = ({
     onSend?.(trimmed);
     setText('');
   };
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognitionClass = getSpeechRecognition();
+    if (!SpeechRecognitionClass) return;
+
+    stopListening();
+
+    textBeforeSpeechRef.current = text;
+
+    const recognition = new SpeechRecognitionClass();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = (uiLanguage || 'de').startsWith('de') ? 'de-DE' : 'en-US';
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      const prefix = textBeforeSpeechRef.current
+        ? textBeforeSpeechRef.current.trimEnd() + ' '
+        : '';
+      setText(prefix + transcript);
+    };
+
+    recognition.onerror = () => {
+      stopListening();
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [uiLanguage, stopListening]);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }, [isListening, startListening, stopListening]);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!showPlusMenu) return;
@@ -244,6 +321,23 @@ const Composer: React.FC<Props> = ({
           disabled={disabled}
           rows={1}
         />
+        {speechAvailable && (
+          <button
+            type="button"
+            className={`kyra-ai-chat__composer-mic-button${isListening ? ' kyra-ai-chat__composer-mic-button--active' : ''}`}
+            onClick={toggleListening}
+            disabled={disabled}
+            aria-label={isListening ? t.micStop : t.micStart}
+            title={isListening ? t.micStop : t.micStart}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="1" width="6" height="12" rx="3" />
+              <path d="M5 10a7 7 0 0 0 14 0" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+            </svg>
+          </button>
+        )}
         <button
           type="button"
           className="kyra-ai-chat__composer-send-button"
@@ -252,9 +346,9 @@ const Composer: React.FC<Props> = ({
           aria-label={t.send}
           title={t.send}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <polyline points="5 11 12 4 19 11" />
           </svg>
         </button>
       </div>

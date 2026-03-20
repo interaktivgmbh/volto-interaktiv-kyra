@@ -123,7 +123,7 @@
   right: 24px;
   bottom: 90px;
   z-index: 1090;
-  width: 360px;
+  width: 440px;
   height: 520px;
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.94) 100%);
   border: 1px solid rgba(148, 163, 184, 0.3);
@@ -138,7 +138,7 @@
   top: 0;
   bottom: 0;
   right: 0;
-  width: 420px;
+  width: 460px;
   height: 100vh;
   border-radius: 0;
   border-left: 1px solid rgba(148, 163, 184, 0.25);
@@ -1665,7 +1665,7 @@
 
 // Dock-Modus: Seiteninhalt einrücken wie Volto Edit-Sidebar
 body.has-ai-panel-docked {
-  margin-right: 515px !important;
+  margin-right: 460px !important;
   overflow-x: hidden !important;
   transition: margin-right 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045);
 
@@ -2088,9 +2088,9 @@ body.has-ai-panel-docked {
 }
 
 .kyra-ai-chat__composer-send-button {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
   border-radius: 50%;
   border: none;
   background: var(--ai-chat-text, #1a1a1a);
@@ -2114,6 +2114,43 @@ body.has-ai-panel-docked {
 
 .kyra-ai-chat__composer-send-button svg {
   stroke: #fff;
+}
+
+.kyra-ai-chat__composer-mic-button {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  margin-left: -6px;
+  margin-right: -6px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.kyra-ai-chat__composer-mic-button:hover {
+  opacity: 0.7;
+}
+
+.kyra-ai-chat__composer-mic-button--active {
+  color: #dc2626;
+  animation: kyra-mic-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes kyra-mic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.kyra-ai-chat__composer-mic-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* ── Plus-button dropdown menu ── */
