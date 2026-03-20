@@ -1101,7 +1101,7 @@ export const createLayoutConversation = async (
 export const sendLayoutMessage = async (
   _baseUrl: string,
   conversationId: string,
-  payload: { message: string; state?: Record<string, any> },
+  payload: { message: string; state?: Record<string, any>; context?: { text?: string; block_id?: string } },
   token?: string,
 ): Promise<{ job_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-messages'), {

@@ -200,6 +200,7 @@ const ChatWidgetProvider: React.FC = () => {
   const conversationRef = useRef<ChatConversation | null>(null);
   const streamControllerRef = useRef<AbortController | null>(null);
   const layoutConversationIdRef = useRef<string | null>(null);
+  const chatConversationIdRef = useRef<string | null>(null);
   const layoutJobAbortRef = useRef<(() => void) | null>(null);
   const fallbackLanguage = useMemo(() => {
     if (typeof document !== 'undefined') {
@@ -422,6 +423,7 @@ const ChatWidgetProvider: React.FC = () => {
     manualSiteModeRef.current = false;
     updateSelectionText('');
     layoutConversationIdRef.current = null;
+    chatConversationIdRef.current = null;
   }, [content?.UID]);
 
   // Listen for text selection on the page (outside chat)
@@ -701,7 +703,7 @@ const ChatWidgetProvider: React.FC = () => {
     }
     updateConversationState(workingConversation, true);
 
-    if (editModeActiveRef.current && editBackendUrl) {
+    if (editBackendUrl) {
       const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
       const editAssistantId = generateId();
       const editAssistantMsg: ChatMessage = {
@@ -729,7 +731,8 @@ const ChatWidgetProvider: React.FC = () => {
         if (preview_image) pageState.preview_image = preview_image;
         if (subjects && subjects.length > 0) pageState.subjects = subjects;
 
-        if (!layoutConversationIdRef.current) {
+        const activeConvRef = editModeActiveRef.current ? layoutConversationIdRef : chatConversationIdRef;
+        if (!activeConvRef.current) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
             content: isDe ? 'Verbinde mit KI\u2026' : 'Connecting to AI\u2026',
@@ -740,12 +743,12 @@ const ChatWidgetProvider: React.FC = () => {
               schema: 'volto',
               version: 'vanilla',
               state: pageState,
-              permissions: ['update', 'create', 'delete', 'move'],
+              permissions: editModeActiveRef.current ? ['update', 'create', 'delete', 'move'] : [],
               language: (preferredLanguage || 'de').slice(0, 2),
             },
             token,
           );
-          layoutConversationIdRef.current = convResponse.conversation_id;
+          activeConvRef.current = convResponse.conversation_id;
         }
 
         applyAssistantUpdate(editAssistantId, (m) => ({
@@ -755,10 +758,15 @@ const ChatWidgetProvider: React.FC = () => {
 
         let jobId: string;
         try {
+          const messagePayload: { message: string; context?: { text?: string } } = { message: contentText };
+          // For normal chat (not edit mode), send page content as context
+          if (!editModeActiveRef.current && pageContentText) {
+            messagePayload.context = { text: pageContentText };
+          }
           const msgResponse = await sendLayoutMessage(
             editBackendUrl,
-            layoutConversationIdRef.current,
-            { message: contentText },
+            activeConvRef.current,
+            messagePayload,
             token,
           );
           jobId = msgResponse.job_id;
@@ -773,7 +781,7 @@ const ChatWidgetProvider: React.FC = () => {
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(downloadUrl);
-          layoutConversationIdRef.current = null;
+          activeConvRef.current = null;
           finalizeAssistant(editAssistantId, {
             content: isDe
               ? `Die KI ist gerade nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als Datei gespeichert.`
@@ -853,10 +861,12 @@ const ChatWidgetProvider: React.FC = () => {
         }
 
         const successMsg = result.message
-          || (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.');
+          || (hasChanges
+            ? (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.')
+            : (isDe ? 'Keine Antwort erhalten.' : 'No response received.'));
         finalizeAssistant(editAssistantId, { content: successMsg, status: 'done' });
 
-        if (hasBlocks) {
+        if (hasBlocks && editModeActiveRef.current) {
           setTimeout(() => window.location.reload(), 800);
         }
       } catch (err: any) {
@@ -1777,7 +1787,7 @@ const ChatWidgetProvider: React.FC = () => {
         history={history}
         onClose={() => setIsOpen(false)}
         onToggleHistory={() => setShowHistory((value) => !value)}
-        onSend={editModeActive ? (text: string) => handleSend(text) : handleApplyPrompt}
+        onSend={(text: string) => handleSend(text)}
         onStartTranslation={startTranslationWizard}
         onStartSync={startSyncWizard}
         onPromptsClick={() => {}}
