@@ -1163,3 +1163,73 @@ export const cancelLayoutJob = async (
 
   return response.json();
 };
+
+export type ChatHistoryData = {
+  conversations: import('./types').ChatConversation[];
+  chat_name: string | null;
+};
+
+export const getAiChatHistory = async (
+  token?: string,
+): Promise<ChatHistoryData> => {
+  const response = await fetch(buildApiUrl('/@ai-chat-history'), {
+    method: 'GET',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+  if (!response.ok) throw new Error('Failed to load chat history');
+  return response.json();
+};
+
+export const patchAiChatHistory = async (
+  data: { conversation?: Record<string, any>; chat_name?: string | null },
+  token?: string,
+): Promise<void> => {
+  const response = await fetch(buildApiUrl('/@ai-chat-history'), {
+    method: 'PATCH',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to save chat history');
+};
+
+export const putAiChatHistory = async (
+  data: { conversations: Record<string, any>[]; chat_name?: string | null },
+  token?: string,
+): Promise<void> => {
+  const response = await fetch(buildApiUrl('/@ai-chat-history'), {
+    method: 'PUT',
+    headers: {
+      ...buildHeaders(token),
+      Accept: 'application/json',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to replace chat history');
+};
+
+export const deleteAiChatConversation = async (
+  conversationId: string,
+  token?: string,
+): Promise<void> => {
+  const response = await fetch(
+    buildApiUrl(`/@ai-chat-history/${encodeURIComponent(conversationId)}`),
+    {
+      method: 'DELETE',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    },
+  );
+  if (!response.ok) throw new Error('Failed to delete conversation');
+};

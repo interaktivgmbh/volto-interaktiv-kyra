@@ -17,6 +17,10 @@ import {
   sendLayoutMessage,
   pollLayoutJob,
   cancelLayoutJob,
+  getAiChatHistory,
+  patchAiChatHistory,
+  putAiChatHistory,
+  deleteAiChatConversation,
 } from './api';
 import type { LayoutJobStatus } from './api';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
@@ -160,7 +164,7 @@ const ChatWidgetProvider: React.FC = () => {
   const [customIcon, setCustomIcon] = useState<string | null>(() => loadCustomIcon());
   const [customIconColor, setCustomIconColor] = useState<string>(() => loadCustomIconColor());
   const [accentColor, setAccentColor] = useState<string | null>(() => loadAccentColor());
-  const [chatName, setChatName] = useState<string | null>(() => loadChatName());
+  const [chatName, setChatName] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capabilities, setCapabilities] =
@@ -236,12 +240,57 @@ const ChatWidgetProvider: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const stored = loadLocalConversations(userKey);
-    setHistory(stored);
-    if (stored.length > 0) {
-      setConversation(stored[0]);
+    if (!token) {
+      const stored = loadLocalConversations(userKey);
+      setHistory(stored);
+      if (stored.length > 0) {
+        setConversation(stored[0]);
+      }
+      const localName = loadChatName();
+      if (localName) setChatName(localName);
+      return;
     }
-  }, [userKey]);
+    let cancelled = false;
+    const loadFromServer = async () => {
+      let serverData: { conversations: ChatConversation[]; chat_name: string | null } | null = null;
+      try {
+        serverData = await getAiChatHistory(token);
+      } catch (_err) {
+      }
+      if (cancelled) return;
+
+      if (serverData) {
+        if (serverData.conversations.length > 0 || serverData.chat_name) {
+          setHistory(serverData.conversations);
+          if (serverData.conversations.length > 0) {
+            setConversation(serverData.conversations[0]);
+          }
+          if (serverData.chat_name) setChatName(serverData.chat_name);
+        } else {
+          // Server empty — migrate localStorage data (once)
+          const migrationKey = `kyra.aiChat.migrated.${userKey}`;
+          const alreadyMigrated = window.localStorage?.getItem(migrationKey);
+          if (!alreadyMigrated) {
+            const localConvs = loadLocalConversations(userKey);
+            const localName = loadChatName();
+            if (localConvs.length > 0 || localName) {
+              try {
+                await putAiChatHistory({ conversations: localConvs, chat_name: localName }, token);
+                setHistory(localConvs);
+                if (localConvs.length > 0) setConversation(localConvs[0]);
+                if (localName) setChatName(localName);
+              } catch (_migrationErr) {
+                // Migration failed — don't block
+              }
+            }
+            window.localStorage?.setItem(migrationKey, '1');
+          }
+        }
+      }
+    };
+    loadFromServer();
+    return () => { cancelled = true; };
+  }, [userKey, token]);
 
   useEffect(() => {
     conversationRef.current = conversation;
@@ -414,8 +463,15 @@ const ChatWidgetProvider: React.FC = () => {
   }, [contextMode, content?.title, content?.Title, preferredLanguage]);
 
   const persistConversation = (nextConversation: ChatConversation) => {
-    const updatedHistory = saveLocalConversation(nextConversation, userKey);
-    setHistory(updatedHistory);
+    setHistory((prev) => {
+      const filtered = prev.filter((c) => c.id !== nextConversation.id);
+      return [nextConversation, ...filtered];
+    });
+    if (token) {
+      patchAiChatHistory({ conversation: nextConversation as any }, token).catch(() => {});
+    } else {
+      saveLocalConversation(nextConversation, userKey);
+    }
   };
 
   const createConversation = (firstMessage?: ChatMessage) => {
@@ -433,23 +489,37 @@ const ChatWidgetProvider: React.FC = () => {
   };
 
   const deleteConversation = (conversationId: string) => {
-    const updatedHistory = removeLocalConversation(conversationId, userKey);
-    setHistory(updatedHistory);
-    if (conversation?.id === conversationId) {
-      if (updatedHistory.length > 0) {
-        setConversation(updatedHistory[0]);
-      } else {
-        const next = createConversation();
-        setConversation(next);
+    setHistory((prev) => {
+      const updated = prev.filter((c) => c.id !== conversationId);
+      if (conversation?.id === conversationId) {
+        if (updated.length > 0) {
+          setConversation(updated[0]);
+        } else {
+          const next = createConversation();
+          setConversation(next);
+        }
       }
+      return updated;
+    });
+    if (token) {
+      deleteAiChatConversation(conversationId, token).catch(() => {});
+    } else {
+      removeLocalConversation(conversationId, userKey);
     }
   };
 
   const persistUpdatedConversation = (updated: ChatConversation) => {
-    const updatedHistory = saveLocalConversation(updated, userKey);
-    setHistory(updatedHistory);
+    setHistory((prev) => {
+      const filtered = prev.filter((c) => c.id !== updated.id);
+      return [updated, ...filtered];
+    });
     if (conversation?.id === updated.id) {
       setConversation(updated);
+    }
+    if (token) {
+      patchAiChatHistory({ conversation: updated as any }, token).catch(() => {});
+    } else {
+      saveLocalConversation(updated, userKey);
     }
   };
 
@@ -483,11 +553,22 @@ const ChatWidgetProvider: React.FC = () => {
     conversationRef.current = nextConversation;
     setConversation(nextConversation);
     if (!persist) return;
-    const updatedHistory = saveLocalConversation(nextConversation, userKey);
-    setHistory(updatedHistory);
-    if (previousId && previousId !== nextConversation.id) {
-      const cleaned = removeLocalConversation(previousId, userKey);
-      setHistory(cleaned);
+    setHistory((prev) => {
+      const filtered = prev.filter((c) => c.id !== nextConversation.id);
+      return [nextConversation, ...filtered];
+    });
+    if (token) {
+      patchAiChatHistory({ conversation: nextConversation as any }, token).catch(() => {});
+      if (previousId && previousId !== nextConversation.id) {
+        deleteAiChatConversation(previousId, token).catch(() => {});
+        setHistory((prev) => prev.filter((c) => c.id !== previousId));
+      }
+    } else {
+      saveLocalConversation(nextConversation, userKey);
+      if (previousId && previousId !== nextConversation.id) {
+        removeLocalConversation(previousId, userKey);
+        setHistory((prev) => prev.filter((c) => c.id !== previousId));
+      }
     }
   };
 
@@ -1033,10 +1114,17 @@ const ChatWidgetProvider: React.FC = () => {
       title: nextTitle,
       updatedAt: new Date().toISOString(),
     };
-    const updatedHistory = saveLocalConversation(updated, userKey);
-    setHistory(updatedHistory);
+    setHistory((prev) => {
+      const filtered = prev.filter((c) => c.id !== updated.id);
+      return [updated, ...filtered];
+    });
     if (conversation?.id === conversationId) {
       setConversation(updated);
+    }
+    if (token) {
+      patchAiChatHistory({ conversation: updated as any }, token).catch(() => {});
+    } else {
+      saveLocalConversation(updated, userKey);
     }
   };
 
@@ -1545,8 +1633,12 @@ const ChatWidgetProvider: React.FC = () => {
     setCustomIconColor(draft.iconColor);
     saveAccentColor(draft.accentColor);
     setAccentColor(draft.accentColor);
-    saveChatName(draft.chatName);
     setChatName(draft.chatName);
+    if (token) {
+      patchAiChatHistory({ chat_name: draft.chatName }, token).catch(() => {});
+    } else {
+      saveChatName(draft.chatName);
+    }
   };
 
   const handleApplyPrompt = (promptText: string) => {
@@ -1595,10 +1687,14 @@ const ChatWidgetProvider: React.FC = () => {
   };
 
   const handleClearHistory = () => {
-    clearAllConversations(userKey);
     setHistory([]);
     const fresh = createConversation();
     setConversation(fresh);
+    if (token) {
+      putAiChatHistory({ conversations: [], chat_name: chatName }, token).catch(() => {});
+    } else {
+      clearAllConversations(userKey);
+    }
   };
 
   const darkenColor = (hex: string, amount: number): string => {
