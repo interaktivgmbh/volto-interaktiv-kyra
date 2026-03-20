@@ -10,6 +10,9 @@ type Props = {
   onTranslateClick?: () => void;
   onSyncClick?: () => void;
   onPromptsClick?: () => void;
+  onFilesSelected?: (files: File[]) => void;
+  attachments?: { name: string; id: string }[];
+  onRemoveAttachment?: (id: string) => void;
   outdatedCount?: number;
   disabled?: boolean;
   uiLanguage?: string;
@@ -34,6 +37,7 @@ const getComposerLabels = (lang?: string) => {
       edit: 'Bearbeiten',
       editActive: 'Bearbeiten (aktiv)',
       editModeTag: 'Bearbeiten-Modus',
+      attachFiles: 'Fotos und Dateien hinzuf\u00fcgen',
       micStart: 'Spracheingabe starten',
       micStop: 'Spracheingabe stoppen',
     };
@@ -47,6 +51,7 @@ const getComposerLabels = (lang?: string) => {
     edit: 'Edit',
     editActive: 'Edit (active)',
     editModeTag: 'Edit mode',
+    attachFiles: 'Add photos and files',
     micStart: 'Start voice input',
     micStop: 'Stop voice input',
   };
@@ -64,6 +69,9 @@ const Composer: React.FC<Props> = ({
   onTranslateClick,
   onSyncClick,
   onPromptsClick,
+  onFilesSelected,
+  attachments = [],
+  onRemoveAttachment,
   outdatedCount = 0,
   disabled,
   uiLanguage,
@@ -82,6 +90,7 @@ const Composer: React.FC<Props> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const textBeforeSpeechRef = useRef('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const t = getComposerLabels(uiLanguage);
 
   const speechAvailable = !!getSpeechRecognition();
@@ -169,6 +178,25 @@ const Composer: React.FC<Props> = ({
 
   return (
     <div className="kyra-ai-chat__composer">
+      {attachments.length > 0 && (
+        <div className="kyra-ai-chat__composer-attachments">
+          {attachments.map((att) => (
+            <span key={att.id} className="kyra-ai-chat__composer-chip">
+              <span>{att.name}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveAttachment?.(att.id)}
+                aria-label="Remove"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       {(contextLabel || editModeActive) && (
         <div className="kyra-ai-chat__composer-context">
           {editModeActive && (
@@ -241,6 +269,18 @@ const Composer: React.FC<Props> = ({
           </button>
           {showPlusMenu && (
             <div className="kyra-ai-chat__composer-plus-panel">
+              <button
+                type="button"
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setShowPlusMenu(false);
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                <span>{t.attachFiles}</span>
+              </button>
               {hasPermission(capabilities, 'translate') && (
                 <button
                   type="button"
@@ -305,6 +345,20 @@ const Composer: React.FC<Props> = ({
               )}
             </div>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.txt,.rtf,.md,.odt,.csv,.xls,.xlsx"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files && files.length > 0) {
+                onFilesSelected?.(Array.from(files));
+              }
+              e.target.value = '';
+            }}
+          />
         </div>
         <textarea
           ref={inputRef}

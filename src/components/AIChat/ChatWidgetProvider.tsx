@@ -21,6 +21,7 @@ import {
   patchAiChatHistory,
   putAiChatHistory,
   deleteAiChatConversation,
+  postAiChatUpload,
 } from './api';
 import type { LayoutJobStatus } from './api';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
@@ -47,6 +48,7 @@ import type {
   ChatRequestPayload,
   ChatResponsePayload,
   ChatContextPayload,
+  AiChatUploadResponse,
   TranslationStatus,
 } from './types';
 
@@ -183,6 +185,7 @@ const ChatWidgetProvider: React.FC = () => {
   const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<{ name: string; id: string; file_id: string }[]>([]);
   const [editModeActive, setEditModeActive] = useState(() => {
     if (typeof sessionStorage !== 'undefined') {
       return sessionStorage.getItem('kyra.editMode') === '1';
@@ -639,6 +642,25 @@ const ChatWidgetProvider: React.FC = () => {
     updateConversationState(nextConversation, true, previousId);
   };
 
+  const handleFilesSelected = async (files: File[]) => {
+    for (const file of files) {
+      const tempId = `upload_${Math.random().toString(36).slice(2, 8)}`;
+      setAttachments((prev) => [...prev, { name: file.name, id: tempId, file_id: '' }]);
+      try {
+        const result: AiChatUploadResponse = await postAiChatUpload(file, token);
+        setAttachments((prev) =>
+          prev.map((a) => (a.id === tempId ? { ...a, file_id: result.file_id } : a)),
+        );
+      } catch (_err) {
+        setAttachments((prev) => prev.filter((a) => a.id !== tempId));
+      }
+    }
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
   const handleSend = async (
     contentText: string,
     contextOverrides?: Partial<ChatContextPayload>,
@@ -951,6 +973,9 @@ const ChatWidgetProvider: React.FC = () => {
       ...(contextOverrides?.selection_text
         ? { selection_text: contextOverrides.selection_text }
         : {}),
+      ...(attachments.length > 0
+        ? { uploads: attachments.filter((a) => a.file_id).map((a) => ({ file_id: a.file_id, name: a.name })) }
+        : {}),
     };
 
     const resolvedLanguage = preferredLanguage || fallbackLanguage;
@@ -979,6 +1004,7 @@ const ChatWidgetProvider: React.FC = () => {
     const controller = new AbortController();
     streamControllerRef.current = controller;
     setIsSending(true);
+    setAttachments([]);
 
     const handleNonStreaming = async (response: ChatResponsePayload) => {
       const assistantContent =
@@ -1774,6 +1800,9 @@ const ChatWidgetProvider: React.FC = () => {
         editModeActive={editModeActive}
         editBackendUrl={editBackendUrl}
         onEditModeToggle={() => updateEditMode(!editModeActive)}
+        onFilesSelected={handleFilesSelected}
+        attachments={attachments}
+        onRemoveAttachment={handleRemoveAttachment}
       />
       {!isOpen && token && (
         <LauncherButton

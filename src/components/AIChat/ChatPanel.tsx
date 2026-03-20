@@ -93,6 +93,9 @@ type Props = {
   editModeActive?: boolean;
   editBackendUrl?: string;
   onEditModeToggle?: () => void;
+  onFilesSelected?: (files: File[]) => void;
+  attachments?: { name: string; id: string }[];
+  onRemoveAttachment?: (id: string) => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -137,6 +140,9 @@ const ChatPanel: React.FC<Props> = ({
   editModeActive,
   editBackendUrl,
   onEditModeToggle,
+  onFilesSelected,
+  attachments,
+  onRemoveAttachment,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -337,6 +343,9 @@ const ChatPanel: React.FC<Props> = ({
         editModeActive={editModeActive}
         editBackendUrl={editBackendUrl}
         onEditModeToggle={onEditModeToggle}
+        onFilesSelected={onFilesSelected}
+        attachments={attachments}
+        onRemoveAttachment={onRemoveAttachment}
       />
       <HistoryDrawer
         open={showHistory}
