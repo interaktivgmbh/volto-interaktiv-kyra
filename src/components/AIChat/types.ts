@@ -1,7 +1,7 @@
-export type ChatRole = 'user' | 'assistant' | 'system' | 'tool';
+export type ChatRole = 'user' | 'assistant' | 'system' | 'tool'; // Didnt see 'system' or 'tool' used anywhere
 
 export type Citation = {
-  source_id: string;
+  source_id: string; // Snake case vs updatedAt's camel case
   label: string;
   url: string;
   snippet: string;
@@ -19,11 +19,11 @@ export type ChatMessage = {
   role: ChatRole;
   content: string;
   createdAt: string;
-  status?: 'streaming' | 'done' | 'error';
+  status?: 'streaming' | 'done' | 'error'; // Not sure why optional
   citations?: Citation[];
   feedback?: 'up' | 'down' | null;
   actions?: ChatMessageAction[];
-  wizardMeta?: Record<string, any>;
+  wizardMeta?: Record<string, any>; // Effectively disables type checking, repeated below
 };
 
 export type ChatConversation = {
@@ -85,7 +85,7 @@ export type TranslationOptions = {
 };
 
 export type ChatContextPayload = {
-  mode: 'page' | 'summarize' | 'related' | 'search';
+  mode: 'page' | 'summarize' | 'related' | 'search'; // Found no uses of 'related' and 'summarize'
   page?: {
     uid?: string;
     url?: string;
@@ -100,7 +100,7 @@ export type ChatContextPayload = {
   }>;
 };
 
-export type ChatQuickAction = {
+export type ChatQuickAction = { // Completely unused
   label: string;
   keyword: string;
   mode: ChatContextPayload['mode'];
@@ -128,7 +128,7 @@ export type ChatResponsePayload = {
   };
   citations?: Citation[];
   capabilities?: ChatCapabilities;
-  used_context?: Array<{
+  used_context?: Array<{ // Could possibly be [{}, {}, {}]
     id?: string;
     title?: string;
     url?: string;
