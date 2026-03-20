@@ -1,3 +1,4 @@
+// .jsx — should be .tsx like the rest of the project.
 import React, { useState, useRef, useEffect } from 'react';
 import { useSlate } from 'slate-react';
 import { Editor, Transforms } from 'slate';
@@ -8,8 +9,12 @@ import { Icon } from '@plone/volto/components';
 import { aichatSVG, aiSVG, sendSVG } from '../../helpers/icons';
 import { useIntl } from 'react-intl';
 
+// This is the example UUID from RFC 4122. All users share this ID for custom prompts.
+// Use crypto.randomUUID().
 const CUSTOM_PROMPT_UUID = '123e4567-e89b-12d3-a456-426614174000';
 
+// Injects a <style> element into the DOM manually, bypasses scss.
+// Should use a .scss file in the theme folder instead.
 const ensureKyraAIStyles = () => {
   if (document.getElementById('kyra-ai-style')) return;
 
@@ -68,8 +73,9 @@ const ensureKyraAIStyles = () => {
   document.head.appendChild(styleEl);
 };
 
+// ~610 lines — similar to ChatWidgetProvider (~1500 lines) this component does too much:
 const AIAssistantSlateButton = () => {
-  const intl = useIntl();
+  const intl = useIntl(); // Same react-intl bypass as AIAssistantButton.jsx.
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
   const t = (en, de) => (isDe && de ? de : en);
@@ -107,6 +113,8 @@ const AIAssistantSlateButton = () => {
     return () => clearTimeout(tmo);
   }, [status]);
 
+  // Same manual click-outside pattern as ChatPanel.tsx, Composer.tsx, HistoryDrawer.tsx.
+  // Consider useRef + onBlur, or extract a shared useClickOutside hook.
   useEffect(() => {
     if (!isPromptDropdownOpen) return;
     const handleClickOutside = (e) => {
@@ -122,7 +130,7 @@ const AIAssistantSlateButton = () => {
     try {
       if (editor.selection) return Editor.string(editor, editor.selection);
     } catch (e) {
-      // ignore
+      // Silent error — same pattern as PromptsPanel.tsx. At minimum should log.
     }
     return '';
   };
@@ -144,6 +152,8 @@ const AIAssistantSlateButton = () => {
     }
   };
 
+  // Better than the regex in MessageList.tsx, but setting .innerHTML with untrusted content can trigger side effects.
+  // Creates a new DOM element on every call. Consider DOMPurify.
   const stripHtml = (html) => {
     if (!html) return '';
     const tmp = document.createElement('div');
@@ -159,7 +169,7 @@ const AIAssistantSlateButton = () => {
     const promptPayload = isCustom
       ? {
           id: CUSTOM_PROMPT_UUID,
-          name: customText?.slice(0, 60) || t('Custom instruction', 'Eigene Anweisung'),
+          name: customText?.slice(0, 60) || t('Custom instruction', 'Eigene Anweisung'), // Not translated
           text: customText,
           actionType: 'replace',
           categories: ['Custom'],
@@ -182,6 +192,7 @@ const AIAssistantSlateButton = () => {
         language: lang,
       };
 
+      // Direct fetch() instead of using shared API layer from ../AIChat/api. Duplicates auth header logic.
       const response = await fetch('/++api++/@ai-assistant-run', {
         method: 'POST',
         headers: {
@@ -201,6 +212,7 @@ const AIAssistantSlateButton = () => {
 
       const data = await response.json();
 
+      // Tries 8 different property names hoping one matches — indicates an undefined API pattern.
       const rawResult =
         data.result ||
         data.text ||
@@ -214,6 +226,7 @@ const AIAssistantSlateButton = () => {
             data.raw.completion)) ||
         '';
 
+      // Custom HTML detection — same pattern of hand-rolled parsers throughout (stripHtml, renderMarkdown in MessageList.tsx).
       const looksLikeHtml =
         typeof rawResult === 'string' && /<\/?[a-z][\s\S]*>/i.test(rawResult);
 
@@ -266,6 +279,8 @@ const AIAssistantSlateButton = () => {
     setChatResult(null);
   };
 
+  // renderStatusMessage + renderChatOverlay = ~240 lines of inline styles with hardcoded colors.
+  // Same inline-styles issue as AIAssistantButton but more extreme. Should use SCSS.
   const renderStatusMessage = () => {
     if (!status) return null;
 
@@ -515,6 +530,7 @@ const AIAssistantSlateButton = () => {
               <button
                 type="button"
                 onClick={handleSubmitCustomPrompt}
+                // Possibly disable while request is in flight.
                 style={{
                   padding: '7px 16px',
                   borderRadius: 999,
@@ -554,6 +570,7 @@ const AIAssistantSlateButton = () => {
       className={`ai-slate-wrapper${isRunning ? ' ai-slate-wrapper--running' : ''}`}
       style={{ position: 'relative', display: 'inline-block' }}
     >
+      {/* onMouseDown with preventDefault breaks keyboard accessibility — users can't trigger via Enter/Space. Should use onClick. */}
       <ToolbarButton
         title={
           isRunning
@@ -570,6 +587,7 @@ const AIAssistantSlateButton = () => {
         }}
       />
 
+      {/* Same onMouseDown issue. */}
       <ToolbarButton
         title={t('AI Assistant \u2013 free text', 'AI Assistant \u2013 Freitext')}
         icon={aichatSVG}
