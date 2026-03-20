@@ -6,12 +6,14 @@ const PANEL_MODE_KEY = 'kyra.aiChat.panelMode.v1';
 const canUseStorage = () =>
   typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 
+// Returns raw `any` — parsed data is never validated against the ChatConversation shape.
+// Corrupt or tampered localStorage will flow straight into React state.
 const safeParse = (value: string | null) => {
   if (!value) return null;
   try {
     return JSON.parse(value);
   } catch (_error) {
-    return null;
+    return null; // Silent catch
   }
 };
 
@@ -32,12 +34,12 @@ export const saveLocalConversation = (
   userKey?: string | null,
 ): ChatConversation[] => {
   if (!canUseStorage()) return [];
-  const existing = loadLocalConversations(userKey);
+  const existing = loadLocalConversations(userKey); // loadLocalConversations already sorts — the result is re-sorted below. First sort is wasted.
   const updated = [
     conversation,
     ...existing.filter((item) => item.id !== conversation.id),
   ];
-  window.localStorage.setItem(keyForUser(userKey), JSON.stringify(updated));
+  window.localStorage.setItem(keyForUser(userKey), JSON.stringify(updated)); // No try/catch — throws QuotaExceededError when localStorage is full, crashing the widget.
   return sortConversations(updated);
 };
 
@@ -48,7 +50,7 @@ export const removeLocalConversation = (
   if (!canUseStorage()) return [];
   const existing = loadLocalConversations(userKey);
   const updated = existing.filter((item) => item.id !== conversationId);
-  window.localStorage.setItem(keyForUser(userKey), JSON.stringify(updated));
+  window.localStorage.setItem(keyForUser(userKey), JSON.stringify(updated)); // Same QuotaExceededError risk as saveLocalConversation.
   return updated;
 };
 
@@ -64,6 +66,7 @@ function sortConversations(conversations: ChatConversation[]) {
   });
 }
 
+// Dead code — AiChatPanelMode, loadPanelMode, savePanelMode are never imported or called anywhere.
 export type AiChatPanelMode = 'docked' | 'floating';
 
 export const loadPanelMode = (): AiChatPanelMode => {
@@ -78,6 +81,7 @@ export const savePanelMode = (mode: AiChatPanelMode) => {
   window.localStorage.setItem(PANEL_MODE_KEY, mode);
 };
 
+// Repetitive load/save pairs below (customIcon, iconColor, accentColor, chatName) all follow the same pattern.
 const CUSTOM_ICON_KEY = 'kyra.aiChat.customIcon';
 const CUSTOM_ICON_COLOR_KEY = 'kyra.aiChat.customIconColor';
 
@@ -86,6 +90,7 @@ export const loadCustomIcon = (): string | null => {
   return window.localStorage.getItem(CUSTOM_ICON_KEY) || null;
 };
 
+// No size validation — a large image data URL can exhaust the shared localStorage budget (~5 MB).
 export const saveCustomIcon = (dataUrl: string | null) => {
   if (!canUseStorage()) return;
   if (dataUrl) {
@@ -136,6 +141,7 @@ export const saveChatName = (name: string | null) => {
   }
 };
 
+// No conversation limit or eviction policy. All conversations accumulate indefinitely in a single localStorage key.
 export const clearAllConversations = (userKey?: string | null) => {
   if (!canUseStorage()) return;
   window.localStorage.removeItem(keyForUser(userKey));

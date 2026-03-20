@@ -19,7 +19,7 @@ export type ChatMessage = {
   role: ChatRole;
   content: string;
   createdAt: string;
-  status?: 'streaming' | 'done' | 'error'; // Not sure why optional
+  status?: 'streaming' | 'done' | 'error';
   citations?: Citation[];
   feedback?: 'up' | 'down' | null;
   actions?: ChatMessageAction[];
