@@ -1,7 +1,8 @@
+// .jsx instead of .tsx — no TypeScript, no prop types. Same as AIAssistant files.
 import React, { useCallback, useEffect, useReducer } from 'react';
 import { useSelector } from 'react-redux';
 import { Header, Container, Button, Icon, Progress, Message } from 'semantic-ui-react';
-import { useIntl } from 'react-intl';
+import { useIntl } from 'react-intl'; // useIntl imported but bypassed by t() below. Same as ChatPanel.tsx. (https://6.docs.plone.org/volto/development/i18n.html)
 
 import {
   getPrompts,
@@ -152,7 +153,7 @@ const PromptManager = () => {
   const intl = useIntl();
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
-  const t = (en, de) => (isDe && de ? de : en);
+  const t = (en, de) => (isDe && de ? de : en); // Custom react-intl bypass — same issue flagged in ChatPanel.tsx.
 
   const token = useSelector((state) => state?.userSession?.token);
 
@@ -241,6 +242,7 @@ const PromptManager = () => {
   }, []);
 
   // --- File selection handlers ---
+  // No file size or type validation before upload — same issue flagged in GlossaryPanel.tsx and SettingsDrawer.tsx. Users can drop arbitrarily large or unsupported files.
   const handleAddCreateFiles = useCallback((files) => {
     const items = makeFileItems(files);
     if (items.length) {
@@ -268,7 +270,7 @@ const PromptManager = () => {
         try {
           full = await getPromptFile(promptId, file.id, token);
         } catch (e) {
-          // ignore; fall back to base meta
+          // Silent catch — same as PromptsPanel.tsx. Should at least console.log.
         }
 
         const contentType =
@@ -281,7 +283,7 @@ const PromptManager = () => {
         let size = file.size || file.length || full?.size || null;
         if (!size && full?.data) {
           try {
-            size = atob(full.data).length;
+            size = atob(full.data).length; // atob() throws on invalid base64 — handled here. In handleDownload below, the catch is silent. Full marked as possibly null
           } catch (e) {
             size = null;
           }
@@ -302,7 +304,7 @@ const PromptManager = () => {
 
       dispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: filesWithMeta });
     } catch (e) {
-      dispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] });
+      dispatch({ type: 'SET_EDIT_ATTACHED_FILES', files: [] }); // Silent catch
     }
   }, [token]);
 
@@ -312,7 +314,7 @@ const PromptManager = () => {
       const file = await getPromptFile(promptId, fileId, token);
       dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file });
     } catch (e) {
-      dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null });
+      dispatch({ type: 'SET_SELECTED_PREVIEW_FILE', file: null }); // Silent catch
     }
   }, [token]);
 
@@ -326,7 +328,7 @@ const PromptManager = () => {
       const contentType = file.content_type || 'application/octet-stream';
       const filename = file.filename || fallbackFilename || 'download';
 
-      const byteCharacters = atob(base64Data);
+      const byteCharacters = atob(base64Data); // atob() — throws on invalid base64, caught silently below.
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -334,6 +336,7 @@ const PromptManager = () => {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: contentType });
 
+      // DOM-based download trick; URL.createObjectURL is never revoked — memory leak.
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = filename;
@@ -341,7 +344,7 @@ const PromptManager = () => {
       link.click();
       link.remove();
     } catch (error) {
-      // ignore download errors
+      // Silent catch — no user feedback on download failure.
     }
   }, [token]);
 
@@ -357,7 +360,7 @@ const PromptManager = () => {
       }
       return errors;
     },
-    [isDe], // eslint-disable-line react-hooks/exhaustive-deps
+    [isDe], // eslint-disable-line react-hooks/exhaustive-deps — `t` used in body but missing from deps.
   );
 
   // --- Submit prompt (create or update) with optional file upload ---
@@ -394,7 +397,7 @@ const PromptManager = () => {
         await fetchPrompts();
         return promptId;
       } catch (e) {
-        return null;
+        return null; // Silent catch
       } finally {
         if (progressInterval) {
           finishUploadProgress(progressInterval);
@@ -464,7 +467,7 @@ const PromptManager = () => {
         },
       });
     }
-  }, [createForm, resetCreateForm, submitPrompt, uploadedFiles, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [createForm, resetCreateForm, submitPrompt, uploadedFiles, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps — 2nd suppression. `t` used but not listed.
 
   // --- Edit prompt ---
   const handleOpenEditModal = useCallback(
@@ -546,16 +549,17 @@ const PromptManager = () => {
         },
       });
     }
-  }, [editForm, editNewFiles, resetEditFiles, submitPrompt, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editForm, editNewFiles, resetEditFiles, submitPrompt, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps — `t` used in body but missing from deps.
 
   // --- Delete prompt ---
+  // No confirmation dialog before delete — same concern flagged in HistoryDrawer.tsx. A window.confirm() or modal would prevent accidental deletion.
   const handleDeletePrompt = useCallback(
     async (id) => {
       try {
         await deletePrompt({ id }, token);
         await fetchPrompts();
       } catch (_err) {
-        // ignore delete errors
+        // ignore delete errors — Silent catch
       }
     },
     [fetchPrompts, token],
@@ -574,7 +578,7 @@ const PromptManager = () => {
         await loadPromptFiles(editForm.id);
         await fetchPrompts();
       } catch (e) {
-        // ignore delete errors
+        // ignore delete errors — Silent catch
       }
     },
     [editAttachedFiles, editForm.id, fetchPrompts, loadPromptFiles, token],

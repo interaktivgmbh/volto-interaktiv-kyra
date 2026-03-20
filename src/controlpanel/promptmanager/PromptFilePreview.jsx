@@ -1,3 +1,4 @@
+// .jsx instead of .tsx — no TypeScript, no prop types.
 import React from 'react';
 import { useIntl } from 'react-intl';
 
@@ -5,7 +6,7 @@ const PromptFilePreview = ({ file }) => {
   const intl = useIntl();
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
-  const t = (en, de) => (isDe && de ? de : en);
+  const t = (en, de) => (isDe && de ? de : en); // Defines its own t() helper independently from the parent's t(). Same react-intl bypass duplicated here.
 
   if (!file) return null;
 
@@ -41,7 +42,7 @@ const PromptFilePreview = ({ file }) => {
       )}
 
       {isText && blob && (
-        <pre className="prompt-file-preview__text">{atob(file.data)}</pre>
+        <pre className="prompt-file-preview__text">{atob(file.data)}</pre> /* atob() with no try/catch — crashes component on invalid base64. */
       )}
 
       {!isImage && !isPDF && !isText && <p>{noPreviewLabel}</p>}

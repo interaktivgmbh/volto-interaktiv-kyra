@@ -1,3 +1,4 @@
+// .jsx instead of .tsx — no TypeScript, no prop types.
 import React, { useCallback } from 'react';
 import { Button, Header, Table } from 'semantic-ui-react';
 import { formatSizeMB } from './utils';
@@ -22,7 +23,7 @@ const AttachedFileRow = ({ file, t, onPreview, onDownload, onDelete }) => {
       <Table.Cell>
         {showThumb && (
           <img
-            src={`data:${file.content_type};base64,${file.thumbData}`}
+            src={`data:${file.content_type};base64,${file.thumbData}`} // content_type checked for image/* above but not against a strict allowlist.
             alt={file.filename}
             className="prompt-manager__thumb"
           />
