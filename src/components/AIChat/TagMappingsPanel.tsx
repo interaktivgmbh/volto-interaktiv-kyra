@@ -95,7 +95,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       const res = await deleteTagMapping({ tag, language }, token);
       setMappings(res.mappings || {});
     } catch (_err) {
-      // ignore
+      // Silent error
     }
   };
 

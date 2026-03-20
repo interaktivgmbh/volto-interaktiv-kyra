@@ -130,6 +130,7 @@ const SettingsDrawer: React.FC<Props> = ({
     draftAccent !== currentAccentColor ||
     draftName !== currentChatName;
 
+  // No file type/Size validation. Users could upload several GB large files. HTML file type filter can be bypassed.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

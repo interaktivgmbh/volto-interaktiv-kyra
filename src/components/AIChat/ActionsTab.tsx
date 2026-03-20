@@ -71,7 +71,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
   if (!canEdit) {
     return (
       <div className="kyra-ai-chat__actions">
-        <p>Actions are available for editors with permissions.</p>
+        <p>Actions are available for editors with permissions.</p> {/*Not translated*/}
       </div>
     );
   }

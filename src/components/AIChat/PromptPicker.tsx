@@ -63,7 +63,7 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
     setLoading(true);
     getPrompts(token)
       .then((res) => setPrompts(res.prompts || []))
-      .catch(() => {})
+      .catch(() => {}) // Another silent error
       .finally(() => setLoading(false));
   }, [open, token]);
 

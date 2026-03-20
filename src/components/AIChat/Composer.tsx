@@ -58,7 +58,7 @@ const Composer: React.FC<Props> = ({
   contextLabel,
   onDismissContext,
   editModeActive,
-  editBackendUrl,
+  editBackendUrl, // Unused
   onEditModeToggle,
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);

@@ -137,11 +137,13 @@ const HistoryDrawer: React.FC<Props> = ({
     setSelected(new Set());
   };
 
+  // TODO: Check if confirmation dialog is needed here
   const handleBulkDelete = () => {
     selected.forEach((id) => onDelete(id));
     exitSelectMode();
   };
 
+  // TODO: Check if confirmation dialog is needed here
   const handleBulkArchive = () => {
     selected.forEach((id) => onArchiveToggle(id));
     exitSelectMode();
@@ -176,7 +178,7 @@ const HistoryDrawer: React.FC<Props> = ({
     filteredConversations.length > 0 &&
     filteredConversations.every((c) => selected.has(c.id));
 
-    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
+    {/* TS7016: Could not find a declaration file for module react/jsx-runtime. */}
   return (
     <div
       className={`kyra-ai-chat__history${
@@ -363,9 +365,11 @@ const HistoryDrawer: React.FC<Props> = ({
                   )}
                 </div>
                 <div className="kyra-ai-chat__history-meta">
+                  {/* toLocaleString() uses browser default locale, may not match uiLanguage. */}
                   {new Date(conversation.updatedAt).toLocaleString()}
                 </div>
               </div>
+              {/* No click-outside handler for this menu — unlike the header menu. */}
               {!selectMode && (
                 <div className="kyra-ai-chat__history-menu">
                   <button

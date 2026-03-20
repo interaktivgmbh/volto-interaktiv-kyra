@@ -72,7 +72,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
   ) as string | undefined;
 
   const [entries, setEntries] = useState<GlossaryEntries>({});
-  const [glossaryId, setGlossaryId] = useState('');
+  const [glossaryId, setGlossaryId] = useState(''); // glossaryId appears to be unused
   const [loading, setLoading] = useState(false);
   const [pairIdx, setPairIdx] = useState(0);
   const [newSource, setNewSource] = useState('');
@@ -129,10 +129,11 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setEntries(res.entries || {});
       setGlossaryId(res.glossary_id || '');
     } catch (_err) {
-      // ignore
+      // Also silent error
     }
   };
 
+  // No file type/Size validation. Users could upload several GB large files. HTML file type filter can be bypassed.
   const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -148,7 +149,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
         setEntries(res.entries || {});
         setGlossaryId(res.glossary_id || '');
       } catch (_err) {
-        // ignore
+      // Also silent error
       } finally {
         setImporting(false);
         if (csvInputRef.current) csvInputRef.current.value = '';
@@ -164,7 +165,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setEntries(res.entries || {});
       setGlossaryId(res.glossary_id || '');
     } catch (_err) {
-      // ignore
+      // Also silent error
     } finally {
       setSyncing(false);
     }
