@@ -25,6 +25,7 @@ import {
 } from './api';
 import type { LayoutJobStatus } from './api';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
+import { setFormData } from '@plone/volto/actions/form/form';
 import { extractPageContent } from './extractPageContent';
 import {
   loadLocalConversations,
@@ -158,6 +159,8 @@ const ChatWidgetProvider: React.FC = () => {
   const userSession = useSelector((state: any) => state.userSession);
   const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
+  const formData = useSelector((state: any) => state.form?.global);
+  const isVoltoEditMode = typeof window !== 'undefined' && window.location.pathname.endsWith('/edit');
 
   const [isOpen, setIsOpen] = useState(() => {
     if (typeof sessionStorage !== 'undefined') {
@@ -186,13 +189,8 @@ const ChatWidgetProvider: React.FC = () => {
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<{ name: string; id: string; file_id: string }[]>([]);
-  const [editModeActive, setEditModeActive] = useState(() => {
-    if (typeof sessionStorage !== 'undefined') {
-      return sessionStorage.getItem('kyra.editMode') === '1';
-    }
-    return false;
-  });
-  const editModeActiveRef = useRef(editModeActive);
+  const [editModeActive, setEditModeActive] = useState(false);
+  const editModeActiveRef = useRef(false);
   const [editBackendUrl, setEditBackendUrl] = useState('');
   const contextModeRef = useRef<'page' | 'site' | 'selection'>('page');
   const selectionTextRef = useRef('');
@@ -414,8 +412,12 @@ const ChatWidgetProvider: React.FC = () => {
   const updateEditMode = (active: boolean) => {
     editModeActiveRef.current = active;
     setEditModeActive(active);
-    try { sessionStorage.setItem('kyra.editMode', active ? '1' : '0'); } catch (_) {}
   };
+
+  // Sync edit mode with Volto's /edit route
+  useEffect(() => {
+    updateEditMode(isVoltoEditMode);
+  }, [isVoltoEditMode]);
 
   // Reset context mode when navigating to a different page
   useEffect(() => {
@@ -845,7 +847,26 @@ const ChatWidgetProvider: React.FC = () => {
           || result.state?.preview_image !== undefined
           || result.state?.subjects !== undefined;
         const hasChanges = hasBlocks || hasMetadata;
-        if (hasChanges) {
+        if (hasChanges && isVoltoEditMode && formData) {
+          // In Volto edit mode: inject changes into the edit form state (no save, no reload)
+          applyAssistantUpdate(editAssistantId, (m) => ({
+            ...m,
+            content: isDe ? 'Änderungen werden in die Bearbeitung übernommen\u2026' : 'Applying changes to the editor\u2026',
+          }));
+          const updatedFormData = { ...formData };
+          if (hasBlocks) {
+            updatedFormData.blocks = result.state!.blocks;
+            if (result.state!.blocks_layout) {
+              updatedFormData.blocks_layout = result.state!.blocks_layout;
+            }
+          }
+          if (result.state!.title !== undefined) updatedFormData.title = result.state!.title;
+          if (result.state!.description !== undefined) updatedFormData.description = result.state!.description;
+          if (result.state!.preview_image !== undefined) updatedFormData.preview_image = result.state!.preview_image;
+          if (result.state!.subjects !== undefined) updatedFormData.subjects = result.state!.subjects;
+          dispatch(setFormData(updatedFormData));
+        } else if (hasChanges) {
+          // Fallback for non-edit-mode: save directly (legacy behavior)
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
             content: isDe ? 'Änderungen werden auf der Seite übernommen\u2026' : 'Applying changes to the page\u2026',
@@ -869,13 +890,11 @@ const ChatWidgetProvider: React.FC = () => {
 
         const successMsg = result.message
           || (hasChanges
-            ? (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.')
+            ? (isVoltoEditMode
+              ? (isDe ? 'Änderungen in der Bearbeitung sichtbar. Bitte manuell speichern.' : 'Changes visible in the editor. Please save manually.')
+              : (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.'))
             : (isDe ? 'Keine Antwort erhalten.' : 'No response received.'));
         finalizeAssistant(editAssistantId, { content: successMsg, status: 'done' });
-
-        if (hasBlocks && editModeActiveRef.current) {
-          setTimeout(() => window.location.reload(), 800);
-        }
       } catch (err: any) {
         finalizeAssistant(editAssistantId, {
           content: isDe
@@ -1817,7 +1836,19 @@ const ChatWidgetProvider: React.FC = () => {
         onCancelEdit={handleCancelEdit}
         editModeActive={editModeActive}
         editBackendUrl={editBackendUrl}
-        onEditModeToggle={() => updateEditMode(!editModeActive)}
+        onEditModeToggle={() => {
+          if (!editModeActive && !isVoltoEditMode) {
+            // Navigate to /edit when activating edit mode from the chat
+            const currentPath = window.location.pathname.replace(/\/edit$/, '');
+            window.location.href = `${currentPath}/edit`;
+          } else if (editModeActive && isVoltoEditMode) {
+            // Navigate back to view mode when deactivating
+            const viewPath = window.location.pathname.replace(/\/edit$/, '');
+            window.location.href = viewPath;
+          } else {
+            updateEditMode(!editModeActive);
+          }
+        }}
         onFilesSelected={handleFilesSelected}
         attachments={attachments}
         onRemoveAttachment={handleRemoveAttachment}
