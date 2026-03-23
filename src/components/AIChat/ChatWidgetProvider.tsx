@@ -204,7 +204,7 @@ const ChatWidgetProvider: React.FC = () => {
   const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [attachments, setAttachments] = useState<{ name: string; id: string; file_id: string }[]>([]);
+  const [attachments, setAttachments] = useState<{ name: string; id: string; file_id: string; text?: string }[]>([]);
   const [editModeActive, setEditModeActive] = useState(false);
   const editModeActiveRef = useRef(false);
   const [editBackendUrl, setEditBackendUrl] = useState('');
@@ -680,7 +680,7 @@ const ChatWidgetProvider: React.FC = () => {
       try {
         const result: AiChatUploadResponse = await postAiChatUpload(file, token);
         setAttachments((prev) =>
-          prev.map((a) => (a.id === tempId ? { ...a, file_id: result.file_id } : a)),
+          prev.map((a) => (a.id === tempId ? { ...a, file_id: result.file_id, text: result.text || '' } : a)),
         );
       } catch (_err) {
         setAttachments((prev) => prev.filter((a) => a.id !== tempId));
@@ -789,12 +789,23 @@ const ChatWidgetProvider: React.FC = () => {
         try {
           const messagePayload: { message: string; context?: { text?: string; block_id?: string } } = { message: contentText };
           const activeSelection = selectionTextRef.current;
+
+          // Build context text from selection, page content, and/or attachments
+          const contextParts: string[] = [];
           if (activeSelection && activeSelection.length > 5) {
-            // Send selected text as context (works in both edit mode and normal chat)
-            messagePayload.context = { text: activeSelection };
+            contextParts.push(activeSelection);
           } else if (!editModeActiveRef.current && pageContentText) {
-            // For normal chat without selection, send full page content
-            messagePayload.context = { text: pageContentText };
+            contextParts.push(pageContentText);
+          }
+          const attachmentTexts = attachments
+            .filter((a) => a.text && a.text.trim())
+            .map((a) => `[File: ${a.name}]\n${a.text}`)
+            .join('\n\n');
+          if (attachmentTexts) {
+            contextParts.push(attachmentTexts);
+          }
+          if (contextParts.length > 0) {
+            messagePayload.context = { text: contextParts.join('\n\n---\n\n') };
           }
           const msgResponse = await sendLayoutMessage(
             editBackendUrl,
