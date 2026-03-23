@@ -443,17 +443,20 @@ const ChatWidgetProvider: React.FC = () => {
         updateContextMode('selection');
         updateSelectionText(text);
       } else if (contextModeRef.current === 'selection') {
-        // Selection cleared — defer check so activeElement has time to update
-        // (selectionchange fires before focus transfer completes)
+        // Selection cleared — only reset if user clicked outside the chat panel.
+        // When clicking into the chat textarea, the browser clears the page
+        // selection but we want to keep the captured text for the next message.
         setTimeout(() => {
           if (contextModeRef.current !== 'selection') return;
           const activeEl = document.activeElement;
           const inChat = activeEl?.closest('.kyra-ai-chat');
           if (inChat) return;
-          // Selection cleared by clicking outside chat — revert
+          // Also keep selection if there's still captured text (user may have
+          // clicked somewhere neutral on the page)
+          if (selectionTextRef.current.length > 5) return;
           updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
           updateSelectionText('');
-        }, 0);
+        }, 100);
       }
     };
     document.addEventListener('selectionchange', handleSelection);
@@ -758,9 +761,13 @@ const ChatWidgetProvider: React.FC = () => {
 
         let jobId: string;
         try {
-          const messagePayload: { message: string; context?: { text?: string } } = { message: contentText };
-          // For normal chat (not edit mode), send page content as context
-          if (!editModeActiveRef.current && pageContentText) {
+          const messagePayload: { message: string; context?: { text?: string; block_id?: string } } = { message: contentText };
+          const activeSelection = selectionTextRef.current;
+          if (activeSelection && activeSelection.length > 5) {
+            // Send selected text as context (works in both edit mode and normal chat)
+            messagePayload.context = { text: activeSelection };
+          } else if (!editModeActiveRef.current && pageContentText) {
+            // For normal chat without selection, send full page content
             messagePayload.context = { text: pageContentText };
           }
           const msgResponse = await sendLayoutMessage(
