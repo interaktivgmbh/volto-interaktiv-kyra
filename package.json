@@ -1,6 +1,6 @@
 {
   "name": "@interaktiv.de/volto-interaktiv-kyra",
-  "version": "1.0.0-alpha.0",
+  "version": "2.1.1",
   "description": "Kyra AI for Volto — a modern, editor-first AI add-on for structured prompts, smart settings and seamless Slate workflows.",
   "main": "src/index.ts",
   "license": "MIT",
