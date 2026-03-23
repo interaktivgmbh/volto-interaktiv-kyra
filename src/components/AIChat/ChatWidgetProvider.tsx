@@ -160,7 +160,23 @@ const ChatWidgetProvider: React.FC = () => {
   const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
   const formData = useSelector((state: any) => state.form?.global);
-  const isVoltoEditMode = typeof window !== 'undefined' && window.location.pathname.endsWith('/edit');
+  const [isVoltoEditMode, setIsVoltoEditMode] = useState(
+    typeof window !== 'undefined' && window.location.pathname.endsWith('/edit'),
+  );
+
+  useEffect(() => {
+    const check = () => {
+      const onEdit = window.location.pathname.endsWith('/edit');
+      setIsVoltoEditMode((prev) => (prev !== onEdit ? onEdit : prev));
+    };
+    check();
+    window.addEventListener('popstate', check);
+    const interval = setInterval(check, 300);
+    return () => {
+      window.removeEventListener('popstate', check);
+      clearInterval(interval);
+    };
+  }, []);
 
   const [isOpen, setIsOpen] = useState(() => {
     if (typeof sessionStorage !== 'undefined') {
@@ -415,8 +431,16 @@ const ChatWidgetProvider: React.FC = () => {
   };
 
   // Sync edit mode with Volto's /edit route
+  const prevEditModeRef = useRef(isVoltoEditMode);
   useEffect(() => {
     updateEditMode(isVoltoEditMode);
+    // Open chat when entering /edit, close when leaving
+    if (!prevEditModeRef.current && isVoltoEditMode) {
+      setIsOpen(true);
+    } else if (prevEditModeRef.current && !isVoltoEditMode) {
+      setIsOpen(false);
+    }
+    prevEditModeRef.current = isVoltoEditMode;
   }, [isVoltoEditMode]);
 
   // Reset context mode when navigating to a different page

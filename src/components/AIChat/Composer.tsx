@@ -100,7 +100,17 @@ const Composer: React.FC<Props> = ({
     if (!trimmed || disabled) return;
     onSend?.(trimmed);
     setText('');
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
+
+  // Re-focus input when sending completes (disabled goes from true to false)
+  const prevDisabledRef = useRef(disabled);
+  useEffect(() => {
+    if (prevDisabledRef.current && !disabled) {
+      inputRef.current?.focus();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
