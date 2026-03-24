@@ -67,7 +67,7 @@ jobs:
           - src/theme/ - SCSS styles
           - src/helpers/ - Helper utilities
 
-          Fix the issue now." --allowedTools "Edit,Write,Read,Glob,Grep,Bash" --dangerouslySkipPermissions
+          Fix the issue now." --allowedTools "Edit,Write,Read,Glob,Grep,Bash"  --dangerously-skip-permissions
 
       - name: Check for changes
         id: changes
