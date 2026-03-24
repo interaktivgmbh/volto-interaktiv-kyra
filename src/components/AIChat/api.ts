@@ -1233,3 +1233,38 @@ export const deleteAiChatConversation = async (
   );
   if (!response.ok) throw new Error('Failed to delete conversation');
 };
+
+export const reportError = async (
+  data: {
+    error_message: string;
+    error_type?: string;
+    stack_trace?: string;
+    page_url?: string;
+    user_action?: string;
+    component?: string;
+    browser?: string;
+    timestamp?: string;
+  },
+  token?: string,
+): Promise<{ status: string; issue_url?: string; issue_number?: number }> => {
+  try {
+    const response = await fetch(buildApiUrl('/@ai-error-report'), {
+      method: 'POST',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        ...data,
+        browser: data.browser || navigator.userAgent,
+        page_url: data.page_url || window.location.href,
+        timestamp: data.timestamp || new Date().toISOString(),
+      }),
+    });
+    if (!response.ok) return { status: 'failed' };
+    return response.json();
+  } catch (_err) {
+    return { status: 'failed' };
+  }
+};

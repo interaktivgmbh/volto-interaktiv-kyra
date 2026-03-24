@@ -22,6 +22,7 @@ import {
   putAiChatHistory,
   deleteAiChatConversation,
   postAiChatUpload,
+  reportError,
 } from './api';
 import type { LayoutJobStatus } from './api';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
@@ -671,6 +672,18 @@ const ChatWidgetProvider: React.FC = () => {
       updatedAt: new Date().toISOString(),
     };
     updateConversationState(nextConversation, true, previousId);
+
+    // Auto-report errors to GitHub
+    if (data.status === 'error' && data.content && token) {
+      reportError({
+        error_message: data.content,
+        error_type: 'AI Assistant Error',
+        component: 'ChatWidgetProvider',
+        user_action: current.messages
+          .filter((m) => m.role === 'user')
+          .slice(-1)[0]?.content || '',
+      }, token).catch(() => {});
+    }
   };
 
   const handleFilesSelected = async (files: File[]) => {
