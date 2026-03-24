@@ -100,6 +100,9 @@ const Composer: React.FC<Props> = ({
     if (!trimmed || disabled) return;
     onSend?.(trimmed);
     setText('');
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -175,6 +178,43 @@ const Composer: React.FC<Props> = ({
     };
   }, []);
 
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      onFilesSelected?.(Array.from(files));
+    }
+  };
+
   useEffect(() => {
     if (!showPlusMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -187,7 +227,21 @@ const Composer: React.FC<Props> = ({
   }, [showPlusMenu]);
 
   return (
-    <div className="kyra-ai-chat__composer">
+    <div
+      className={`kyra-ai-chat__composer${isDragging ? ' kyra-ai-chat__composer--dragging' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="kyra-ai-chat__composer-drop-overlay">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>
+          <span>{t.attachFiles}</span>
+        </div>
+      )}
       {attachments.length > 0 && (
         <div className="kyra-ai-chat__composer-attachments">
           {attachments.map((att) => (
@@ -374,7 +428,16 @@ const Composer: React.FC<Props> = ({
           ref={inputRef}
           className="kyra-ai-chat__composer-input"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            // Auto-grow textarea
+            const el = e.target;
+            el.style.height = 'auto';
+            const maxH = 150;
+            const newH = Math.min(el.scrollHeight, maxH);
+            el.style.height = `${newH}px`;
+            el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
