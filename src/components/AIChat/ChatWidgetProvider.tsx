@@ -155,6 +155,89 @@ const buildTitle = (content: string, lang?: string) => {
   return `${capped.slice(0, 57)}...`;
 };
 
+/**
+ * Sanitize a partial state from the Layout Agent so incomplete blocks
+ * don't crash Volto's renderers during live preview.
+ * - columnsBlock without data/blocks/blocks_layout → patched with empty defaults
+ * - accordion/tabs without data/blocks/blocks_layout → patched with empty defaults
+ * - Nested sub-blocks (columns, panels) without blocks/blocks_layout → patched
+ * - Blocks referenced in blocks_layout but missing from blocks → removed from layout
+ */
+const sanitizePartialState = (state: Record<string, any>): Record<string, any> => {
+  if (!state.blocks || !state.blocks_layout?.items) return state;
+
+  const blocks = { ...state.blocks };
+  const items = (state.blocks_layout.items as string[]).filter((id) => !!blocks[id]);
+
+  for (const id of Object.keys(blocks)) {
+    const block = blocks[id];
+    if (!block || !block['@type']) continue;
+
+    blocks[id] = sanitizeBlock(block);
+  }
+
+  return { ...state, blocks, blocks_layout: { items } };
+};
+
+const sanitizeBlock = (block: Record<string, any>): Record<string, any> => {
+  const type = block['@type'];
+
+  // columnsBlock: needs data.blocks + data.blocks_layout
+  if (type === 'columnsBlock') {
+    if (!block.data) return { ...block, data: { blocks: {}, blocks_layout: { items: [] } }, gridCols: block.gridCols || [] };
+    const data = { ...block.data };
+    if (!data.blocks) data.blocks = {};
+    if (!data.blocks_layout?.items) data.blocks_layout = { items: [] };
+    // Filter layout items that exist in blocks
+    data.blocks_layout = { items: (data.blocks_layout.items as string[]).filter((id: string) => !!data.blocks[id]) };
+    // Sanitize each column's nested blocks
+    for (const colId of Object.keys(data.blocks)) {
+      const col = data.blocks[colId];
+      if (col && !col.blocks) data.blocks[colId] = { ...col, blocks: {}, blocks_layout: { items: [] } };
+      else if (col && !col.blocks_layout?.items) data.blocks[colId] = { ...col, blocks_layout: { items: [] } };
+      else if (col?.blocks && col?.blocks_layout?.items) {
+        // Filter sub-block layout
+        const subItems = (col.blocks_layout.items as string[]).filter((sid: string) => !!col.blocks[sid]);
+        data.blocks[colId] = { ...col, blocks_layout: { items: subItems } };
+      }
+    }
+    return { ...block, data };
+  }
+
+  // accordion / tabs: needs data.blocks + data.blocks_layout
+  if (type === 'accordion' || type === 'tabs') {
+    if (!block.data) return { ...block, data: { blocks: {}, blocks_layout: { items: [] } } };
+    const data = { ...block.data };
+    if (!data.blocks) data.blocks = {};
+    if (!data.blocks_layout?.items) data.blocks_layout = { items: [] };
+    data.blocks_layout = { items: (data.blocks_layout.items as string[]).filter((id: string) => !!data.blocks[id]) };
+    // Sanitize each panel
+    for (const panelId of Object.keys(data.blocks)) {
+      const panel = data.blocks[panelId];
+      if (panel && !panel.blocks) data.blocks[panelId] = { ...panel, blocks: {}, blocks_layout: { items: [] } };
+      else if (panel && !panel.blocks_layout?.items) data.blocks[panelId] = { ...panel, blocks_layout: { items: [] } };
+      else if (panel?.blocks && panel?.blocks_layout?.items) {
+        const subItems = (panel.blocks_layout.items as string[]).filter((sid: string) => !!panel.blocks[sid]);
+        data.blocks[panelId] = { ...panel, blocks_layout: { items: subItems } };
+      }
+    }
+    return { ...block, data };
+  }
+
+  // slateTable: needs table.rows as array
+  if (type === 'slateTable') {
+    if (!block.table) return { ...block, table: { rows: [] } };
+    if (!Array.isArray(block.table.rows)) return { ...block, table: { ...block.table, rows: [] } };
+    return block;
+  }
+
+  // slider/carousel: needs slides/columns as array
+  if (type === 'slider' && !Array.isArray(block.slides)) return { ...block, slides: [] };
+  if (type === 'carousel' && !Array.isArray(block.columns)) return { ...block, columns: [] };
+
+  return block;
+};
+
 const ChatWidgetProvider: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch();
@@ -890,6 +973,25 @@ const ChatWidgetProvider: React.FC = () => {
                   ...m,
                   content: status.progress!,
                 }));
+              }
+              // Live preview: apply partial state during processing
+              if (status.state && isVoltoEditMode && formData) {
+                try {
+                  const partial = status.state;
+                  const sanitized = sanitizePartialState(partial);
+                  const liveFormData = { ...formData };
+                  if (sanitized.blocks && Object.keys(sanitized.blocks).length > 0) {
+                    liveFormData.blocks = sanitized.blocks;
+                    if (sanitized.blocks_layout) liveFormData.blocks_layout = sanitized.blocks_layout;
+                  }
+                  if (sanitized.title !== undefined) liveFormData.title = sanitized.title;
+                  if (sanitized.description !== undefined) liveFormData.description = sanitized.description;
+                  if (sanitized.preview_image !== undefined) liveFormData.preview_image = sanitized.preview_image;
+                  if (sanitized.subjects !== undefined) liveFormData.subjects = sanitized.subjects;
+                  dispatch(setFormData(liveFormData));
+                } catch (_err) {
+                  // Skip this partial update if sanitization fails
+                }
               }
               continue;
             }

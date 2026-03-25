@@ -1073,7 +1073,7 @@ export const prepareBlocksForEditMode = async (
 };
 
 export type LayoutJobStatus =
-  | { status: 'running'; progress?: string }
+  | { status: 'running'; progress?: string; state?: Record<string, any> }
   | { status: 'completed'; message?: string; state?: Record<string, any> }
   | { status: 'failed'; error?: string }
   | { status: 'cancelled' };
