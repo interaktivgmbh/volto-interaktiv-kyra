@@ -745,7 +745,7 @@ const ChatWidgetProvider: React.FC = () => {
     }
     updateConversationState(workingConversation, true);
 
-    if (editBackendUrl) {
+    if (editBackendUrl && editModeActiveRef.current) {
       const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
       const editAssistantId = generateId();
       const editAssistantMsg: ChatMessage = {
