@@ -19,6 +19,7 @@ type Props = {
   onEditModeToggle?: () => void;
 };
 
+// Same react-intl issue as ChatPanel.tsx.
 const getComposerLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -57,7 +58,7 @@ const Composer: React.FC<Props> = ({
   contextLabel,
   onDismissContext,
   editModeActive,
-  editBackendUrl,
+  editBackendUrl, // Unused
   onEditModeToggle,
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
@@ -73,6 +74,7 @@ const Composer: React.FC<Props> = ({
     setText('');
   };
 
+  // Same manual click-outside pattern as ChatPanel.tsx. See comment there for useRef + onBlur fix.
   useEffect(() => {
     if (!showPlusMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -84,6 +86,7 @@ const Composer: React.FC<Props> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPlusMenu]);
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div className="kyra-ai-chat__composer">
       {(contextLabel || editModeActive) && (
@@ -93,8 +96,9 @@ const Composer: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={onEditModeToggle}
-                aria-label="Disable edit mode"
+                aria-label="Disable edit mode" // Hardcoded aria-label — should use translated label
               >
+                {/* Inline SVGs — same issue as ChatPanel.tsx. Extract to icon helpers. */}
                 <svg
                   width="18"
                   height="18"
@@ -217,7 +221,7 @@ const Composer: React.FC<Props> = ({
             }
           }}
           placeholder={t.placeholder}
-          disabled={true}
+          disabled={true} // BUG: textarea is always disabled regardless of the 'disabled' prop. Should be disabled={disabled}.
           rows={1}
         />
         <button

@@ -10,6 +10,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -71,7 +72,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
   ) as string | undefined;
 
   const [entries, setEntries] = useState<GlossaryEntries>({});
-  const [glossaryId, setGlossaryId] = useState('');
+  const [glossaryId, setGlossaryId] = useState(''); // glossaryId appears to be unused
   const [loading, setLoading] = useState(false);
   const [pairIdx, setPairIdx] = useState(0);
   const [newSource, setNewSource] = useState('');
@@ -115,7 +116,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setNewSource('');
       setNewTarget('');
     } catch (_err) {
-      // ignore
+      // Same pattern as PromptsPanel — all operations silently swallow errors. See comment there.
     }
   };
 
@@ -128,10 +129,11 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setEntries(res.entries || {});
       setGlossaryId(res.glossary_id || '');
     } catch (_err) {
-      // ignore
+      // Also silent error
     }
   };
 
+  // No file type/Size validation. Users could upload several GB large files. HTML file type filter can be bypassed.
   const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -147,7 +149,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
         setEntries(res.entries || {});
         setGlossaryId(res.glossary_id || '');
       } catch (_err) {
-        // ignore
+      // Also silent error
       } finally {
         setImporting(false);
         if (csvInputRef.current) csvInputRef.current.value = '';
@@ -163,7 +165,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setEntries(res.entries || {});
       setGlossaryId(res.glossary_id || '');
     } catch (_err) {
-      // ignore
+      // Also silent error
     } finally {
       setSyncing(false);
     }
@@ -171,6 +173,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
 
   const rows = Object.entries(entries).sort(([a], [b]) => a.localeCompare(b));
 
+  {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings kyra-ai-chat__glossary${
@@ -209,6 +212,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
             title={syncing ? t.syncing : t.sync}
             aria-label={t.sync}
           >
+            {/* Inline SVGs — same issue as ChatPanel.tsx. */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 4 23 10 17 10" />
               <polyline points="1 20 1 14 7 14" />
@@ -234,7 +238,7 @@ const GlossaryPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
             {rows.map(([src, tgt]) => (
               <div key={src} className="kyra-ai-chat__tag-mappings-row kyra-ai-chat__glossary-row">
                 <div>{src}</div>
-                <div>{tgt}</div>
+                <div>{tgt}</div> // TS2322
                 <div>
                   <button
                     type="button"

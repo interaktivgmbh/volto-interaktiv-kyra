@@ -1,3 +1,4 @@
+// .jsx instead of .tsx — no TypeScript, no prop types.
 import React, { useCallback } from 'react';
 import { Button, Loader, Message, Table } from 'semantic-ui-react';
 
@@ -26,7 +27,7 @@ const PromptRow = ({ prompt, onEdit, onDelete, t }) => {
         <Button size="small" onClick={handleEdit}>
           {t('Edit', 'Bearbeiten')}
         </Button>
-        <Button size="small" color="red" onClick={handleDelete}>
+        <Button size="small" color="red" onClick={handleDelete}>{/* No confirmation dialog — same concern flagged in HistoryDrawer.tsx and index.jsx handleDeletePrompt. */}
           {t('Delete', 'L\u00f6schen')}
         </Button>
       </Table.Cell>

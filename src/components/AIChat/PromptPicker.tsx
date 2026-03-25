@@ -11,6 +11,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -36,7 +37,7 @@ const groupByCategory = (prompts: Prompt[]) => {
   for (const prompt of prompts) {
     const cats = prompt.categories && prompt.categories.length > 0
       ? prompt.categories
-      : ['Allgemein'];
+      : ['Allgemein']; // Hardcoded German string — should use labels object or react-intl for default category.
     for (const cat of cats) {
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(prompt);
@@ -62,7 +63,7 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
     setLoading(true);
     getPrompts(token)
       .then((res) => setPrompts(res.prompts || []))
-      .catch(() => {})
+      .catch(() => {}) // Another silent error
       .finally(() => setLoading(false));
   }, [open, token]);
 
@@ -74,6 +75,7 @@ const PromptPicker: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
     ? grouped[activeCategory] || []
     : prompts;
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div className="kyra-ai-chat__prompt-picker-inline">
       {/* Header */}

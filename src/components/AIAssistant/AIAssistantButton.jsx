@@ -1,3 +1,4 @@
+ // .jsx file — rest of the project uses .tsx.
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useIntl } from 'react-intl';
@@ -7,7 +8,7 @@ import { getPrompts } from '../AIChat/api';
 const groupPromptsByCategory = (prompts) => {
   const grouped = {};
   (prompts || []).forEach((p) => {
-    const cats = p.categories?.length ? p.categories : ['Allgemein'];
+    const cats = p.categories?.length ? p.categories : ['Allgemein']; // Hardcoded language, use something like react-intl.
     cats.forEach((cat) => {
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(p);
@@ -16,8 +17,8 @@ const groupPromptsByCategory = (prompts) => {
   return grouped;
 };
 
-const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
-  const intl = useIntl();
+const AIAssistantButton = ({ onSelectPrompt = () => {} }) => { // No prop types — onSelectPrompt is untyped.
+  const intl = useIntl(); // Imported but never used
   const locale = (intl.locale || 'en').toLowerCase();
   const isDe = locale.startsWith('de');
   const t = (en, de) => (isDe && de ? de : en);
@@ -39,7 +40,7 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
         setPrompts(res.prompts || []);
         setLoaded(true);
       })
-      .catch(() => {
+      .catch(() => { // Silent error. Same pattern as PromptsPanel.tsx.
         setLoaded(true);
       })
       .finally(() => setLoading(false));
@@ -56,7 +57,7 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
     if (!activeCategory || !categories.includes(activeCategory)) {
       setActiveCategory(categories[0]);
     }
-  }, [categories.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [categories.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps — suppressing hooks rule. categories is derived from prompts, could use useMemo instead. Also join(',') is fragile if a category name contains a comma.
 
   if (loading && categories.length === 0) {
     return (
@@ -76,6 +77,8 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
 
   const currentPrompts = activeCategory ? grouped[activeCategory] || [] : [];
 
+  // Inline styles throughout — conflicts with _ai-chat.scss, needs !important to override).
+  // Hardcoded colors ignore --ai-chat-accent theming. No aria-labels or keyboard nav.
   return (
     <div
       className="kyra-ai-menu"

@@ -10,6 +10,7 @@ type Props = {
   uiLanguage?: string;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -85,7 +86,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       setNewTag('');
       setNewTranslated('');
     } catch (_err) {
-      // ignore
+      // Same silent error pattern. See PromptsPanel.tsx.
     }
   };
 
@@ -94,7 +95,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
       const res = await deleteTagMapping({ tag, language }, token);
       setMappings(res.mappings || {});
     } catch (_err) {
-      // ignore
+      // Silent error
     }
   };
 
@@ -107,6 +108,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
   });
   rows.sort((a, b) => a.tag.localeCompare(b.tag) || a.language.localeCompare(b.language));
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings kyra-ai-chat__tag-mappings${
@@ -151,6 +153,7 @@ const TagMappingsPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
                     aria-label={t.delete}
                     title={t.delete}
                   >
+                    {/* Inline SVG — same issue as ChatPanel.tsx. */}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                       <line x1="18" y1="6" x2="6" y2="18" />
                       <line x1="6" y1="6" x2="18" y2="18" />

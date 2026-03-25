@@ -48,6 +48,7 @@ const ACCENT_PRESETS = [
   '#f97316',
 ];
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -129,6 +130,7 @@ const SettingsDrawer: React.FC<Props> = ({
     draftAccent !== currentAccentColor ||
     draftName !== currentChatName;
 
+  // No file type/Size validation. Users could upload several GB large files. HTML file type filter can be bypassed.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -156,6 +158,7 @@ const SettingsDrawer: React.FC<Props> = ({
     });
   };
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div
       className={`kyra-ai-chat__settings${
@@ -225,7 +228,7 @@ const SettingsDrawer: React.FC<Props> = ({
                 onClick={() =>
                   setDraftAccent(color === '#3b97d4' ? null : color)
                 }
-                aria-label={color}
+                aria-label={color} // Hex color codes as aria-labels are not accessible. Use descriptive color names.
               />
             ))}
             <label
@@ -323,6 +326,7 @@ const SettingsDrawer: React.FC<Props> = ({
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setDraftIconColor(color)}
+                    // Same hex-as-aria-label issue as line 229.
                     aria-label={color}
                   />
                 ))}

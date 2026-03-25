@@ -54,6 +54,10 @@ const DEFAULT_CAPABILITIES: ChatCapabilities = {
 
 const generateId = () =>
   `chat_${Math.random().toString(36).slice(2, 10)}`;
+    // Use something crypto.randomUUID() instead fir actual random numbers. This also provides UUIDs by default
+    // Read more:
+    // https://deepsource.com/blog/dont-use-math-random
+    // https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
@@ -62,6 +66,9 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 const ALL_LANGUAGES = Object.keys(LANGUAGE_NAMES);
 
+// Translations in Volto should be using react-intl instead of custom code.
+// The current approach is also a larger architectural problem in this project.
+// Read more: https://6.docs.plone.org/volto/development/i18n.html
 const getTranslationLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -118,6 +125,8 @@ const getTranslationLabels = (lang?: string) => {
   };
 };
 
+// Same problem with inline translations here.
+// Building titles for conversations is something  light-weight AI models can do quite well. Using AI would also mean more reliable handling of edge cases.
 const buildTitle = (content: string, lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   const defaultTitle = isDe ? 'Neuer Chat' : 'New chat';
@@ -126,7 +135,7 @@ const buildTitle = (content: string, lang?: string) => {
 
   const firstSegment = trimmed.split(/[\n\r.!?]/)[0] || trimmed;
   const tokens = firstSegment
-    .replace(/["\u201C\u201D\u201A\u2018\u2019]+/g, '')
+    .replace(/["\u201C\u201D\u201A\u2018\u2019]+/g, '') // Purpose of filtering should be explained or at least the characters. Only relevant if we decide to keep buildTitle() as such.
     .trim()
     .split(/\s+/);
 
@@ -146,6 +155,8 @@ const buildTitle = (content: string, lang?: string) => {
   return `${capped.slice(0, 57)}...`;
 };
 
+// This component has roughly ~1500 lines of code and is therefore hard to debug/review.
+// Before further review this needs to be refactored.
 const ChatWidgetProvider: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch();
@@ -1606,6 +1617,7 @@ const ChatWidgetProvider: React.FC = () => {
   // Don't render during SSR — avoids settings flash on hydration
   if (!mounted) return null;
 
+    {// TS7016: Could not find a declaration file for module react/jsx-runtime.}
   return (
     <div className="kyra-ai-chat" style={accentStyles}>
       <ChatPanel

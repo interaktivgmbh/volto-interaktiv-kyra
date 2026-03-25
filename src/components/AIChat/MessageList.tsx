@@ -11,6 +11,7 @@ type Props = {
   onCancelEdit?: () => void;
 };
 
+// Same react-intl issue.
 const getMessageLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -35,6 +36,8 @@ const getMessageLabels = (lang?: string) => {
   };
 };
 
+// Regex-based stripHtml won't handle nested tags or encoded entities reliably.
+// Example: stripHtml('<script>alert("x")</script>')
 const stripHtml = (value: string) => value.replace(/<[^>]+>/g, '').trim();
 
 /**
@@ -42,6 +45,7 @@ const stripHtml = (value: string) => value.replace(/<[^>]+>/g, '').trim();
  * Supports: headings (##), bold (**), italic (*), unordered lists (-),
  * ordered lists (1.), and paragraphs.
  */
+// Use proven solutions like DOMPurify or react-markdown instead
 const renderMarkdown = (text: string): string => {
   if (!text) return '';
   const escaped = text
@@ -143,7 +147,7 @@ const MessageList: React.FC<Props> = ({
   onEditAndResend,
   onCancelEdit,
 }) => {
-  const rendered = useMemo(() => messages, [messages]);
+  const rendered = useMemo(() => messages, [messages]); // This useMemo is a no-op — it returns the same reference.
   const containerRef = useRef<HTMLDivElement>(null);
   const [editText, setEditText] = useState('');
   const editRef = useRef<HTMLTextAreaElement>(null);
@@ -160,10 +164,12 @@ const MessageList: React.FC<Props> = ({
     if (editingMessageId) {
       const msg = messages.find((m) => m.id === editingMessageId);
       if (msg) setEditText(msg.content || '');
+      // Magic timeout is fragile as it may fire after unmount or before render. A ref callback would be more reliable.
       setTimeout(() => editRef.current?.focus(), 50);
     }
   }, [editingMessageId, messages]);
 
+    {/* TS7016: Could not find a declaration file for module react/jsx-runtime. */}
   return (
     <div className="kyra-ai-chat__messages" ref={containerRef}>
       {rendered.map((message) => {
@@ -254,7 +260,7 @@ const MessageList: React.FC<Props> = ({
                       {rawContent ? (
                         <div
                           className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__message-content--markdown"
-                          dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }} // dangerouslySetInnerHTML is fragile — a change to renderMarkdown could introduce XSS. Consider react-markdown or DOMPurify.
                         />
                       ) : isStreaming ? (
                         <div className="kyra-ai-chat__prompt-comparison--result kyra-ai-chat__prompt-comparison--placeholder">
@@ -281,6 +287,7 @@ const MessageList: React.FC<Props> = ({
                     {useMarkdown ? (
                       <div
                         className="kyra-ai-chat__message-content kyra-ai-chat__message-content--markdown"
+                        // Same dangerouslySetInnerHTML risk as line 258.
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(rawContent) }}
                       />
                     ) : (
@@ -308,6 +315,7 @@ const MessageList: React.FC<Props> = ({
                     }`}
                     onClick={() => onAction?.(message.id, action.value)}
                   >
+                    {/*Components should not have svgs as hardcoded html. Instead import them like settingsSVG etc.*/}
                     {action.icon === 'page' && (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -330,6 +338,7 @@ const MessageList: React.FC<Props> = ({
                 <ul>
                   {message.citations.map((citation) => (
                     <li key={citation.source_id}>
+                      {/* TODO: Check if validation makes sense here */}
                       <a href={citation.url} target="_blank" rel="noreferrer">
                         {citation.label || citation.url}
                       </a>

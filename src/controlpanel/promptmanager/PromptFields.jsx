@@ -1,3 +1,4 @@
+// .jsx instead of .tsx — no TypeScript, no prop types.
 import React from 'react';
 import { Form } from 'semantic-ui-react';
 

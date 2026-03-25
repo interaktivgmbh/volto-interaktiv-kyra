@@ -41,7 +41,7 @@ type ContentBlock = {
     blocks?: Record<string, ContentBlock>;
     blocks_layout?: { items?: string[] };
   }>;
-  [key: string]: any;
+  [key: string]: any; // Index signature disables excess-property checking — typos like block.pliantext won't be caught.
 };
 
 type ContentData = {
@@ -67,12 +67,19 @@ function slateToText(nodes: SlateNode | SlateNode[]): string {
     .join('');
 }
 
+// extractBlockText ↔ extractFromBlocksLayout are mutually recursive with no depth limit.
+// Content from the REST API is JSON-serialized (no circular refs possible), but deeply nested containers
+// (e.g. columnsBlock → nested columnsBlock → …) could still exhaust the call stack.
+
 /** Extract text from a single Volto block. */
 function extractBlockText(block: ContentBlock): string {
   const type = block['@type'];
 
   // Skip title/description blocks — already in metadata header
   if (type === 'title' || type === 'description') return '';
+
+  // Missing block types that the backend (ai_context.py) handles: video, teaser, hero, quote.
+  // These silently return '' — the fallback at the bottom only catches blocks with plaintext/text fields.
 
   // Slate / text blocks
   if (type === 'slate' || type === 'text') {
@@ -91,6 +98,8 @@ function extractBlockText(block: ContentBlock): string {
   }
 
   // Table blocks
+  // Assumes first row is always a header. Correct for Volto's default, but ignores the hideHeaders flag —
+  // when hideHeaders is true the first row is data, not a header, and the markdown separator is misleading.
   if (type === 'table' && block.table?.rows) {
     const rows = block.table.rows;
     const textRows = rows.map((row) => {
@@ -184,6 +193,8 @@ export function extractPageContent(content: ContentData | null | undefined): str
   const result = parts.join('\n');
   if (!result.trim()) return '';
 
+  // Truncates at arbitrary character boundary — can cut mid-word, mid-table-row, or mid-URL.
+  // Truncating at last complete block/paragraph boundary would produce cleaner output.
   if (result.length > MAX_LENGTH) {
     return result.slice(0, MAX_LENGTH) + '\n[...content truncated]';
   }

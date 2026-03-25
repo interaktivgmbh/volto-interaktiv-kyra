@@ -1,6 +1,8 @@
+// .jsx instead of .tsx — no TypeScript, no prop types. Same as other promptmanager files.
 import React, { useRef, useState, useCallback } from 'react';
 import { Icon } from 'semantic-ui-react';
 
+// No file size or type validation — accepts any file. Same issue as GlossaryPanel.tsx and SettingsDrawer.tsx.
 const PromptDropzone = ({
   id,
   label,

@@ -1,3 +1,4 @@
+// .jsx instead of .tsx — no TypeScript, no prop types.
 import React from 'react';
 import { Button, Divider, Form, Header, Modal } from 'semantic-ui-react';
 import PromptFields from './PromptFields';

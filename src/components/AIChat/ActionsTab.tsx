@@ -12,6 +12,7 @@ type Props = {
   onRefetchTranslationStatus?: () => Promise<void>;
 };
 
+// Same react-intl issue.
 const getLabels = (lang?: string) => {
   const isDe = (lang || '').toLowerCase().startsWith('de');
   if (isDe) {
@@ -70,7 +71,7 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
   if (!canEdit) {
     return (
       <div className="kyra-ai-chat__actions">
-        <p>Actions are available for editors with permissions.</p>
+        <p>Actions are available for editors with permissions.</p> {/*Not translated*/}
       </div>
     );
   }
@@ -104,13 +105,14 @@ const ActionsTab: React.FC<Props> = ({ canEdit, pageContext, onApplied, uiLangua
         translation,
       });
       setSuccess(
-        uiLanguage?.startsWith('de')
+        uiLanguage?.startsWith('de') // Direct language checks bypass the labels object (lines 15-53). Same pattern on lines 115, 149, 157. Use the labels object consistently.
           ? `Übersetzung nach ${LANGUAGE_NAMES[targetLanguage] || targetLanguage} erfolgreich.`
           : `Translation to ${LANGUAGE_NAMES[targetLanguage] || targetLanguage} completed successfully.`,
       );
       await onRefetchTranslationStatus?.();
       onApplied?.(result);
     } catch (_error) {
+      // Same direct language check — see comment at line 108.
       setError(
         uiLanguage?.startsWith('de')
           ? 'Übersetzung fehlgeschlagen.'

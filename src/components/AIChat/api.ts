@@ -1,3 +1,12 @@
+// 20+ fetch functions below repeat the same pattern — extract an apiFetch<T>() helper to cut ~200 lines
+// Error handling is inconsistent: GETs silently return defaults etc.
+// Inconsistent comment convention: first half has no section headers - possibly refactor into different files
+// Endpoint paths are hardcoded as strings
+// Naming convention splits: first 20 functions use REST-verb prefixes (postAiChat, getTagMappings)
+// layout functions switch to action verbs (createLayoutConversation, sendLayoutMessage). Pick one.
+//    https://restfulapi.net/resource-naming/
+// Only postAiChatStream accepts AbortSignal — long-running calls like postAiActionsPlan can't be aborted
+// A general problem is that functions (apart from endpoints) are doing too much at one: https://medium.com/@aronisfotis/clean-code-principles-b2d00c36993d
 const API_PREFIX = '/++api++';
 
 import type {
@@ -12,13 +21,15 @@ import type {
   TranslationStatus,
   Prompt,
 } from './types';
-import type { AiChatUploadResponse } from './types';
+import type { AiChatUploadResponse } from './types'; // Merge into the import above
 
 const buildApiUrl = (path: string) => {
   const suffix = path.startsWith('/') ? path : `/${path}`;
   return `${API_PREFIX}${suffix}`;
 };
 
+// Content-Type is always set here, but FormData uploads (postAiChatUpload, uploadPromptFiles) must bypass
+// this entirely — consider a skipContentType option or splitting into buildAuthHeaders
 const buildHeaders = (token?: string) => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -51,7 +62,7 @@ export const postAiChat = async (
   return response.json();
 };
 
-export const postAiFeedback = async (
+export const postAiFeedback = async ( // Not called anywhere
   payload: FeedbackPayload,
   token?: string,
 ): Promise<void> => {
@@ -106,8 +117,8 @@ export const getAiCapabilities = async (
 export const postAiActionsPlan = async (
   payload: {
     goal: string;
-    page?: { uid?: string; url?: string };
-    constraints?: Record<string, any>;
+    page?: { uid?: string; url?: string }; // Possibly create a PageReference type
+    constraints?: Record<string, any>; // having `any` here effectively disables type checking
     translation?: TranslationOptions | null;
   },
   token?: string,
@@ -133,7 +144,7 @@ export const postAiActionsPlan = async (
 export const postAiActionsApply = async (
   payload: {
     plan_id?: string;
-    actions?: any[];
+    actions?: any[]; // Maybe any[] → AiAction[]
     page?: { uid?: string; url?: string };
     translation?: TranslationOptions | null;
   },
@@ -157,7 +168,7 @@ export const postAiActionsApply = async (
   return response.json();
 };
 
-export const postAiChatUpload = async (
+export const postAiChatUpload = async ( // Not imported anywhere
   file: File,
   token?: string,
 ): Promise<AiChatUploadResponse> => {
@@ -179,6 +190,7 @@ export const postAiChatUpload = async (
   return response.json();
 };
 
+// StreamHandlers, StreamResult, TagMappings, GlossaryEntries, LayoutJobStatus are defined here but all other shared types live in types.ts — move them for consistency
 type StreamHandlers = {
   onToken?: (delta: string) => void;
   onCitations?: (citations: Citation[]) => void;
@@ -191,6 +203,7 @@ type StreamResult = {
   data?: ChatResponsePayload;
 };
 
+// Custom parser, consider a library instead of self written code
 const parseSseEvent = (
   rawEvent: string,
   handlers: StreamHandlers,
@@ -200,6 +213,7 @@ const parseSseEvent = (
   let eventType = '';
   const dataLines: string[] = [];
 
+  // line.replace() replaces all occurrences, not just prefix — use slice() instead
   lines.forEach((line) => {
     if (line.startsWith('event:')) {
       eventType = line.replace('event:', '').trim();
@@ -217,15 +231,15 @@ const parseSseEvent = (
     return;
   }
 
-  let payload: any = dataText;
+  let payload: any = dataText; // Check if this could be a type instead of any
   try {
     payload = JSON.parse(dataText);
   } catch (_error) {
-    // keep as text
+    // Silent error
   }
 
   if (!eventType && payload && typeof payload === 'object') {
-    eventType = payload.type || payload.event || '';
+    eventType = payload.type || payload.event || ''; // Sketchy fallbacks
   }
 
   if (eventType === 'error') {
@@ -261,6 +275,7 @@ const parseSseEvent = (
   }
 };
 
+// Custom consumer, could this be from an external library?
 const consumeEventStream = async (
   stream: ReadableStream<Uint8Array>,
   handlers: StreamHandlers,
@@ -340,7 +355,7 @@ export const getTranslationStatus = async (
   pageUrl: string,
   token?: string,
 ): Promise<TranslationStatus> => {
-  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, ''); // Duplicated — extract stripOrigin()
   const response = await fetch(buildApiUrl(`${path}/@ai-translation-status`), {
     method: 'GET',
     headers: {
@@ -543,7 +558,7 @@ export const importGlossaryCsv = async (
 export const getPromptFiles = async (
   promptId: string,
   token?: string,
-): Promise<{ files: any[] }> => {
+): Promise<{ files: any[] }> => { // Define a PromptFile type in types.ts instead of any
   const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}`), {
     method: 'GET',
     headers: {
@@ -564,7 +579,7 @@ export const getPromptFile = async (
   promptId: string,
   fileId: string,
   token?: string,
-): Promise<any> => {
+): Promise<any> => { // Use PromptFile type
   const response = await fetch(buildApiUrl(`/@ai-prompt-files/${promptId}/${fileId}`), {
     method: 'GET',
     headers: {
@@ -585,7 +600,7 @@ export const uploadPromptFiles = async (
   promptId: string,
   files: File[],
   token?: string,
-): Promise<any[]> => {
+): Promise<any[]> => { // Use PromptFile[]
   const results: any[] = [];
 
   for (const file of files) {
@@ -724,6 +739,8 @@ export const deletePrompt = async (
 
 // ---------------------------------------------------------------------------
 // Replace selected text in page blocks
+// Slate manipulation logic — doesn't belong in api.ts, move to slateUtils.ts
+// All Slate functions use any[] — import SlateNode from extractPageContent.ts instead
 // ---------------------------------------------------------------------------
 
 function extractSlateText(nodes: any[]): string {
@@ -738,6 +755,8 @@ function extractSlateText(nodes: any[]): string {
 
 const normalizeWhitespace = (s: string) => s.replace(/\s+/g, ' ').trim();
 
+// FUnction is doing too much. Refactor into single responsibility functions instead
+// Not reviewed further
 function replaceInSlateNodes(
   nodes: any[],
   original: string,
@@ -825,6 +844,9 @@ function replaceInSlateNodes(
  * Fetches the page content and computes updated blocks with the text replaced.
  * Returns { blocks } ready to be PATCHed via Volto's updateContent action.
  */
+// 140 lines — split page fetch from replacement logic. The three strategies (Slate fields, string
+// fields, multi-block) could each be their own function, making this an orchestrator
+// Not reviewed further
 export const computeBlocksWithReplacement = async (
   pageUrl: string,
   originalText: string,
@@ -899,7 +921,7 @@ export const computeBlocksWithReplacement = async (
           updatedBlocks[blockId] = {
             ...block,
             [field]: block[field].replace(
-              new RegExp(originalText.replace(/\s+/g, '\\s+').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+              new RegExp(originalText.replace(/\s+/g, '\\s+').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), // Not sure what this is doing. Preferably use less Regex or comment at least
               cleanText,
             ),
           };
@@ -971,11 +993,11 @@ export const computeBlocksWithReplacement = async (
 /**
  * Resolves listing block items via Plone's @querystring-search endpoint.
  */
-export const resolveListingBlockItems = async (
+export const resolveListingBlockItems = async ( // Only used internally by prepareBlocksForEditMode — doesn't need export
   querystring: Record<string, any>,
   contextPath: string,
   token?: string,
-): Promise<any[]> => {
+): Promise<any[]> => { // This could be a type
   const response = await fetch(buildApiUrl(`${contextPath}/@querystring-search`), {
     method: 'POST',
     headers: {
@@ -1079,13 +1101,13 @@ export type LayoutJobStatus =
   | { status: 'cancelled' };
 
 export const createLayoutConversation = async (
-  _baseUrl: string,
+  _baseUrl: string, // Unused in all 4 layout functions — remove parameter and update call sites
   payload: { schema: string; version: string; state: Record<string, any> },
   token?: string,
 ): Promise<{ conversation_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-conversations'), {
     method: 'POST',
-    headers: buildHeaders(token),
+    headers: buildHeaders(token), // Missing Accept: 'application/json' — Plone may return HTML
     credentials: 'same-origin',
     body: JSON.stringify(payload),
   });
@@ -1106,7 +1128,7 @@ export const sendLayoutMessage = async (
 ): Promise<{ job_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-messages'), {
     method: 'POST',
-    headers: buildHeaders(token),
+    headers: buildHeaders(token), // Missing Accept: 'application/json' — Plone may return HTML
     credentials: 'same-origin',
     body: JSON.stringify({ ...payload, conversation_id: conversationId }),
   });
@@ -1151,7 +1173,7 @@ export const cancelLayoutJob = async (
 ): Promise<{ status: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-job-cancel'), {
     method: 'POST',
-    headers: buildHeaders(token),
+    headers: buildHeaders(token), // Missing Accept: 'application/json' — Plone may return HTML
     credentials: 'same-origin',
     body: JSON.stringify({ job_id: jobId }),
   });
