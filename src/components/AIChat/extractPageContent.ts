@@ -107,6 +107,17 @@ function extractBlockText(block: ContentBlock): string {
     return textRows.join('\n');
   }
 
+  // Listing blocks
+  if (type === 'listing') {
+    const headline = typeof block.headline === 'string' ? block.headline.trim() : '';
+    const items = block.items as Array<{ title?: string; description?: string }> | undefined;
+    if (!items?.length) return headline || '';
+    const itemLines = items
+      .map((item) => [item.title, item.description].filter(Boolean).join(' – '))
+      .filter(Boolean);
+    return [headline, ...itemLines].filter(Boolean).join('\n');
+  }
+
   // Container: columns
   if (type === 'columnsBlock' && block.columns) {
     return block.columns

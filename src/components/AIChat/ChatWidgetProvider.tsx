@@ -242,6 +242,16 @@ const ChatWidgetProvider: React.FC = () => {
     };
   }, [content]);
 
+  const safePageReference = useMemo(() => {
+    if (!pageReference?.page) return undefined;
+    const blocks = content?.blocks as Record<string, any> | undefined;
+    if (!blocks) return pageReference.page;
+    const hasUnsupportedBlocks = Object.values(blocks).some(
+      (block) => block?.['@type'] === 'listing',
+    );
+    return hasUnsupportedBlocks ? undefined : pageReference.page;
+  }, [pageReference, content]);
+
   const pageContentText = useMemo(
     () => extractPageContent(content),
     [content],
@@ -1046,12 +1056,12 @@ const ChatWidgetProvider: React.FC = () => {
         ? {}
         : activeMode === 'selection'
         ? {
-            page: pageReference?.page,
+            page: safePageReference,
             page_content: activeSelection,
             selection_text: activeSelection,
           }
         : {
-            page: pageReference?.page,
+            page: safePageReference,
             page_content: pageContentText || undefined,
           }),
       query: contextOverrides?.query,
