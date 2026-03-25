@@ -1390,14 +1390,14 @@ const ChatWidgetProvider: React.FC = () => {
         page: pagePayload,
         constraints: { allowlist: ['translate_content'] },
         translation,
-      });
+      }, token);
 
       const result = await postAiActionsApply({
         plan_id: planResponse.plan_id,
         actions: planResponse.actions,
         page: pagePayload,
         translation,
-      });
+      }, token);
 
       const langName = LANGUAGE_NAMES[targetLang] || targetLang;
       const successText = customLabels?.success
