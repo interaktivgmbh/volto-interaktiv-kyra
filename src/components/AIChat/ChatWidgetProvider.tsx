@@ -880,10 +880,12 @@ const ChatWidgetProvider: React.FC = () => {
         }
 
         if (result.status === 'failed') {
+          let failedError = result.error || '';
+          try { const p = JSON.parse(failedError); failedError = p.error || p.message || p.detail || failedError; } catch (_) {}
           finalizeAssistant(editAssistantId, {
             content: isDe
-              ? `Fehler: ${result.error || 'Unbekannter Fehler'}`
-              : `Error: ${result.error || 'Unknown error'}`,
+              ? `Fehler: ${failedError || 'Unbekannter Fehler'}`
+              : `Error: ${failedError || 'Unknown error'}`,
             status: 'error',
           });
           return;

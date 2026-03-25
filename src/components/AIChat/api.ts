@@ -19,6 +19,16 @@ const buildApiUrl = (path: string) => {
   return `${API_PREFIX}${suffix}`;
 };
 
+const extractErrorMessage = (errorText: string, fallback: string): string => {
+  if (!errorText) return fallback;
+  try {
+    const parsed = JSON.parse(errorText);
+    return parsed.error || parsed.message || parsed.detail || errorText;
+  } catch (_) {
+    return errorText;
+  }
+};
+
 const buildHeaders = (token?: string) => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -1092,7 +1102,7 @@ export const createLayoutConversation = async (
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || 'Failed to create layout conversation');
+    throw new Error(extractErrorMessage(errorText, 'Failed to create layout conversation'));
   }
 
   return response.json();
@@ -1113,7 +1123,7 @@ export const sendLayoutMessage = async (
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || 'Failed to send layout message');
+    throw new Error(extractErrorMessage(errorText, 'Failed to send layout message'));
   }
 
   return response.json();
@@ -1138,7 +1148,7 @@ export const pollLayoutJob = async (
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || 'Failed to poll layout job');
+    throw new Error(extractErrorMessage(errorText, 'Failed to poll layout job'));
   }
 
   return response.json();
