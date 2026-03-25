@@ -1057,14 +1057,24 @@ export const prepareBlocksForEditMode = async (
 
   const resolved = await resolveListingsInBlocks(blocks, blocksLayout.items, path, token);
 
+  const filteredBlocks: Record<string, any> = {};
+  const filteredItems: string[] = [];
+  for (const id of blocksLayout.items) {
+    const block = resolved[id];
+    if (block && block['@type'] !== 'listing') {
+      filteredBlocks[id] = block;
+      filteredItems.push(id);
+    }
+  }
+
   const previewImage = data.preview_image?.[0]?.['@id']
     || data.preview_image?.download
     || data.preview_image
     || '';
 
   return {
-    blocks: resolved,
-    blocks_layout: blocksLayout,
+    blocks: filteredBlocks,
+    blocks_layout: { items: filteredItems },
     title: data.title || '',
     description: data.description || '',
     preview_image: typeof previewImage === 'string' ? previewImage : '',
