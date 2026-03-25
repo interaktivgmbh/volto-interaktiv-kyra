@@ -29,6 +29,16 @@ const buildHeaders = (token?: string) => {
   return headers;
 };
 
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  const text = await response.text();
+  try {
+    const json = JSON.parse(text);
+    return json.error || json.message || json.detail || text;
+  } catch {
+    return text;
+  }
+};
+
 export const postAiChat = async (
   payload: ChatRequestPayload,
   token?: string,
@@ -44,7 +54,7 @@ export const postAiChat = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI chat request failed');
   }
 
@@ -66,7 +76,7 @@ export const postAiFeedback = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI feedback request failed');
   }
 };
@@ -96,7 +106,7 @@ export const getAiCapabilities = async (
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI capabilities request failed');
   }
 
@@ -123,7 +133,7 @@ export const postAiActionsPlan = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI actions plan request failed');
   }
 
@@ -150,7 +160,7 @@ export const postAiActionsApply = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI actions apply request failed');
   }
 
@@ -172,7 +182,7 @@ export const postAiChatUpload = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI chat upload failed');
   }
 
@@ -318,7 +328,7 @@ export const postAiChatStream = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI chat stream request failed');
   }
 
@@ -393,7 +403,7 @@ export const postTagMapping = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Tag mapping save failed');
   }
 
@@ -415,7 +425,7 @@ export const deleteTagMapping = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Tag mapping delete failed');
   }
 
@@ -435,7 +445,7 @@ export const getAiChatTranslations = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'AI chat translations request failed');
   }
 
@@ -485,7 +495,7 @@ export const postGlossaryEntry = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Glossary entry save failed');
   }
 
@@ -507,7 +517,7 @@ export const deleteGlossaryEntry = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Glossary entry delete failed');
   }
 
@@ -529,7 +539,7 @@ export const importGlossaryCsv = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'CSV import failed');
   }
 
@@ -600,7 +610,7 @@ export const uploadPromptFiles = async (
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await parseErrorMessage(response);
       throw new Error(errorText || 'File upload failed');
     }
 
@@ -626,7 +636,7 @@ export const deletePromptFile = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'File deletion failed');
   }
 
@@ -671,7 +681,7 @@ export const createPrompt = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Prompt creation failed');
   }
 
@@ -693,7 +703,7 @@ export const updatePrompt = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Prompt update failed');
   }
 
@@ -715,7 +725,7 @@ export const deletePrompt = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Prompt deletion failed');
   }
 
@@ -1091,7 +1101,7 @@ export const createLayoutConversation = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Failed to create layout conversation');
   }
 
@@ -1112,7 +1122,7 @@ export const sendLayoutMessage = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Failed to send layout message');
   }
 
@@ -1137,7 +1147,7 @@ export const pollLayoutJob = async (
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Failed to poll layout job');
   }
 
@@ -1157,7 +1167,7 @@ export const cancelLayoutJob = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await parseErrorMessage(response);
     throw new Error(errorText || 'Failed to cancel layout job');
   }
 
