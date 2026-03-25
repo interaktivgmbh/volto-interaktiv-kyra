@@ -3,9 +3,9 @@
 # Kyra — AI Assistant for Volto
 
 **Intelligent content assistant for Plone/Volto editors**
-DeepL translation · AI chat · Edit mode · Layout agent · Prompt management · Widget customization
+DeepL translation · AI chat · Edit mode · Layout agent · Reference pages · Voice input · Prompt management · Widget customization
 
-[![Version](https://img.shields.io/badge/version-2.0-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
+[![Version](https://img.shields.io/badge/version-2.1.4-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
 [![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](LICENSE)
 [![Plone](https://img.shields.io/badge/Plone-6-orange.svg)](https://plone.org)
 [![Volto](https://img.shields.io/badge/Volto-18+-purple.svg)](https://github.com/plone/volto)
@@ -22,7 +22,7 @@ DeepL translation · AI chat · Edit mode · Layout agent · Prompt management �
 
 ## Contents
 
-> **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Edit Mode](#edit-mode) · [Layout Agent](#layout-agent) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [Slate Integration](#slate-editor-integration) · [File Attachments](#prompt-file-attachments) · [History](#chat-history) · [Permissions](#permission-matrix) · [Customization](#customization)
+> **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Voice Input](#voice-input) · [Edit Mode](#edit-mode) · [Layout Agent](#layout-agent) · [Reference Pages](#reference-pages) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [Slate Integration](#slate-editor-integration) · [File Attachments](#prompt-file-attachments) · [History](#chat-history) · [Permissions](#permission-matrix) · [Customization](#customization) · [Auto Error Reporting](#auto-error-reporting)
 >
 > **Technical** — [Architecture](#architecture) · [API Endpoints](#api-endpoints) · [Installation](#installation) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting)
 
@@ -35,18 +35,22 @@ DeepL translation · AI chat · Edit mode · Layout agent · Prompt management �
 | **DeepL Translation** | Translate pages or subtrees with glossary support |
 | **Translation Sync** | Detect and update outdated translations |
 | **AI Chat** | Streaming chat with citations and page context |
+| **Voice Input** | Speech-to-text via Web Speech API for hands-free input |
 | **Edit Mode** | Directly modify page content (headings, text, metadata) via chat |
 | **Layout Agent** | AI-driven page layout generation and block restructuring |
+| **Reference Pages** | Neighboring pages (parent, siblings, children) sent as AI context |
 | **Text Selection** | Select text on page as targeted AI context |
 | **Prompt Manager** | Curated prompt library with compare view — available in chat panel and as Slate editor toolbar buttons |
 | **Slate Editor Integration** | Prompt Manager and free-text prompts directly in the Slate rich-text editor toolbar |
 | **Prompt File Attachments** | Upload reference files to prompts for additional context |
 | **AI Assistant Run** | Execute prompts against selected text inline from the Slate toolbar |
-| **Chat History** | Pin, archive, rename conversations |
+| **Chat History** | Server-side per-user conversation history with pin, archive and rename |
+| **Drag & Drop Upload** | Drop files directly into the chat composer for context |
 | **Glossary** | DeepL glossary for consistent terminology |
 | **Tag Mappings** | Keyword translation mappings |
 | **Permission Matrix** | Fine-grained role-based access control per feature |
 | **Customization** | Custom icon, accent color and chat name |
+| **Auto Error Reporting** | Automatic GitHub issue creation on AI errors with optional auto-fix via Claude Code |
 | **Audit Logging** | Server-side logging of all AI actions for compliance |
 
 ---
@@ -149,17 +153,31 @@ sequenceDiagram
 - **Streaming** via Server-Sent Events with real-time rendering
 - **Citations** with source links and snippets
 - **Feedback** — rate responses with thumbs up or down
-- **File Upload** — attach documents (PDF, RTF) for additional context
+- **File Upload** — attach documents (PDF, RTF) via button or drag & drop for additional context
+- **Voice Input** — speech-to-text via Web Speech API with live transcription
 - **Context Modes** — current page content, selected text, or site-wide
 - **Abort** — cancel in-flight requests
 - **Wizard Actions** — interactive buttons in assistant responses for guided workflows
 - **Message Editing** — edit previously sent user messages inline
+- **Auto-growing Input** — composer textarea grows with content (up to 150px)
+- **Server-side History** — conversations stored per-user on the Plone backend
+
+---
+
+## Voice Input
+
+Hands-free input via the browser's Web Speech API.
+
+- Microphone button in the composer toolbar
+- Live transcription during recording
+- Automatic insertion into the message input
+- Works alongside typed text and file attachments
 
 ---
 
 ## Edit Mode
 
-Directly edit page content through AI instructions via the chat panel. Edit mode allows modifying headings, text blocks, metadata and other Volto block content without opening the Plone editor.
+Directly edit page content through AI instructions via the chat panel. Edit mode integrates with Volto's native `/edit` route — the chat panel opens automatically when entering the editor and the AI operates on the live form state via `setFormData`.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
@@ -181,18 +199,19 @@ sequenceDiagram
 
 **How it works:**
 
-1. Editor activates edit mode via the `+` menu in the composer
+1. Editor navigates to `/edit` — edit mode activates automatically and the chat panel opens
 2. Current page blocks are loaded and prepared (including listing block resolution)
-3. Each chat message is processed as an edit instruction
-4. Text replacements are computed against Slate nodes with whitespace-normalized matching
-5. Changes are applied via `PATCH` to the Plone content API
-6. The page reloads automatically to reflect the changes
+3. Each chat message is sent to the Layout Agent as an edit instruction
+4. The agent returns an updated block state which is injected into the Volto form via `setFormData`
+5. The editor sees changes live in the form and can save or discard as usual
+6. Edit mode state persists across page reloads via sessionStorage
 
 **Capabilities:**
 - Modify text in any Slate-based block (paragraphs, headings, descriptions)
-- Replace content in string fields (`plaintext`, `head_title`, `citation`)
-- Multi-paragraph replacements across multiple blocks
-- Content locking during edit operations to prevent conflicts
+- Create, delete and rearrange blocks via natural language
+- Modify page metadata (title, description, subjects, preview image)
+- Reference pages provide broader site context to the AI agent
+- Separate conversation IDs for chat vs edit mode
 
 ---
 
@@ -227,7 +246,7 @@ sequenceDiagram
 - Communication via a Plone proxy (`@ai-edit-*` endpoints) to an external Layout Agent API
 - Conversation-based: a layout conversation is created with the current page state, then messages are sent as edit instructions
 - Asynchronous job processing with polling and cancel support
-- The proxy handles authentication (static API key or Keycloak token)
+- The proxy handles authentication via Keycloak token
 
 **Endpoints (proxied through Plone):**
 
@@ -237,6 +256,21 @@ sequenceDiagram
 | `@ai-edit-messages` | Send an edit instruction to an existing conversation |
 | `@ai-edit-jobs` | Poll the status of a running layout job |
 | `@ai-edit-job-cancel` | Cancel a running layout job |
+
+---
+
+## Reference Pages
+
+When creating a Layout Agent conversation, Kyra automatically fetches neighboring pages and sends them as read-only context. This enables the AI to answer questions about the broader site and to reuse content from related pages.
+
+**Pages included:**
+- **Parent page** — the direct parent in the content tree
+- **Siblings** — up to 5 sibling pages at the same level
+- **Children** — up to 5 child pages of the current page
+
+Each reference page includes its full block content (`blocks`, `blocks_layout`) plus metadata (`title`, `description`, `subjects`). Fixed metadata blocks (e.g. `eventMetadata`) are automatically filtered out.
+
+The Layout Agent can read these pages but not modify them.
 
 ---
 
@@ -319,12 +353,13 @@ Both buttons support:
 
 ## Chat History
 
-- Persistent per-user conversation history in localStorage
+- **Server-side storage** — conversations stored per-user in Plone annotations (device-independent)
 - **Pin** important conversations to the top
 - **Archive** conversations without deleting
 - **Rename** conversation titles
 - **Bulk actions** for multi-select delete and archive
 - Auto-generated titles from first message content
+- Device-specific settings (accent color, icon) remain in localStorage
 
 ---
 
@@ -359,6 +394,23 @@ Personalize via the settings drawer:
 
 ---
 
+## Auto Error Reporting
+
+When the AI assistant encounters an error, it can automatically create a GitHub issue with full context (error message, page URL, conversation state). An optional GitHub Action workflow then uses Claude Code to analyze and fix the bug automatically.
+
+**Flow:**
+1. AI response returns `status: 'error'`
+2. Frontend calls `@ai-error-report` endpoint with error details
+3. Backend creates a GitHub issue via the GitHub REST API with the `auto-reported` label
+4. GitHub Action triggers, runs Claude Code to analyze and fix the issue
+5. If a fix is found, a PR is created automatically
+
+**Requirements:**
+- `github_token` and `github_repo` configured in the Kyra control panel
+- `.github/workflows/auto-fix-issue.yml` in the repository (included in this addon)
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -374,6 +426,8 @@ flowchart TD
         P --> Tags["Tag Mappings"]
         P --> Prom["Prompt Picker"]
         P --> Edit["Edit Mode"]
+        P --> Voice["Voice Input"]
+        P --> RefPages["Reference Pages"]
         Slate["Slate Toolbar"] --> AIBtn["AI Prompt Menu"]
         Slate --> AIChat["AI Free-Text"]
     end
@@ -390,6 +444,8 @@ flowchart TD
         C9["Prompt Files"]
         C10["Edit Proxy"]
         C11["Audit"]
+        C12["Chat History"]
+        C13["Error Report"]
     end
 
     subgraph Services["External Services"]
@@ -397,6 +453,7 @@ flowchart TD
         DL["DeepL API"]
         KC["Keycloak"]
         LA["Layout Agent"]
+        GH["GitHub API"]
     end
 
     Chat <--> C1
@@ -410,11 +467,15 @@ flowchart TD
     AIChat --> C8
     Prom --> C9
     Edit --> C10
+    Hist <--> C12
+    Chat --> C13
+    RefPages --> C10
     C1 --> GW
     C1 --> KC
     C2 --> DL
     C8 --> GW
     C10 --> LA
+    C13 --> GH
 
     style L fill:#dbeafe,stroke:#2563eb,color:#111
     style P fill:#dbeafe,stroke:#2563eb,color:#111
@@ -426,6 +487,8 @@ flowchart TD
     style Tags fill:#dbeafe,stroke:#2563eb,color:#111
     style Prom fill:#dbeafe,stroke:#2563eb,color:#111
     style Edit fill:#dbeafe,stroke:#2563eb,color:#111
+    style Voice fill:#dbeafe,stroke:#2563eb,color:#111
+    style RefPages fill:#dbeafe,stroke:#2563eb,color:#111
     style Slate fill:#dbeafe,stroke:#2563eb,color:#111
     style AIBtn fill:#dbeafe,stroke:#2563eb,color:#111
     style AIChat fill:#dbeafe,stroke:#2563eb,color:#111
@@ -440,10 +503,13 @@ flowchart TD
     style C9 fill:#fff,stroke:#2563eb,color:#111
     style C10 fill:#fff,stroke:#2563eb,color:#111
     style C11 fill:#fff,stroke:#2563eb,color:#111
+    style C12 fill:#fff,stroke:#2563eb,color:#111
+    style C13 fill:#fff,stroke:#2563eb,color:#111
     style GW fill:#dcfce7,stroke:#16a34a,color:#111
     style DL fill:#dcfce7,stroke:#16a34a,color:#111
     style KC fill:#dcfce7,stroke:#16a34a,color:#111
     style LA fill:#dcfce7,stroke:#16a34a,color:#111
+    style GH fill:#dcfce7,stroke:#16a34a,color:#111
 ```
 
 ### Permissions
@@ -518,6 +584,8 @@ flowchart LR
 | `POST` | `/@ai-edit-messages` | Send layout edit instruction |
 | `GET` | `/@ai-edit-jobs` | Poll layout job status |
 | `POST` | `/@ai-edit-job-cancel` | Cancel running layout job |
+| `GET/PATCH/PUT/DELETE` | `/@ai-chat-history` | Server-side per-user chat history |
+| `POST` | `/@ai-error-report` | Auto-create GitHub issue from AI error |
 
 ---
 
@@ -577,7 +645,8 @@ Navigate to **Site Setup, Kyra AI Settings**:
 | `domain_id` | Domain identifier, default: `plone` |
 | `deepl_api_key` | DeepL API key for translations |
 | `edit_backend_url` | Layout Agent backend URL (leave empty to disable edit mode) |
-| `edit_backend_api_key` | API key for Layout Agent auth (leave empty for Keycloak fallback) |
+| `github_token` | GitHub personal access token for auto error reporting |
+| `github_repo` | GitHub repository (e.g. `org/repo`) for auto error reporting |
 
 ---
 
