@@ -1028,6 +1028,22 @@ const resolveListingsInBlocks = async (
   return resolved;
 };
 
+const UNSUPPORTED_EDIT_BLOCK_TYPES = new Set(['listing']);
+
+const stripUnsupportedBlocks = (
+  blocks: Record<string, any>,
+  blocksLayout: { items: string[] },
+): { blocks: Record<string, any>; blocks_layout: { items: string[] } } => {
+  const filteredItems = blocksLayout.items.filter(
+    (id) => !UNSUPPORTED_EDIT_BLOCK_TYPES.has(blocks[id]?.['@type']),
+  );
+  const filteredBlocks: Record<string, any> = {};
+  for (const id of filteredItems) {
+    filteredBlocks[id] = blocks[id];
+  }
+  return { blocks: filteredBlocks, blocks_layout: { ...blocksLayout, items: filteredItems } };
+};
+
 export const prepareBlocksForEditMode = async (
   pageUrl: string,
   token?: string,
@@ -1056,6 +1072,7 @@ export const prepareBlocksForEditMode = async (
   const blocksLayout = data.blocks_layout || { items: [] };
 
   const resolved = await resolveListingsInBlocks(blocks, blocksLayout.items, path, token);
+  const { blocks: sanitizedBlocks, blocks_layout: sanitizedLayout } = stripUnsupportedBlocks(resolved, blocksLayout);
 
   const previewImage = data.preview_image?.[0]?.['@id']
     || data.preview_image?.download
@@ -1063,8 +1080,8 @@ export const prepareBlocksForEditMode = async (
     || '';
 
   return {
-    blocks: resolved,
-    blocks_layout: blocksLayout,
+    blocks: sanitizedBlocks,
+    blocks_layout: sanitizedLayout,
     title: data.title || '',
     description: data.description || '',
     preview_image: typeof previewImage === 'string' ? previewImage : '',
