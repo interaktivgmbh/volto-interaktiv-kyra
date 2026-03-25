@@ -1078,9 +1078,143 @@ export type LayoutJobStatus =
   | { status: 'failed'; error?: string }
   | { status: 'cancelled' };
 
+export type ReferencePage = {
+  link: string;
+  title?: string;
+  description?: string;
+  preview_image?: string;
+  subjects?: string[];
+  blocks: Record<string, any>;
+  blocks_layout: { items: string[] };
+};
+
+export const fetchReferencePages = async (
+  pageUrl: string,
+  token?: string,
+  maxSiblings: number = 5,
+  maxChildren: number = 5,
+): Promise<ReferencePage[]> => {
+  const path = pageUrl.replace(/^https?:\/\/[^/]+/, '');
+  const references: ReferencePage[] = [];
+  const seen = new Set<string>();
+  seen.add(path);
+
+  const fetchPage = async (pagePath: string): Promise<ReferencePage | null> => {
+    try {
+      const response = await fetch(buildApiUrl(`${pagePath}?expand=breadcrumbs`), {
+        method: 'GET',
+        headers: {
+          ...buildHeaders(token),
+          Accept: 'application/json',
+        },
+        credentials: 'same-origin',
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (!data.blocks || !data.blocks_layout) return null;
+      const pageLinkPath = (data['@id'] || '').replace(/^https?:\/\/[^/]+/, '');
+      // Strip fixed metadata blocks (e.g. eventMetadata) that the Layout Agent doesn't support
+      const filteredBlocks: Record<string, any> = {};
+      const filteredItems: string[] = [];
+      for (const id of (data.blocks_layout.items || [])) {
+        const block = data.blocks[id];
+        if (block && !block.fixed) {
+          filteredBlocks[id] = block;
+          filteredItems.push(id);
+        }
+      }
+      if (filteredItems.length === 0) return null;
+      const page: ReferencePage = {
+        link: pageLinkPath || pagePath,
+        blocks: filteredBlocks,
+        blocks_layout: { items: filteredItems },
+      };
+      if (data.title) page.title = data.title;
+      if (data.description) page.description = data.description;
+      if (typeof data.preview_image === 'string' && data.preview_image) page.preview_image = data.preview_image;
+      if (data.subjects && data.subjects.length > 0) page.subjects = data.subjects;
+      return page;
+    } catch (_err) {
+      return null;
+    }
+  };
+
+  // Fetch parent page
+  const parentPath = path.split('/').slice(0, -1).join('/') || '/';
+  if (parentPath && parentPath !== '/' && !seen.has(parentPath)) {
+    seen.add(parentPath);
+    const parent = await fetchPage(parentPath);
+    if (parent) references.push(parent);
+  }
+
+  // Fetch siblings and children via parent's items
+  try {
+    const parentForNav = parentPath && parentPath !== '/' ? parentPath : path;
+    const navResponse = await fetch(buildApiUrl(`${parentForNav}?expand=navigation&expand.navigation.depth=1`), {
+      method: 'GET',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    });
+    if (navResponse.ok) {
+      const navData = await navResponse.json();
+      // Siblings from parent's navigation items
+      const navItems = navData?.['@components']?.navigation?.items || navData?.items || [];
+      let siblingCount = 0;
+      for (const item of navItems) {
+        if (siblingCount >= maxSiblings) break;
+        const itemPath = (item['@id'] || item.url || '').replace(/^https?:\/\/[^/]+/, '');
+        if (!itemPath || seen.has(itemPath)) continue;
+        seen.add(itemPath);
+        const sibling = await fetchPage(itemPath);
+        if (sibling) {
+          references.push(sibling);
+          siblingCount++;
+        }
+      }
+    }
+  } catch (_err) {
+    // Navigation fetch failed, continue without siblings
+  }
+
+  // Fetch children of current page
+  try {
+    const childResponse = await fetch(buildApiUrl(`${path}?expand=navigation&expand.navigation.depth=1`), {
+      method: 'GET',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    });
+    if (childResponse.ok) {
+      const childData = await childResponse.json();
+      const childItems = childData?.['@components']?.navigation?.items || childData?.items || [];
+      let childCount = 0;
+      for (const item of childItems) {
+        if (childCount >= maxChildren) break;
+        const itemPath = (item['@id'] || item.url || '').replace(/^https?:\/\/[^/]+/, '');
+        if (!itemPath || seen.has(itemPath)) continue;
+        seen.add(itemPath);
+        const child = await fetchPage(itemPath);
+        if (child) {
+          references.push(child);
+          childCount++;
+        }
+      }
+    }
+  } catch (_err) {
+    // Children fetch failed, continue without
+  }
+
+  return references;
+};
+
 export const createLayoutConversation = async (
   _baseUrl: string,
-  payload: { schema: string; version: string; state: Record<string, any>; permissions?: string[]; language?: string },
+  payload: { schema: string; version: string; state: Record<string, any>; permissions?: string[]; language?: string; reference_pages?: ReferencePage[] },
   token?: string,
 ): Promise<{ conversation_id: string }> => {
   const response = await fetch(buildApiUrl('/@ai-edit-conversations'), {

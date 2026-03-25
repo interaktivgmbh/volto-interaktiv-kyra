@@ -14,6 +14,7 @@ import {
   computeBlocksWithReplacement,
   prepareBlocksForEditMode,
   createLayoutConversation,
+  fetchReferencePages,
   sendLayoutMessage,
   pollLayoutJob,
   cancelLayoutJob,
@@ -766,8 +767,9 @@ const ChatWidgetProvider: React.FC = () => {
 
       try {
         const pageUrl = content?.['@id'] || '';
+        const pagePath = pageUrl.replace(/^https?:\/\/[^/]+/, '');
         const { blocks, blocks_layout, title, description, preview_image, subjects } = await prepareBlocksForEditMode(pageUrl, token);
-        const pageState: Record<string, any> = { blocks, blocks_layout };
+        const pageState: Record<string, any> = { blocks, blocks_layout, link: pagePath };
         if (title) pageState.title = title;
         if (description) pageState.description = description;
         if (preview_image) pageState.preview_image = preview_image;
@@ -777,17 +779,46 @@ const ChatWidgetProvider: React.FC = () => {
         if (!activeConvRef.current) {
           applyAssistantUpdate(editAssistantId, (m) => ({
             ...m,
+            content: isDe ? 'Lade Seitenkontext\u2026' : 'Loading page context\u2026',
+          }));
+
+          // Fetch reference pages (parent, siblings, children) for additional context
+          let referencePages: any[] = [];
+          try {
+            referencePages = await fetchReferencePages(pageUrl, token);
+            // referencePages loaded successfully
+          } catch (_err) {
+            console.error('[Kyra] Reference pages error:', _err);
+          }
+
+          applyAssistantUpdate(editAssistantId, (m) => ({
+            ...m,
             content: isDe ? 'Verbinde mit KI\u2026' : 'Connecting to AI\u2026',
           }));
+          const convPayload = {
+            schema: 'volto',
+            version: 'vanilla',
+            state: pageState,
+            permissions: editModeActiveRef.current ? ['update', 'create', 'delete', 'move'] : [],
+            language: (preferredLanguage || 'de').slice(0, 2),
+            ...(referencePages.length > 0 ? { reference_pages: referencePages } : {}),
+          };
+          console.log('[Kyra] createLayoutConversation payload:', JSON.stringify(convPayload, null, 2));
+          console.log('[Kyra] payload summary:', {
+            schema: convPayload.schema,
+            version: convPayload.version,
+            state_keys: Object.keys(convPayload.state),
+            state_link: convPayload.state.link,
+            state_title: convPayload.state.title,
+            state_blocks_count: Object.keys(convPayload.state.blocks || {}).length,
+            permissions: convPayload.permissions,
+            language: convPayload.language,
+            reference_pages_count: convPayload.reference_pages?.length ?? 0,
+            reference_pages_links: convPayload.reference_pages?.map((p: any) => p.link) ?? [],
+          });
           const convResponse = await createLayoutConversation(
             editBackendUrl,
-            {
-              schema: 'volto',
-              version: 'vanilla',
-              state: pageState,
-              permissions: editModeActiveRef.current ? ['update', 'create', 'delete', 'move'] : [],
-              language: (preferredLanguage || 'de').slice(0, 2),
-            },
+            convPayload,
             token,
           );
           activeConvRef.current = convResponse.conversation_id;
