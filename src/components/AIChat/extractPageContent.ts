@@ -107,6 +107,12 @@ function extractBlockText(block: ContentBlock): string {
     return textRows.join('\n');
   }
 
+  // Listing blocks
+  if (type === 'listing') {
+    const headline = block.headline || block.title || '';
+    return headline ? `[Listing: ${headline}]` : '[Listing]';
+  }
+
   // Container: columns
   if (type === 'columnsBlock' && block.columns) {
     return block.columns

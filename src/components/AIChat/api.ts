@@ -1028,6 +1028,45 @@ const resolveListingsInBlocks = async (
   return resolved;
 };
 
+const UNSUPPORTED_AI_BLOCK_TYPES = new Set(['listing']);
+
+const removeUnsupportedBlocks = (
+  blocks: Record<string, any>,
+  blocksLayout: { items: string[] },
+): { blocks: Record<string, any>; blocks_layout: { items: string[] } } => {
+  const filteredItems = blocksLayout.items.filter(
+    (id) => !UNSUPPORTED_AI_BLOCK_TYPES.has(blocks[id]?.['@type']),
+  );
+
+  const filteredBlocks: Record<string, any> = {};
+  for (const id of filteredItems) {
+    const block = { ...blocks[id] };
+
+    if (block.blocks && block.blocks_layout?.items) {
+      const { blocks: nb, blocks_layout: nl } = removeUnsupportedBlocks(block.blocks, block.blocks_layout);
+      block.blocks = nb;
+      block.blocks_layout = nl;
+    }
+    if (block.data?.blocks && block.data?.blocks_layout?.items) {
+      const { blocks: nb, blocks_layout: nl } = removeUnsupportedBlocks(block.data.blocks, block.data.blocks_layout);
+      block.data = { ...block.data, blocks: nb, blocks_layout: nl };
+    }
+    if (block.columns) {
+      block.columns = block.columns.map((col: any) => {
+        if (col.blocks && col.blocks_layout?.items) {
+          const { blocks: nb, blocks_layout: nl } = removeUnsupportedBlocks(col.blocks, col.blocks_layout);
+          return { ...col, blocks: nb, blocks_layout: nl };
+        }
+        return col;
+      });
+    }
+
+    filteredBlocks[id] = block;
+  }
+
+  return { blocks: filteredBlocks, blocks_layout: { items: filteredItems } };
+};
+
 export const prepareBlocksForEditMode = async (
   pageUrl: string,
   token?: string,
@@ -1056,6 +1095,7 @@ export const prepareBlocksForEditMode = async (
   const blocksLayout = data.blocks_layout || { items: [] };
 
   const resolved = await resolveListingsInBlocks(blocks, blocksLayout.items, path, token);
+  const { blocks: cleanBlocks, blocks_layout: cleanLayout } = removeUnsupportedBlocks(resolved, blocksLayout);
 
   const previewImage = data.preview_image?.[0]?.['@id']
     || data.preview_image?.download
@@ -1063,8 +1103,8 @@ export const prepareBlocksForEditMode = async (
     || '';
 
   return {
-    blocks: resolved,
-    blocks_layout: blocksLayout,
+    blocks: cleanBlocks,
+    blocks_layout: cleanLayout,
     title: data.title || '',
     description: data.description || '',
     preview_image: typeof previewImage === 'string' ? previewImage : '',
