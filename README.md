@@ -3,9 +3,9 @@
 # Kyra — AI Assistant for Volto
 
 **Intelligent content assistant for Plone/Volto editors**
-DeepL translation · AI chat · Edit mode · Layout agent · Reference pages · Voice input · Prompt management · Widget customization
+DeepL translation · AI chat · Live preview · Edit mode · Layout agent · Reference pages · Voice input · Prompt management · Widget customization
 
-[![Version](https://img.shields.io/badge/version-2.1.4-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
+[![Version](https://img.shields.io/badge/version-2.1.6-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
 [![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](LICENSE)
 [![Plone](https://img.shields.io/badge/Plone-6-orange.svg)](https://plone.org)
 [![Volto](https://img.shields.io/badge/Volto-18+-purple.svg)](https://github.com/plone/volto)
@@ -22,7 +22,7 @@ DeepL translation · AI chat · Edit mode · Layout agent · Reference pages · 
 
 ## Contents
 
-> **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Voice Input](#voice-input) · [Edit Mode](#edit-mode) · [Layout Agent](#layout-agent) · [Reference Pages](#reference-pages) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [Slate Integration](#slate-editor-integration) · [File Attachments](#prompt-file-attachments) · [History](#chat-history) · [Permissions](#permission-matrix) · [Customization](#customization) · [Auto Error Reporting](#auto-error-reporting)
+> **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Voice Input](#voice-input) · [Edit Mode & Live Preview](#edit-mode) · [Layout Agent](#layout-agent) · [Reference Pages](#reference-pages) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [Slate Integration](#slate-editor-integration) · [File Attachments](#prompt-file-attachments) · [History](#chat-history) · [Permissions](#permission-matrix) · [Customization](#customization) · [Auto Error Reporting](#auto-error-reporting)
 >
 > **Technical** — [Architecture](#architecture) · [API Endpoints](#api-endpoints) · [Installation](#installation) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting)
 
@@ -34,9 +34,10 @@ DeepL translation · AI chat · Edit mode · Layout agent · Reference pages · 
 |:--------|:------------|
 | **DeepL Translation** | Translate pages or subtrees with glossary support |
 | **Translation Sync** | Detect and update outdated translations |
-| **AI Chat** | Streaming chat with citations and page context |
+| **AI Chat** | Streaming chat with auto-generated citations from reference pages and attachments |
 | **Voice Input** | Speech-to-text via Web Speech API for hands-free input |
 | **Edit Mode** | Directly modify page content (headings, text, metadata) via chat |
+| **Live Preview** | Real-time rendering of AI changes in the edit view during processing |
 | **Layout Agent** | AI-driven page layout generation and block restructuring |
 | **Reference Pages** | Neighboring pages (parent, siblings, children) sent as AI context |
 | **Text Selection** | Select text on page as targeted AI context |
@@ -151,7 +152,7 @@ sequenceDiagram
 ```
 
 - **Streaming** via Server-Sent Events with real-time rendering
-- **Citations** with source links and snippets
+- **Citations** — auto-generated from reference pages (matched by title/link) and file attachments used as context
 - **Feedback** — rate responses with thumbs up or down
 - **File Upload** — attach documents (PDF, RTF) via button or drag & drop for additional context
 - **Voice Input** — speech-to-text via Web Speech API with live transcription
@@ -202,9 +203,12 @@ sequenceDiagram
 1. Editor navigates to `/edit` — edit mode activates automatically and the chat panel opens
 2. Current page blocks are loaded and prepared (including listing block resolution)
 3. Each chat message is sent to the Layout Agent as an edit instruction
-4. The agent returns an updated block state which is injected into the Volto form via `setFormData`
-5. The editor sees changes live in the form and can save or discard as usual
-6. Edit mode state persists across page reloads via sessionStorage
+4. **Live Preview**: partial state updates are applied to the form in real-time as the agent processes — blocks appear one by one
+5. The final state is injected into the Volto form via `setFormData`
+6. The editor sees changes live in the form and can save or discard as usual
+7. Edit mode state persists across page reloads via sessionStorage
+
+**Live Preview** renders intermediate states during processing. Incomplete block structures (columns without content, accordions without panels, tables without rows) are automatically sanitized with safe defaults to prevent render crashes.
 
 **Capabilities:**
 - Modify text in any Slate-based block (paragraphs, headings, descriptions)
@@ -234,11 +238,11 @@ sequenceDiagram
     Agent-->>Kyra: Job ID
     loop Poll until completed
         Kyra->>Agent: Poll job status
-        Agent-->>Kyra: running / completed
+        Agent-->>Kyra: running + partial state
+        Note over Kyra,Editor: Live Preview:<br/>partial state rendered immediately
     end
-    Agent-->>Kyra: New block state
-    Kyra->>Plone: PATCH updated blocks
-    Kyra->>Editor: Page reloaded
+    Agent-->>Kyra: completed + final state
+    Kyra->>Editor: Final state applied to edit form
 ```
 
 **Architecture:**
