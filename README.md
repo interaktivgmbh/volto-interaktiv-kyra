@@ -247,12 +247,13 @@ sequenceDiagram
 
 **Architecture:**
 
-- Communication via a Plone proxy (`@ai-edit-*` endpoints) to an external Layout Agent API
+- The Layout Agent runs directly inside Plone as an integrated Python module — no external service required
 - Conversation-based: a layout conversation is created with the current page state, then messages are sent as edit instructions
-- Asynchronous job processing with polling and cancel support
-- The proxy handles authentication via Keycloak token
+- Asynchronous job processing via a dedicated `asyncio` event loop in a daemon thread, with polling and cancel support
+- ~50 LangChain tools for block CRUD across 20 block types
+- Diff-aware reverse converter preserves unchanged blocks during round-trips
 
-**Endpoints (proxied through Plone):**
+**Endpoints (served by Plone):**
 
 | Endpoint | Purpose |
 |:---------|:--------|
@@ -446,7 +447,7 @@ flowchart TD
         C7["Capabilities"]
         C8["Assistant Run"]
         C9["Prompt Files"]
-        C10["Edit Proxy"]
+        C10["Layout Agent"]
         C11["Audit"]
         C12["Chat History"]
         C13["Error Report"]
@@ -456,7 +457,7 @@ flowchart TD
         GW["AI Gateway"]
         DL["DeepL API"]
         KC["Keycloak"]
-        LA["Layout Agent"]
+        OAI["OpenAI API"]
         GH["GitHub API"]
     end
 
@@ -478,7 +479,7 @@ flowchart TD
     C1 --> KC
     C2 --> DL
     C8 --> GW
-    C10 --> LA
+    C10 --> OAI
     C13 --> GH
 
     style L fill:#dbeafe,stroke:#2563eb,color:#111
@@ -512,7 +513,7 @@ flowchart TD
     style GW fill:#dcfce7,stroke:#16a34a,color:#111
     style DL fill:#dcfce7,stroke:#16a34a,color:#111
     style KC fill:#dcfce7,stroke:#16a34a,color:#111
-    style LA fill:#dcfce7,stroke:#16a34a,color:#111
+    style OAI fill:#dcfce7,stroke:#16a34a,color:#111
     style GH fill:#dcfce7,stroke:#16a34a,color:#111
 ```
 
@@ -648,7 +649,8 @@ Navigate to **Site Setup, Kyra AI Settings**:
 | `keycloak_token_expiration_time` | Token cache TTL in seconds, `0` = no caching |
 | `domain_id` | Domain identifier, default: `plone` |
 | `deepl_api_key` | DeepL API key for translations |
-| `edit_backend_url` | Layout Agent backend URL (leave empty to disable edit mode) |
+| `openai_api_key` | OpenAI API key for the integrated Layout Agent |
+| `openai_model` | LLM model ID (default: `gpt-5.4-mini`) |
 | `github_token` | GitHub personal access token for auto error reporting |
 | `github_repo` | GitHub repository (e.g. `org/repo`) for auto error reporting |
 
@@ -683,10 +685,9 @@ Navigate to **Site Setup, Kyra AI Settings**:
 <details>
 <summary><strong>Edit mode / Layout Agent not working</strong></summary>
 
-- Verify `edit_backend_url` is set in the control panel
-- Ensure the Layout Agent backend is running and reachable from Plone
-- Check `edit_backend_api_key` or Keycloak token configuration
-- Review Plone logs for `[ai-edit-proxy]` messages
+- Verify `openai_api_key` is set in the control panel
+- Check that the configured `openai_model` is valid and accessible with your API key
+- Review Plone logs for `[ai-edit-engine]` messages
 
 </details>
 
