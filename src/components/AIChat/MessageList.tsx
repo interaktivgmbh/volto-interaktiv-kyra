@@ -330,9 +330,13 @@ const MessageList: React.FC<Props> = ({
                 <ul>
                   {message.citations.map((citation) => (
                     <li key={citation.source_id}>
-                      <a href={citation.url} target="_blank" rel="noreferrer">
-                        {citation.label || citation.url}
-                      </a>
+                      {citation.url ? (
+                        <a href={citation.url} target="_blank" rel="noreferrer">
+                          {citation.label || citation.url}
+                        </a>
+                      ) : (
+                        <span>{citation.label}</span>
+                      )}
                       {citation.snippet && (
                         <div className="kyra-ai-chat__citation-snippet">
                           {citation.snippet}

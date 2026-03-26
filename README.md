@@ -12,9 +12,9 @@ DeepL translation · AI chat · Edit mode · Layout agent · Reference pages · 
 
 <br/>
 
-<img src="showcase/bot-showcase.gif" alt="Kyra AI Assistant — Animated Showcase" width="100%" />
+<img src="showcase/volto_ai_assistant-animation.gif" alt="Kyra AI Assistant — Animated Showcase" width="100%" />
 
-<sub>17 animated scenes — <a href="https://www.interaktiv.de/medien/svg/bot-showcase.svg/@@images/16c622ac-b240-4370-82ee-264fd1d449c8.svg">open interactive version</a></sub>
+<sub>17 animated scenes — <a href="https://www.interaktiv.de/medien/svg/volto_ai_assistant-animation.svg/@@images/530130c3-ae54-4457-9d2d-2efaba8d59a4.svg">open interactive version</a></sub>
 
 </div>
 

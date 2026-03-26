@@ -26,6 +26,7 @@ import {
   reportError,
 } from './api';
 import type { LayoutJobStatus } from './api';
+import type { Citation } from './types';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
 import { setFormData } from '@plone/volto/actions/form/form';
 import { extractPageContent } from './extractPageContent';
@@ -153,6 +154,56 @@ const buildTitle = (content: string, lang?: string) => {
   const capped = title.charAt(0).toUpperCase() + title.slice(1);
   if (capped.length <= 60) return capped;
   return `${capped.slice(0, 57)}...`;
+};
+
+/**
+ * Build citations from reference pages mentioned in the response text
+ * and from file attachments that were part of the request context.
+ * - Reference pages: matched by title (min 3 chars) or link path (case-insensitive)
+ * - Attachments: always included as sources when present (they were used as context)
+ */
+const buildCitations = (
+  responseText: string,
+  referencePages: Array<{ link: string; title?: string }>,
+  attachmentNames: string[],
+): Citation[] => {
+  const citations: Citation[] = [];
+  const seen = new Set<string>();
+
+  // Match reference pages by title or link
+  if (responseText && referencePages.length) {
+    const textLower = responseText.toLowerCase();
+    for (const page of referencePages) {
+      if (seen.has(page.link)) continue;
+      const titleMatch = page.title && page.title.length >= 3
+        && textLower.includes(page.title.toLowerCase());
+      const linkMatch = page.link && textLower.includes(page.link.toLowerCase());
+      if (titleMatch || linkMatch) {
+        seen.add(page.link);
+        citations.push({
+          source_id: page.link,
+          label: page.title || page.link,
+          url: page.link,
+          snippet: '',
+        });
+      }
+    }
+  }
+
+  // Always include attachments as sources — they were sent as context
+  for (const name of attachmentNames) {
+    const id = `attachment:${name}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    citations.push({
+      source_id: id,
+      label: name,
+      url: '',
+      snippet: '',
+    });
+  }
+
+  return citations;
 };
 
 /**
@@ -300,6 +351,7 @@ const ChatWidgetProvider: React.FC = () => {
   const streamControllerRef = useRef<AbortController | null>(null);
   const layoutConversationIdRef = useRef<string | null>(null);
   const chatConversationIdRef = useRef<string | null>(null);
+  const referencePagesRef = useRef<Array<{ link: string; title?: string }>>([]);
   const layoutJobAbortRef = useRef<(() => void) | null>(null);
   const fallbackLanguage = useMemo(() => {
     if (typeof document !== 'undefined') {
@@ -535,6 +587,7 @@ const ChatWidgetProvider: React.FC = () => {
     updateSelectionText('');
     layoutConversationIdRef.current = null;
     chatConversationIdRef.current = null;
+    referencePagesRef.current = [];
   }, [content?.UID]);
 
   // Listen for text selection on the page (outside chat)
@@ -869,7 +922,7 @@ const ChatWidgetProvider: React.FC = () => {
           let referencePages: any[] = [];
           try {
             referencePages = await fetchReferencePages(pageUrl, token);
-            // referencePages loaded successfully
+            referencePagesRef.current = referencePages.map((p: any) => ({ link: p.link, title: p.title }));
           } catch (_err) {
             console.error('[Kyra] Reference pages error:', _err);
           }
@@ -1075,7 +1128,12 @@ const ChatWidgetProvider: React.FC = () => {
               ? (isDe ? 'Änderungen in der Bearbeitung sichtbar. Bitte manuell speichern.' : 'Changes visible in the editor. Please save manually.')
               : (isDe ? '\u00c4nderungen erfolgreich angewendet.' : 'Changes applied successfully.'))
             : (isDe ? 'Keine Antwort erhalten.' : 'No response received.'));
-        finalizeAssistant(editAssistantId, { content: successMsg, status: 'done' });
+        const citations = buildCitations(
+          successMsg,
+          referencePagesRef.current,
+          attachments.filter((a) => a.file_id).map((a) => a.name),
+        );
+        finalizeAssistant(editAssistantId, { content: successMsg, citations, status: 'done' });
       } catch (err: any) {
         finalizeAssistant(editAssistantId, {
           content: isDe
