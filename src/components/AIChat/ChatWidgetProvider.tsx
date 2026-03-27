@@ -351,6 +351,28 @@ const ChatWidgetProvider: React.FC = () => {
   const streamControllerRef = useRef<AbortController | null>(null);
   const layoutConversationIdRef = useRef<string | null>(null);
   const chatConversationIdRef = useRef<string | null>(null);
+
+  // Helper: persist edit-engine conversation IDs in sessionStorage so they
+  // survive page reloads while the backend MemorySaver still holds the thread.
+  const _convStorageKey = (kind: 'layout' | 'chat', uid: string) =>
+    `kyra.editConvId.${kind}.${uid}`;
+
+  const saveEditConvId = (kind: 'layout' | 'chat', uid: string, convId: string | null) => {
+    try {
+      const key = _convStorageKey(kind, uid);
+      if (convId) {
+        sessionStorage.setItem(key, convId);
+      } else {
+        sessionStorage.removeItem(key);
+      }
+    } catch (_) { /* SSR / private-mode guard */ }
+  };
+
+  const loadEditConvId = (kind: 'layout' | 'chat', uid: string): string | null => {
+    try {
+      return sessionStorage.getItem(_convStorageKey(kind, uid)) || null;
+    } catch (_) { return null; }
+  };
   const referencePagesRef = useRef<Array<{ link: string; title?: string }>>([]);
   const layoutJobAbortRef = useRef<(() => void) | null>(null);
   const fallbackLanguage = useMemo(() => {
@@ -585,9 +607,18 @@ const ChatWidgetProvider: React.FC = () => {
     updateContextMode('page');
     manualSiteModeRef.current = false;
     updateSelectionText('');
-    layoutConversationIdRef.current = null;
-    chatConversationIdRef.current = null;
     referencePagesRef.current = [];
+
+    // Restore edit-engine conversation IDs from sessionStorage (survives
+    // page reloads) or clear them when navigating to a different page.
+    const uid = content?.UID;
+    if (uid) {
+      layoutConversationIdRef.current = loadEditConvId('layout', uid);
+      chatConversationIdRef.current = loadEditConvId('chat', uid);
+    } else {
+      layoutConversationIdRef.current = null;
+      chatConversationIdRef.current = null;
+    }
   }, [content?.UID]);
 
   // Listen for text selection on the page (outside chat)
@@ -958,6 +989,12 @@ const ChatWidgetProvider: React.FC = () => {
             token,
           );
           activeConvRef.current = convResponse.conversation_id;
+          // Persist so the conversation survives page reloads
+          const pageUid = content?.UID;
+          if (pageUid) {
+            const kind = editModeActiveRef.current ? 'layout' : 'chat';
+            saveEditConvId(kind, pageUid, convResponse.conversation_id);
+          }
         }
 
         applyAssistantUpdate(editAssistantId, (m) => ({
@@ -966,11 +1003,9 @@ const ChatWidgetProvider: React.FC = () => {
         }));
 
         let jobId: string;
-        try {
-          const messagePayload: { message: string; context?: { text?: string; block_id?: string } } = { message: contentText };
+        const buildMessagePayload = () => {
+          const mp: { message: string; context?: { text?: string; block_id?: string } } = { message: contentText };
           const activeSelection = selectionTextRef.current;
-
-          // Build context text from selection, page content, and/or attachments
           const contextParts: string[] = [];
           if (activeSelection && activeSelection.length > 5) {
             contextParts.push(activeSelection);
@@ -985,8 +1020,13 @@ const ChatWidgetProvider: React.FC = () => {
             contextParts.push(attachmentTexts);
           }
           if (contextParts.length > 0) {
-            messagePayload.context = { text: contextParts.join('\n\n---\n\n') };
+            mp.context = { text: contextParts.join('\n\n---\n\n') };
           }
+          return mp;
+        };
+
+        try {
+          const messagePayload = buildMessagePayload();
           const msgResponse = await sendLayoutMessage(
             editBackendUrl,
             activeConvRef.current,
@@ -995,24 +1035,70 @@ const ChatWidgetProvider: React.FC = () => {
           );
           jobId = msgResponse.job_id;
         } catch (sendErr: any) {
-          const debugPayload = { schema: 'volto', version: 'vanilla', state: pageState, message: contentText };
-          const blob = new Blob([JSON.stringify(debugPayload, null, 2)], { type: 'application/json' });
-          const downloadUrl = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = downloadUrl;
-          a.download = `edit-payload-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(downloadUrl);
-          activeConvRef.current = null;
-          finalizeAssistant(editAssistantId, {
-            content: isDe
-              ? `Die KI ist gerade nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als Datei gespeichert.`
-              : `AI is currently unreachable (${sendErr?.message || 'network error'}). The payload has been saved as a file.`,
-            status: 'done',
-          });
-          return;
+          // If the conversation was restored from sessionStorage but the
+          // backend lost it (e.g. server restart), recreate and retry once.
+          const isNotFound = (sendErr?.message || '').includes('not found') ||
+            (sendErr?.message || '').includes('404');
+          if (isNotFound) {
+            try {
+              applyAssistantUpdate(editAssistantId, (m) => ({
+                ...m,
+                content: isDe ? 'Sitzung wird wiederhergestellt\u2026' : 'Restoring session\u2026',
+              }));
+              const retryConvPayload = {
+                schema: 'volto' as const,
+                version: 'vanilla' as const,
+                state: pageState,
+                permissions: editModeActiveRef.current ? ['update', 'create', 'delete', 'move'] : [],
+                language: (preferredLanguage || 'de').slice(0, 2),
+                ...(referencePagesRef.current.length > 0 ? { reference_pages: referencePagesRef.current } : {}),
+              };
+              const retryConv = await createLayoutConversation(editBackendUrl, retryConvPayload, token);
+              activeConvRef.current = retryConv.conversation_id;
+              const retryUid = content?.UID;
+              if (retryUid) {
+                saveEditConvId(editModeActiveRef.current ? 'layout' : 'chat', retryUid, retryConv.conversation_id);
+              }
+              const retryMsg = buildMessagePayload();
+              const retryResponse = await sendLayoutMessage(editBackendUrl, activeConvRef.current, retryMsg, token);
+              jobId = retryResponse.job_id;
+            } catch (retryErr: any) {
+              activeConvRef.current = null;
+              const rUid = content?.UID;
+              if (rUid) saveEditConvId(editModeActiveRef.current ? 'layout' : 'chat', rUid, null);
+              finalizeAssistant(editAssistantId, {
+                content: isDe
+                  ? `Die KI ist gerade nicht erreichbar (${retryErr?.message || 'Netzwerkfehler'}).`
+                  : `AI is currently unreachable (${retryErr?.message || 'network error'}).`,
+                status: 'done',
+              });
+              return;
+            }
+          } else {
+            const debugPayload = { schema: 'volto', version: 'vanilla', state: pageState, message: contentText };
+            const blob = new Blob([JSON.stringify(debugPayload, null, 2)], { type: 'application/json' });
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `edit-payload-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+            activeConvRef.current = null;
+            const errUid = content?.UID;
+            if (errUid) {
+              const errKind = editModeActiveRef.current ? 'layout' : 'chat';
+              saveEditConvId(errKind, errUid, null);
+            }
+            finalizeAssistant(editAssistantId, {
+              content: isDe
+                ? `Die KI ist gerade nicht erreichbar (${sendErr?.message || 'Netzwerkfehler'}). Der Payload wurde als Datei gespeichert.`
+                : `AI is currently unreachable (${sendErr?.message || 'network error'}). The payload has been saved as a file.`,
+              status: 'done',
+            });
+            return;
+          }
         }
 
         const pollUntilDone = async (): Promise<LayoutJobStatus> => {
@@ -1415,6 +1501,15 @@ const ChatWidgetProvider: React.FC = () => {
     const fresh = createConversation();
     setConversation(fresh);
     setShowHistory(false);
+    // Clear edit-engine conversation IDs so the next message starts a fresh
+    // backend session instead of continuing the old one.
+    layoutConversationIdRef.current = null;
+    chatConversationIdRef.current = null;
+    const uid = content?.UID;
+    if (uid) {
+      saveEditConvId('layout', uid, null);
+      saveEditConvId('chat', uid, null);
+    }
   };
 
   const renameConversation = (conversationId: string) => {
