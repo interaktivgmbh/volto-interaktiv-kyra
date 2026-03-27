@@ -214,17 +214,31 @@ const buildCitations = (
  * - Nested sub-blocks (columns, panels) without blocks/blocks_layout → patched
  * - Blocks referenced in blocks_layout but missing from blocks → removed from layout
  */
-const sanitizePartialState = (state: Record<string, any>): Record<string, any> => {
+const sanitizePartialState = (state: Record<string, any>, prevBlocks?: Record<string, any>): Record<string, any> => {
   if (!state.blocks || !state.blocks_layout?.items) return state;
 
   const blocks = { ...state.blocks };
-  const items = (state.blocks_layout.items as string[]).filter((id) => !!blocks[id]);
+  let items = (state.blocks_layout.items as string[]).filter((id) => !!blocks[id]);
 
   for (const id of Object.keys(blocks)) {
     const block = blocks[id];
     if (!block || !block['@type']) continue;
 
     blocks[id] = sanitizeBlock(block);
+
+    // Form blocks use volto-subblocks which reads subblocks only in the
+    // constructor.  When subblocks change externally (agent added a field),
+    // we must force a remount by replacing the block UUID.
+    if (block['@type'] === 'form' && prevBlocks?.[id]?.['@type'] === 'form') {
+      const oldSubs = prevBlocks[id].subblocks;
+      const newSubs = block.subblocks;
+      if (Array.isArray(newSubs) && Array.isArray(oldSubs) && newSubs.length !== oldSubs.length) {
+        const newUid = crypto.randomUUID?.() || `form_${Math.random().toString(36).slice(2, 10)}`;
+        blocks[newUid] = blocks[id];
+        delete blocks[id];
+        items = items.map((item) => (item === id ? newUid : item));
+      }
+    }
   }
 
   return { ...state, blocks, blocks_layout: { items } };
@@ -285,6 +299,9 @@ const sanitizeBlock = (block: Record<string, any>): Record<string, any> => {
   // slider/carousel: needs slides/columns as array
   if (type === 'slider' && !Array.isArray(block.slides)) return { ...block, slides: [] };
   if (type === 'carousel' && !Array.isArray(block.columns)) return { ...block, columns: [] };
+
+  // form: needs subblocks as array
+  if (type === 'form' && !Array.isArray(block.subblocks)) return { ...block, subblocks: [] };
 
   return block;
 };
@@ -1117,7 +1134,7 @@ const ChatWidgetProvider: React.FC = () => {
               if (status.state && isVoltoEditMode && formData) {
                 try {
                   const partial = status.state;
-                  const sanitized = sanitizePartialState(partial);
+                  const sanitized = sanitizePartialState(partial, formData?.blocks);
                   const liveFormData = { ...formData };
                   if (sanitized.blocks && Object.keys(sanitized.blocks).length > 0) {
                     liveFormData.blocks = sanitized.blocks;
@@ -1173,11 +1190,12 @@ const ChatWidgetProvider: React.FC = () => {
             ...m,
             content: isDe ? 'Änderungen werden in die Bearbeitung übernommen\u2026' : 'Applying changes to the editor\u2026',
           }));
+          const sanitizedResult = sanitizePartialState(result.state!, formData?.blocks);
           const updatedFormData = { ...formData };
           if (hasBlocks) {
-            updatedFormData.blocks = result.state!.blocks;
-            if (result.state!.blocks_layout) {
-              updatedFormData.blocks_layout = result.state!.blocks_layout;
+            updatedFormData.blocks = sanitizedResult.blocks || result.state!.blocks;
+            if (sanitizedResult.blocks_layout || result.state!.blocks_layout) {
+              updatedFormData.blocks_layout = sanitizedResult.blocks_layout || result.state!.blocks_layout;
             }
           }
           if (result.state!.title !== undefined) updatedFormData.title = result.state!.title;
