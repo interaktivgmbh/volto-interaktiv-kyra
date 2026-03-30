@@ -226,18 +226,28 @@ const sanitizePartialState = (state: Record<string, any>, prevBlocks?: Record<st
 
     blocks[id] = sanitizeBlock(block);
 
-    // Form blocks use volto-subblocks which reads subblocks only in the
-    // constructor.  When subblocks change externally (agent added a field),
-    // we must force a remount by replacing the block UUID.
-    if (block['@type'] === 'form' && prevBlocks?.[id]?.['@type'] === 'form') {
-      const oldSubs = prevBlocks[id].subblocks;
-      const newSubs = block.subblocks;
-      if (Array.isArray(newSubs) && Array.isArray(oldSubs) && newSubs.length !== oldSubs.length) {
-        const newUid = crypto.randomUUID?.() || `form_${Math.random().toString(36).slice(2, 10)}`;
-        blocks[newUid] = blocks[id];
-        delete blocks[id];
-        items = items.map((item) => (item === id ? newUid : item));
-      }
+    // Some blocks (form, tabs) initialize internal React state from props
+    // only on mount and never sync afterwards.  When the agent creates or
+    // modifies them, we force a remount by swapping the block UUID so React
+    // treats them as new components.
+    const needsRemount =
+      // Form: volto-subblocks reads subblocks only in the constructor.
+      (block['@type'] === 'form' && (!prevBlocks?.[id] || (
+        Array.isArray(block.subblocks) && Array.isArray(prevBlocks[id]?.subblocks) &&
+        block.subblocks.length !== prevBlocks[id].subblocks.length
+      ))) ||
+      // Tabs: activeTab is set to tabsList[0] on mount — if block is new
+      // or tabs changed, the component needs a fresh mount.
+      (block['@type'] === 'tabs_block' && (!prevBlocks?.[id] || (
+        JSON.stringify(block.data?.blocks_layout?.items) !==
+        JSON.stringify(prevBlocks[id]?.data?.blocks_layout?.items)
+      )));
+
+    if (needsRemount) {
+      const newUid = crypto.randomUUID?.() || `blk_${Math.random().toString(36).slice(2, 10)}`;
+      blocks[newUid] = blocks[id];
+      delete blocks[id];
+      items = items.map((item) => (item === id ? newUid : item));
     }
   }
 
