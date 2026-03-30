@@ -610,10 +610,8 @@ const ChatWidgetProvider: React.FC = () => {
   const prevEditModeRef = useRef(isVoltoEditMode);
   useEffect(() => {
     updateEditMode(isVoltoEditMode);
-    // Open chat when entering /edit, close when leaving
-    if (!prevEditModeRef.current && isVoltoEditMode) {
-      setIsOpen(true);
-    } else if (prevEditModeRef.current && !isVoltoEditMode) {
+    // Close chat when leaving /edit (but don't auto-open on enter)
+    if (prevEditModeRef.current && !isVoltoEditMode) {
       setIsOpen(false);
     }
     prevEditModeRef.current = isVoltoEditMode;
