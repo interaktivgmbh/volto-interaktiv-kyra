@@ -14,6 +14,7 @@ type Props = {
   currentIconColor: string;
   currentAccentColor: string | null;
   currentChatName: string | null;
+  currentLanguage?: string | null;
   historyCount?: number;
   uiLanguage?: string;
 };
@@ -23,6 +24,7 @@ export type SettingsDraft = {
   iconColor: string;
   accentColor: string | null;
   chatName: string | null;
+  language?: string | null;
 };
 
 const isSvgDataUrl = (url: string) =>
@@ -71,6 +73,8 @@ const getLabels = (lang?: string) => {
       clearHistory: 'Chat-Verlauf löschen',
       clearHistoryHint: 'Alle gespeicherten Unterhaltungen entfernen.',
       clearHistoryConfirm: 'Verlauf löschen',
+      languageSection: 'Sprache',
+      languageHint: 'Sprache für den Chat-Assistenten.',
     };
   }
   return {
@@ -91,6 +95,8 @@ const getLabels = (lang?: string) => {
     clearHistory: 'Clear chat history',
     clearHistoryHint: 'Remove all saved conversations.',
     clearHistoryConfirm: 'Clear history',
+    languageSection: 'Language',
+    languageHint: 'Language for the chat assistant.',
   };
 };
 
@@ -103,6 +109,7 @@ const SettingsDrawer: React.FC<Props> = ({
   currentIconColor,
   currentAccentColor,
   currentChatName,
+  currentLanguage,
   historyCount = 0,
   uiLanguage,
 }) => {
@@ -113,6 +120,7 @@ const SettingsDrawer: React.FC<Props> = ({
   const [draftIconColor, setDraftIconColor] = useState(currentIconColor);
   const [draftAccent, setDraftAccent] = useState(currentAccentColor);
   const [draftName, setDraftName] = useState(currentChatName);
+  const [draftLanguage, setDraftLanguage] = useState(currentLanguage || null);
   const [showAccentPicker, setShowAccentPicker] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const accentPickerRef = useRef<HTMLDivElement>(null);
@@ -123,6 +131,7 @@ const SettingsDrawer: React.FC<Props> = ({
       setDraftIconColor(currentIconColor);
       setDraftAccent(currentAccentColor);
       setDraftName(currentChatName);
+      setDraftLanguage(currentLanguage || null);
     } else {
       setShowAccentPicker(false);
       setShowIconPicker(false);
@@ -135,7 +144,8 @@ const SettingsDrawer: React.FC<Props> = ({
     draftIcon !== currentCustomIcon ||
     draftIconColor !== currentIconColor ||
     draftAccent !== currentAccentColor ||
-    draftName !== currentChatName;
+    draftName !== currentChatName ||
+    draftLanguage !== (currentLanguage || null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,6 +171,7 @@ const SettingsDrawer: React.FC<Props> = ({
       iconColor: draftIconColor,
       accentColor: draftAccent,
       chatName: draftName,
+      language: draftLanguage,
     });
   };
 
@@ -204,6 +215,38 @@ const SettingsDrawer: React.FC<Props> = ({
               setDraftName(e.target.value || null)
             }
           />
+        </div>
+
+        {/* Language */}
+        <div className="kyra-ai-chat__settings-section">
+          <div className="kyra-ai-chat__settings-section-title">
+            {t.languageSection}
+          </div>
+          <div className="kyra-ai-chat__settings-hint">{t.languageHint}</div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <button
+              type="button"
+              className={`kyra-ai-chat__button ${
+                (draftLanguage || '').startsWith('de')
+                  ? 'kyra-ai-chat__button--primary'
+                  : 'kyra-ai-chat__button--ghost'
+              }`}
+              onClick={() => setDraftLanguage('de')}
+            >
+              Deutsch
+            </button>
+            <button
+              type="button"
+              className={`kyra-ai-chat__button ${
+                (draftLanguage || '').startsWith('en')
+                  ? 'kyra-ai-chat__button--primary'
+                  : 'kyra-ai-chat__button--ghost'
+              }`}
+              onClick={() => setDraftLanguage('en')}
+            >
+              English
+            </button>
+          </div>
         </div>
 
         {/* Accent Color */}

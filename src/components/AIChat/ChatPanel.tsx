@@ -369,6 +369,7 @@ const ChatPanel: React.FC<Props> = ({
         currentIconColor={customIconColor}
         currentAccentColor={accentColor}
         currentChatName={chatName}
+        currentLanguage={uiLanguage}
         historyCount={history.length}
         uiLanguage={uiLanguage}
       />

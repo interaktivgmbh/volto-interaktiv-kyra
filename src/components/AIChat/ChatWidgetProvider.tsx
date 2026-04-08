@@ -42,6 +42,8 @@ import {
   saveAccentColor,
   loadChatName,
   saveChatName,
+  loadPreferredLanguage,
+  savePreferredLanguage,
   clearAllConversations,
 } from './storage';
 import type {
@@ -362,7 +364,7 @@ const ChatWidgetProvider: React.FC = () => {
   const [conversation, setConversation] = useState<ChatConversation | null>(
     null,
   );
-  const [preferredLanguage, setPreferredLanguage] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState(() => loadPreferredLanguage() || '');
   const [translationStatus, setTranslationStatus] = useState<TranslationStatus | null>(null);
   const [contextMode, setContextMode] = useState<'page' | 'site' | 'selection'>('page');
   const [selectionText, setSelectionText] = useState('');
@@ -538,7 +540,7 @@ const ChatWidgetProvider: React.FC = () => {
       try {
         const translations = await getAiChatTranslations(token);
         if (!isMounted) return;
-        if (translations.language) {
+        if (translations.language && !loadPreferredLanguage()) {
           setPreferredLanguage(translations.language);
         }
       } catch (_error) {
@@ -2063,6 +2065,7 @@ const ChatWidgetProvider: React.FC = () => {
     iconColor: string;
     accentColor: string | null;
     chatName: string | null;
+    language?: string | null;
   }) => {
     saveCustomIcon(draft.customIcon);
     setCustomIcon(draft.customIcon);
@@ -2071,6 +2074,10 @@ const ChatWidgetProvider: React.FC = () => {
     saveAccentColor(draft.accentColor);
     setAccentColor(draft.accentColor);
     setChatName(draft.chatName);
+    if (draft.language) {
+      savePreferredLanguage(draft.language);
+      setPreferredLanguage(draft.language);
+    }
     if (token) {
       patchAiChatHistory({ chat_name: draft.chatName }, token).catch(() => {});
     } else {

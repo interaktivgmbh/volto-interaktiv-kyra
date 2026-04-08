@@ -136,6 +136,22 @@ export const saveChatName = (name: string | null) => {
   }
 };
 
+const PREFERRED_LANGUAGE_KEY = 'kyra.aiChat.preferredLanguage';
+
+export const loadPreferredLanguage = (): string | null => {
+  if (!canUseStorage()) return null;
+  return window.localStorage.getItem(PREFERRED_LANGUAGE_KEY) || null;
+};
+
+export const savePreferredLanguage = (lang: string | null) => {
+  if (!canUseStorage()) return;
+  if (lang) {
+    window.localStorage.setItem(PREFERRED_LANGUAGE_KEY, lang);
+  } else {
+    window.localStorage.removeItem(PREFERRED_LANGUAGE_KEY);
+  }
+};
+
 export const clearAllConversations = (userKey?: string | null) => {
   if (!canUseStorage()) return;
   window.localStorage.removeItem(keyForUser(userKey));
