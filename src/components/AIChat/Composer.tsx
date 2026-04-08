@@ -5,6 +5,11 @@ import { translateSVG } from '../../helpers/icons';
 import type { ChatCapabilities } from './types';
 import { hasPermission } from './types';
 
+type SkillItem = {
+  name: string;
+  description: string;
+};
+
 type Props = {
   onSend?: (text: string) => void;
   onTranslateClick?: () => void;
@@ -23,6 +28,7 @@ type Props = {
   editModeActive?: boolean;
   editBackendUrl?: string;
   onEditModeToggle?: () => void;
+  skills?: SkillItem[];
 };
 
 const getComposerLabels = (lang?: string) => {
@@ -38,6 +44,7 @@ const getComposerLabels = (lang?: string) => {
       editActive: 'Bearbeiten (aktiv)',
       editModeTag: 'Bearbeiten-Modus',
       attachFiles: 'Fotos und Dateien hinzuf\u00fcgen',
+      skills: 'Skills',
       micStart: 'Spracheingabe starten',
       micStop: 'Spracheingabe stoppen',
     };
@@ -52,6 +59,7 @@ const getComposerLabels = (lang?: string) => {
     editActive: 'Edit (active)',
     editModeTag: 'Edit mode',
     attachFiles: 'Add photos and files',
+    skills: 'Skills',
     micStart: 'Start voice input',
     micStop: 'Stop voice input',
   };
@@ -82,8 +90,10 @@ const Composer: React.FC<Props> = ({
   editModeActive,
   editBackendUrl,
   onEditModeToggle,
+  skills = [],
 }) => {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [showSkillsPanel, setShowSkillsPanel] = useState(false);
   const [text, setText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const plusMenuRef = useRef<HTMLDivElement>(null);
@@ -317,6 +327,49 @@ const Composer: React.FC<Props> = ({
           )}
         </div>
       )}
+      {showSkillsPanel && skills.length > 0 && (
+        <div className="kyra-ai-chat__skills-panel">
+          <div className="kyra-ai-chat__skills-header">
+            <span className="kyra-ai-chat__skills-title">{t.skills}</span>
+            <button
+              type="button"
+              className="kyra-ai-chat__skills-close"
+              onClick={() => setShowSkillsPanel(false)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <div className="kyra-ai-chat__skills-list">
+            {skills.map((skill) => (
+              <button
+                key={skill.name}
+                type="button"
+                className="kyra-ai-chat__skills-item"
+                onClick={() => {
+                  setText((prev) => {
+                    const prefix = `/${skill.name} `;
+                    if (prev.includes(prefix)) return prev;
+                    return prefix + prev;
+                  });
+                  setShowSkillsPanel(false);
+                  inputRef.current?.focus();
+                }}
+              >
+                <div className="kyra-ai-chat__skills-item-name">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  /{skill.name}
+                </div>
+                <div className="kyra-ai-chat__skills-item-desc">{skill.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="kyra-ai-chat__composer-row">
         <div className="kyra-ai-chat__composer-plus-menu" ref={plusMenuRef}>
           <button
@@ -373,6 +426,20 @@ const Composer: React.FC<Props> = ({
                 </svg>
                 <span>{t.prompts}</span>
               </button>
+              {skills.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPlusMenu(false);
+                    setShowSkillsPanel(true);
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  <span>{t.skills}</span>
+                </button>
+              )}
               {editBackendUrl && (
                 <button
                   type="button"

@@ -67,6 +67,12 @@ const DEFAULT_CAPABILITIES: ChatCapabilities = {
 const generateId = () =>
   `chat_${Math.random().toString(36).slice(2, 10)}`;
 
+const AVAILABLE_SKILLS = [
+  { name: 'design-landing-page', description: 'Landing Page aufbauen' },
+  { name: 'extract-from-document', description: 'Inhalte aus Dokument extrahieren' },
+  { name: 'improve-text-flow', description: 'Textfluss verbessern' },
+];
+
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   de: 'Deutsch',
@@ -2201,6 +2207,7 @@ const ChatWidgetProvider: React.FC = () => {
         editingMessageId={editingMessageId}
         onEditAndResend={handleEditAndResend}
         onCancelEdit={handleCancelEdit}
+        skills={editModeActive ? AVAILABLE_SKILLS : []}
         editModeActive={editModeActive}
         editBackendUrl={editBackendUrl}
         onEditModeToggle={() => {

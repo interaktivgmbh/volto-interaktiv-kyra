@@ -2239,6 +2239,105 @@ body.has-ai-panel-docked {
   flex-shrink: 0;
 }
 
+// Skills panel — popup above the composer
+.kyra-ai-chat__skills-panel {
+  background: var(--ai-chat-bg, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  margin: 0 12px 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.kyra-ai-chat__skills-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.kyra-ai-chat__skills-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ai-chat-muted);
+}
+
+.kyra-ai-chat__skills-close {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--ai-chat-muted);
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: var(--ai-chat-fg);
+  }
+}
+
+.kyra-ai-chat__skills-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.kyra-ai-chat__skills-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.kyra-ai-chat__skills-item-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ai-chat-accent, #3b97d4);
+}
+
+.kyra-ai-chat__skills-item-desc {
+  font-size: 12px;
+  color: var(--ai-chat-muted);
+  line-height: 1.4;
+  padding-left: 22px;
+}
+
+.kyra-ai-chat__composer-plus-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 4px 0;
+}
+
+.kyra-ai-chat__composer-plus-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ai-chat-muted);
+  padding: 4px 12px 2px;
+}
+
 .kyra-ai-chat__composer-badge {
   margin-left: auto;
   min-width: 18px;

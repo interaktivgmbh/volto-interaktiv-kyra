@@ -96,6 +96,7 @@ type Props = {
   onFilesSelected?: (files: File[]) => void;
   attachments?: { name: string; id: string }[];
   onRemoveAttachment?: (id: string) => void;
+  skills?: { name: string; description: string }[];
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -143,6 +144,7 @@ const ChatPanel: React.FC<Props> = ({
   onFilesSelected,
   attachments,
   onRemoveAttachment,
+  skills = [],
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -346,6 +348,7 @@ const ChatPanel: React.FC<Props> = ({
         onFilesSelected={onFilesSelected}
         attachments={attachments}
         onRemoveAttachment={onRemoveAttachment}
+        skills={skills}
       />
       <HistoryDrawer
         open={showHistory}
