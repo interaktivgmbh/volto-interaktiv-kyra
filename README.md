@@ -20,6 +20,12 @@ DeepL translation · AI chat · Live preview · Edit mode · Layout agent · Ref
 
 ---
 
+> **Live Demo** — Try Kyra at [spielwiese.interaktiv.de](https://spielwiese.interaktiv.de)
+> Login: `demo` / `kyra-spielwiese-2026`
+> The database resets daily — feel free to experiment.
+
+---
+
 ## Contents
 
 > **Features** — [Translation](#translation) · [Translation Sync](#translation-sync) · [AI Chat](#ai-chat) · [Voice Input](#voice-input) · [Edit Mode & Live Preview](#edit-mode) · [Layout Agent](#layout-agent) · [Reference Pages](#reference-pages) · [Text Selection](#text-selection) · [Prompts](#prompt-management) · [Slate Integration](#slate-editor-integration) · [File Attachments](#prompt-file-attachments) · [History](#chat-history) · [Permissions](#permission-matrix) · [Customization](#customization) · [Auto Error Reporting](#auto-error-reporting)
