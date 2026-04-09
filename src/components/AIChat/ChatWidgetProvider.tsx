@@ -18,6 +18,10 @@ import {
   sendLayoutMessage,
   pollLayoutJob,
   cancelLayoutJob,
+  createChatConversation,
+  sendChatMessage,
+  pollChatJob,
+  cancelChatJob,
   getAiChatHistory,
   patchAiChatHistory,
   putAiChatHistory,
@@ -947,6 +951,7 @@ const ChatWidgetProvider: React.FC = () => {
     updateConversationState(workingConversation, true);
 
     if (editBackendUrl) {
+      const isEditMode = editModeActiveRef.current;
       const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
       const editAssistantId = generateId();
       const editAssistantMsg: ChatMessage = {
@@ -1016,11 +1021,9 @@ const ChatWidgetProvider: React.FC = () => {
             reference_pages_count: convPayload.reference_pages?.length ?? 0,
             reference_pages_links: convPayload.reference_pages?.map((p: any) => p.link) ?? [],
           });
-          const convResponse = await createLayoutConversation(
-            editBackendUrl,
-            convPayload,
-            token,
-          );
+          const convResponse = isEditMode
+            ? await createLayoutConversation(editBackendUrl, convPayload, token)
+            : await createChatConversation(convPayload, token);
           activeConvRef.current = convResponse.conversation_id;
           // Persist so the conversation survives page reloads
           const pageUid = content?.UID;
@@ -1060,12 +1063,9 @@ const ChatWidgetProvider: React.FC = () => {
 
         try {
           const messagePayload = buildMessagePayload();
-          const msgResponse = await sendLayoutMessage(
-            editBackendUrl,
-            activeConvRef.current,
-            messagePayload,
-            token,
-          );
+          const msgResponse = isEditMode
+            ? await sendLayoutMessage(editBackendUrl, activeConvRef.current, messagePayload, token)
+            : await sendChatMessage(activeConvRef.current, messagePayload, token);
           jobId = msgResponse.job_id;
         } catch (sendErr: any) {
           // If the conversation was restored from sessionStorage but the
@@ -1086,14 +1086,18 @@ const ChatWidgetProvider: React.FC = () => {
                 language: (preferredLanguage || 'de').slice(0, 2),
                 ...(referencePagesRef.current.length > 0 ? { reference_pages: referencePagesRef.current } : {}),
               };
-              const retryConv = await createLayoutConversation(editBackendUrl, retryConvPayload, token);
+              const retryConv = isEditMode
+                ? await createLayoutConversation(editBackendUrl, retryConvPayload, token)
+                : await createChatConversation(retryConvPayload, token);
               activeConvRef.current = retryConv.conversation_id;
               const retryUid = content?.UID;
               if (retryUid) {
                 saveEditConvId(editModeActiveRef.current ? 'layout' : 'chat', retryUid, retryConv.conversation_id);
               }
               const retryMsg = buildMessagePayload();
-              const retryResponse = await sendLayoutMessage(editBackendUrl, activeConvRef.current, retryMsg, token);
+              const retryResponse = isEditMode
+                ? await sendLayoutMessage(editBackendUrl, activeConvRef.current, retryMsg, token)
+                : await sendChatMessage(activeConvRef.current, retryMsg, token);
               jobId = retryResponse.job_id;
             } catch (retryErr: any) {
               activeConvRef.current = null;
@@ -1138,7 +1142,9 @@ const ChatWidgetProvider: React.FC = () => {
           while (!aborted.current) {
             await new Promise<void>((resolve) => setTimeout(resolve, 1500));
             if (aborted.current) break;
-            const status = await pollLayoutJob(editBackendUrl, jobId, token);
+            const status = isEditMode
+              ? await pollLayoutJob(editBackendUrl, jobId, token)
+              : await pollChatJob(jobId, token);
             if (status.status === 'running') {
               if (status.progress) {
                 applyAssistantUpdate(editAssistantId, (m) => ({
@@ -1169,7 +1175,10 @@ const ChatWidgetProvider: React.FC = () => {
             }
             return status;
           }
-          await cancelLayoutJob(editBackendUrl, jobId, token).catch(() => {});
+          await (isEditMode
+            ? cancelLayoutJob(editBackendUrl, jobId, token)
+            : cancelChatJob(jobId, token)
+          ).catch(() => {});
           return { status: 'cancelled' };
         };
 

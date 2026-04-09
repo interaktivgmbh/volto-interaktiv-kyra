@@ -1298,6 +1298,92 @@ export const cancelLayoutJob = async (
   return response.json();
 };
 
+// ---------------------------------------------------------------------------
+// Chat-proxy endpoints (read-only layout-agent conversations)
+// ---------------------------------------------------------------------------
+
+export const createChatConversation = async (
+  payload: { schema: string; version: string; state: Record<string, any>; language?: string },
+  token?: string,
+): Promise<{ conversation_id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-chat-conversations'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to create chat conversation');
+  }
+
+  return response.json();
+};
+
+export const sendChatMessage = async (
+  conversationId: string,
+  payload: { message: string; state?: Record<string, any>; context?: { text?: string; block_id?: string } },
+  token?: string,
+): Promise<{ job_id: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-chat-messages'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify({ ...payload, conversation_id: conversationId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to send chat message');
+  }
+
+  return response.json();
+};
+
+export const pollChatJob = async (
+  jobId: string,
+  token?: string,
+): Promise<LayoutJobStatus> => {
+  const response = await fetch(
+    buildApiUrl(`/@ai-chat-jobs?job_id=${encodeURIComponent(jobId)}`),
+    {
+      method: 'GET',
+      headers: {
+        ...buildHeaders(token),
+        Accept: 'application/json',
+      },
+      credentials: 'same-origin',
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to poll chat job');
+  }
+
+  return response.json();
+};
+
+export const cancelChatJob = async (
+  jobId: string,
+  token?: string,
+): Promise<{ status: string }> => {
+  const response = await fetch(buildApiUrl('/@ai-chat-job-cancel'), {
+    method: 'POST',
+    headers: buildHeaders(token),
+    credentials: 'same-origin',
+    body: JSON.stringify({ job_id: jobId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Failed to cancel chat job');
+  }
+
+  return response.json();
+};
+
 export type ChatHistoryData = {
   conversations: import('./types').ChatConversation[];
   chat_name: string | null;
