@@ -5,7 +5,7 @@
 **Intelligent content assistant for Plone/Volto editors**
 DeepL translation · AI chat · Live preview · Edit mode · Layout agent · Reference pages · Voice input · Prompt management · Widget customization
 
-[![Version](https://img.shields.io/badge/version-2.1.6-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
+[![Version](https://img.shields.io/badge/version-2.2.4-blue.svg)](https://github.com/interaktivgmbh/volto-interaktiv-kyra)
 [![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](LICENSE)
 [![Plone](https://img.shields.io/badge/Plone-6-orange.svg)](https://plone.org)
 [![Volto](https://img.shields.io/badge/Volto-18+-purple.svg)](https://github.com/plone/volto)
@@ -34,7 +34,7 @@ DeepL translation · AI chat · Live preview · Edit mode · Layout agent · Ref
 |:--------|:------------|
 | **DeepL Translation** | Translate pages or subtrees with glossary support |
 | **Translation Sync** | Detect and update outdated translations |
-| **AI Chat** | Streaming chat with auto-generated citations from reference pages and attachments |
+| **AI Chat** | Context-aware chat with auto-generated citations from reference pages and attachments |
 | **Voice Input** | Speech-to-text via Web Speech API for hands-free input |
 | **Edit Mode** | Directly modify page content (headings, text, metadata) via chat |
 | **Live Preview** | Real-time rendering of AI changes in the edit view during processing |
@@ -131,7 +131,7 @@ flowchart LR
 
 ## AI Chat
 
-Context-aware streaming chat with citations.
+Context-aware chat via the external Layout Agent backend (read-only mode).
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryBorderColor': '#2563eb', 'primaryTextColor': '#111', 'lineColor': '#475569', 'signalColor': '#475569', 'signalTextColor': '#111', 'labelTextColor': '#111', 'actorBkg': '#dbeafe', 'actorTextColor': '#111', 'actorBorder': '#2563eb', 'actorLineColor': '#94a3b8', 'noteBkgColor': '#fef3c7', 'noteBorderColor': '#d97706', 'noteTextColor': '#111'}}}%%
@@ -139,19 +139,23 @@ sequenceDiagram
     participant Editor
     participant Kyra
     participant Plone
-    participant AI as AI Gateway
+    participant Agent as Layout Agent
 
     Editor->>Kyra: Sends message
     Note over Kyra: Attaches page context<br/>or selected text
-    Kyra->>Plone: POST chat endpoint
-    Plone->>AI: Forward with context
-    AI-->>Plone: SSE stream tokens
-    Plone-->>Kyra: Token-by-token
-    Kyra->>Editor: Live rendering
-    Note over Kyra,Editor: Citations appended
+    Kyra->>Plone: Create conversation (read-only)
+    Note over Plone: Pre-loads site context<br/>(pages, documents, PDFs)
+    Plone->>Agent: Forward with site context
+    Agent-->>Plone: Job ID
+    loop Poll until completed
+        Plone->>Agent: Poll job status
+        Agent-->>Plone: running / completed
+    end
+    Plone-->>Kyra: Response message
+    Kyra->>Editor: Display with citations
 ```
 
-- **Streaming** via Server-Sent Events with real-time rendering
+- **Site Context** — Plone pre-loads the site tree and document content (including PDF text extraction) and injects it into the first message
 - **Citations** — auto-generated from reference pages (matched by title/link) and file attachments used as context
 - **Feedback** — rate responses with thumbs up or down
 - **File Upload** — attach documents (PDF, RTF) via button or drag & drop for additional context
@@ -584,10 +588,14 @@ flowchart LR
 | `GET/POST/DELETE` | `/@ai-tag-mappings` | Tag mapping management |
 | `GET` | `/@ai-capabilities` | Feature flags and permissions |
 | `GET/POST` | `/@ai-permission-matrix` | Read/update role-based permission matrix |
-| `POST` | `/@ai-edit-conversations` | Create layout agent conversation |
+| `POST` | `/@ai-edit-conversations` | Create layout agent conversation (edit mode, full permissions) |
 | `POST` | `/@ai-edit-messages` | Send layout edit instruction |
 | `GET` | `/@ai-edit-jobs` | Poll layout job status |
 | `POST` | `/@ai-edit-job-cancel` | Cancel running layout job |
+| `POST` | `/@ai-chat-conversations` | Create layout agent conversation (chat mode, read-only) |
+| `POST` | `/@ai-chat-messages` | Send chat message to layout agent |
+| `GET` | `/@ai-chat-jobs` | Poll chat job status |
+| `POST` | `/@ai-chat-job-cancel` | Cancel running chat job |
 | `GET/PATCH/PUT/DELETE` | `/@ai-chat-history` | Server-side per-user chat history |
 | `POST` | `/@ai-error-report` | Auto-create GitHub issue from AI error |
 
@@ -648,7 +656,7 @@ Navigate to **Site Setup, Kyra AI Settings**:
 | `keycloak_token_expiration_time` | Token cache TTL in seconds, `0` = no caching |
 | `domain_id` | Domain identifier, default: `plone` |
 | `deepl_api_key` | DeepL API key for translations |
-| `edit_backend_url` | Layout Agent backend URL (leave empty to disable edit mode) |
+| `edit_backend_url` | External Layout Agent backend URL — enables both chat and edit mode |
 | `github_token` | GitHub personal access token for auto error reporting |
 | `github_repo` | GitHub repository (e.g. `org/repo`) for auto error reporting |
 
@@ -685,8 +693,8 @@ Navigate to **Site Setup, Kyra AI Settings**:
 
 - Verify `edit_backend_url` is set in the control panel
 - Ensure the Layout Agent backend is running and reachable from Plone
-- Check `edit_backend_api_key` or Keycloak token configuration
-- Review Plone logs for `[ai-edit-proxy]` messages
+- Keycloak credentials must be configured for authentication
+- Review Plone logs for `[ai-edit-proxy]` or `[ai-chat-proxy]` messages
 
 </details>
 
