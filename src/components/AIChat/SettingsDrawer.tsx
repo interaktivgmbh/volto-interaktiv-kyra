@@ -223,7 +223,7 @@ const SettingsDrawer: React.FC<Props> = ({
             {t.languageSection}
           </div>
           <div className="kyra-ai-chat__settings-hint">{t.languageHint}</div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+          <div className="kyra-ai-settings-language-row">
             <button
               type="button"
               className={`kyra-ai-chat__button ${
@@ -272,7 +272,7 @@ const SettingsDrawer: React.FC<Props> = ({
                 aria-label={color}
               />
             ))}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
+            <div className="kyra-ai-settings-picker-wrapper">
               <button
                 type="button"
                 className="kyra-ai-chat__settings-color-picker"
@@ -385,7 +385,7 @@ const SettingsDrawer: React.FC<Props> = ({
                     aria-label={color}
                   />
                 ))}
-                <div style={{ position: 'relative', display: 'inline-block' }}>
+                <div className="kyra-ai-settings-picker-wrapper">
                   <button
                     type="button"
                     className="kyra-ai-chat__settings-color-picker"

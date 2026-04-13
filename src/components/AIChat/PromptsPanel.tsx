@@ -104,7 +104,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       const res = await getPrompts(token);
       setPrompts(res.prompts || []);
     } catch (_err) {
-      // ignore
     } finally {
       setLoading(false);
     }
@@ -136,7 +135,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       setShowCreate(false);
       await fetchPrompts();
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -167,7 +165,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       setEditId(null);
       await fetchPrompts();
     } catch (_err) {
-      // ignore
     }
   };
 
@@ -176,7 +173,6 @@ const PromptsPanel: React.FC<Props> = ({ open, onClose, onApplyPrompt, uiLanguag
       await deletePrompt({ id }, token);
       await fetchPrompts();
     } catch (_err) {
-      // ignore
     }
   };
 

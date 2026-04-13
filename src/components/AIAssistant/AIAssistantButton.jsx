@@ -60,7 +60,7 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
 
   if (loading && categories.length === 0) {
     return (
-      <div style={{ padding: '8px 12px', fontSize: '0.85rem', color: '#666' }}>
+      <div className="kyra-ai-menu-loading">
         {t('Prompts are loading\u2026', 'Prompts werden geladen \u2026')}
       </div>
     );
@@ -68,7 +68,7 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
 
   if (!loading && categories.length === 0) {
     return (
-      <div style={{ padding: '8px 12px', fontSize: '0.85rem', color: '#666' }}>
+      <div className="kyra-ai-menu-loading">
         {t('No prompts available.', 'Keine Prompts verf\u00fcgbar.')}
       </div>
     );
@@ -77,81 +77,34 @@ const AIAssistantButton = ({ onSelectPrompt = () => {} }) => {
   const currentPrompts = activeCategory ? grouped[activeCategory] || [] : [];
 
   return (
-    <div
-      className="kyra-ai-menu"
-      style={{
-        display: 'flex',
-        minWidth: 360,
-        maxWidth: 480,
-        maxHeight: 260,
-        background: '#fff',
-        borderRadius: 8,
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        className="kyra-ai-menu-categories"
-        style={{
-          flex: '0 0 160px',
-          borderRight: '1px solid #eee',
-          padding: '8px 0',
-          overflowY: 'auto',
-        }}
-      >
+    <div className="kyra-ai-menu">
+      <div className="kyra-ai-menu-categories">
         {categories.map((cat) => (
           <button
             key={cat}
             type="button"
             onClick={() => setActiveCategory(cat)}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              padding: '6px 12px',
-              border: 'none',
-              background:
-                cat === activeCategory ? 'rgba(0,123,148,0.08)' : 'transparent',
-              fontSize: '0.8rem',
-              fontWeight: cat === activeCategory ? 600 : 500,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              color: '#444',
-              cursor: 'pointer',
-            }}
+            className={`kyra-ai-menu-category-btn${cat === activeCategory ? ' kyra-ai-menu-category-btn--active' : ''}`}
           >
             {cat}
           </button>
         ))}
       </div>
 
-      <div
-        className="kyra-ai-menu-prompts"
-        style={{ flex: 1, padding: '8px', overflowY: 'auto' }}
-      >
+      <div className="kyra-ai-menu-prompts">
         {currentPrompts.map((prompt) => (
           <button
             key={prompt.id}
             type="button"
             onClick={() => onSelectPrompt(prompt)}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              padding: '6px 10px',
-              marginBottom: 4,
-              borderRadius: 4,
-              border: '1px solid #e2e2e2',
-              background: '#fafafa',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
+            className="kyra-ai-menu-prompt-btn"
           >
             {prompt.name}
           </button>
         ))}
 
         {currentPrompts.length === 0 && (
-          <div style={{ padding: '6px 10px', fontSize: '0.8rem', color: '#777' }}>
+          <div className="kyra-ai-menu-empty">
             {t('No prompts in this category.', 'Keine Prompts in dieser Kategorie.')}
           </div>
         )}

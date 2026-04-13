@@ -10,64 +10,6 @@ import { useIntl } from 'react-intl';
 
 const CUSTOM_PROMPT_UUID = '123e4567-e89b-12d3-a456-426614174000';
 
-const ensureKyraAIStyles = () => {
-  if (document.getElementById('kyra-ai-style')) return;
-
-  const styleEl = document.createElement('style');
-  styleEl.id = 'kyra-ai-style';
-  styleEl.innerHTML = `
-    body.kyra-ai-running .block .block.slate.selected {
-      position: relative;
-    }
-
-    body.kyra-ai-running .block .block.slate.selected::before,
-    body.kyra-ai-running .block .block.slate.selected:hover::before {
-      background-color: #fff5d6 !important;
-      border-color: #f1a637 !important;
-      outline: 2px solid #f1a637 !important;
-      animation: kyra-ai-pulse 1.1s ease-in-out infinite;
-      transform-origin: center center;
-    }
-
-    body.kyra-ai-running .block .block.slate.selected::after {
-      content: '';
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      border: 2px solid #f1a637;
-      border-top-color: transparent;
-      border-left-color: transparent;
-      right: 12px;
-      bottom: 10px;
-      z-index: 2;
-      pointer-events: none;
-      animation: kyra-ai-spinner 0.7s linear infinite;
-    }
-
-    @keyframes kyra-ai-pulse {
-      0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(241, 166, 55, 0.0);
-      }
-      50% {
-        transform: scale(1.03);
-        box-shadow: 0 0 0 8px rgba(241, 166, 55, 0.3);
-      }
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(241, 166, 55, 0.0);
-      }
-    }
-
-    @keyframes kyra-ai-spinner {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-  `;
-  document.head.appendChild(styleEl);
-};
-
 const AIAssistantSlateButton = () => {
   const intl = useIntl();
   const locale = (intl.locale || 'en').toLowerCase();
@@ -85,10 +27,6 @@ const AIAssistantSlateButton = () => {
 
   const editor = useSlate();
   const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    ensureKyraAIStyles();
-  }, []);
 
   useEffect(() => {
     if (isRunning) {
@@ -307,38 +245,17 @@ const AIAssistantSlateButton = () => {
       <div
         className="kyra-ai-status"
         style={{
-          position: 'absolute',
-          top: '40px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          minWidth: 280,
-          maxWidth: 520,
           background: bg,
           border: `1px solid ${border}`,
-          borderRadius: 8,
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          fontSize: '0.85rem',
           color,
-          boxShadow: '0 10px 24px rgba(0, 0, 0, 0.14)',
-          zIndex: 10000,
-          pointerEvents: 'auto',
         }}
       >
-        <span style={{ marginRight: 8, fontSize: '0.9rem' }}>{icon}</span>
-        <span style={{ flex: 1 }}>{text}</span>
+        <span className="kyra-ai-status__icon">{icon}</span>
+        <span className="kyra-ai-status__text">{text}</span>
         <button
           type="button"
           onClick={() => setStatus(null)}
-          style={{
-            marginLeft: 10,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            lineHeight: 1,
-          }}
+          className="kyra-ai-status__close"
         >
           {'\u00d7'}
         </button>
@@ -350,55 +267,16 @@ const AIAssistantSlateButton = () => {
     if (!chatOpen) return null;
 
     return (
-      <div
-        className="kyra-ai-chat-overlay"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 11000,
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          padding: '0 12px 24px 12px',
-        }}
-      >
-        <div
-          className="kyra-ai-chat-card"
-          style={{
-            marginBottom: 16,
-            width: 'min(860px, 100%)',
-            background: '#ffffff',
-            borderRadius: 14,
-            boxShadow: '0 24px 60px rgba(15, 23, 42, 0.22)',
-            padding: '16px 18px 14px 18px',
-            pointerEvents: 'auto',
-            border: '1px solid rgba(148, 163, 184, 0.35)',
-            fontSize: '1rem',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 10,
-            }}
-          >
-            <div style={{ fontSize: '1rem', fontWeight: 600 }}>
+      <div className="kyra-ai-chat-overlay">
+        <div className="kyra-ai-chat-card">
+          <div className="kyra-ai-chat-card__header">
+            <div className="kyra-ai-chat-card__title">
               {t('AI Assistant', 'AI Assistant')}
             </div>
             <button
               type="button"
               onClick={handleCloseChat}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                fontSize: '1.1rem',
-                cursor: 'pointer',
-                padding: 4,
-                lineHeight: 1,
-              }}
+              className="kyra-ai-chat-card__close"
             >
               {'\u00d7'}
             </button>
@@ -406,25 +284,12 @@ const AIAssistantSlateButton = () => {
 
           {chatResult && (
             <>
-              <div
-                className="kyra-ai-chat-preview"
-                style={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 10,
-                  padding: '10px 12px',
-                  marginBottom: 6,
-                  maxHeight: 260,
-                  overflowY: 'auto',
-                  fontSize: '1rem',
-                  lineHeight: 1.5,
-                  background: 'radial-gradient(circle at top left, #f8fafc 0, #ffffff 40%)',
-                }}
-              >
+              <div className="kyra-ai-chat-preview">
                 {chatResult.text}
               </div>
 
-              <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <div className="kyra-ai-chat-preview__disclaimer">
+                <span className="kyra-ai-chat-preview__disclaimer-text">
                   {t('AI responses can be inaccurate', 'KI-Antworten k\u00f6nnen ungenau sein')}
                 </span>
               </div>
@@ -432,16 +297,11 @@ const AIAssistantSlateButton = () => {
           )}
 
           <div
-            className="kyra-ai-chat-inputrow"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginTop: chatResult ? 0 : 4,
-            }}
+            className={`kyra-ai-chat-inputrow ${chatResult ? 'kyra-ai-chat-inputrow--with-preview' : 'kyra-ai-chat-inputrow--no-preview'}`}
           >
             <input
               type="text"
+              className="kyra-ai-chat-inputrow__input"
               placeholder={t(
                 'Instruct the AI to edit or generate something\u2026',
                 'KI anweisen, etwas zu bearbeiten oder zu generieren\u2026',
@@ -456,88 +316,37 @@ const AIAssistantSlateButton = () => {
                   }
                 }
               }}
-              style={{
-                flex: 1,
-                border: '1px solid #cbd5f5',
-                borderRadius: 999,
-                padding: '10px 16px',
-                fontSize: '1rem',
-                outline: 'none',
-                backgroundColor: '#f8fafc',
-              }}
             />
             <button
               type="button"
               onClick={handleSubmitCustomPrompt}
               disabled={isRunning || !chatInput.trim()}
-              style={{
-                minWidth: 56,
-                border: '1px solid #1f7ae0',
-                borderRadius: 999,
-                background: isRunning || !chatInput.trim() ? '#9cbcf4' : '#0094d4',
-                cursor: isRunning || !chatInput.trim() ? 'default' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 14px',
-              }}
+              className={`kyra-ai-chat-inputrow__send ${isRunning || !chatInput.trim() ? 'kyra-ai-chat-inputrow__send--disabled' : 'kyra-ai-chat-inputrow__send--active'}`}
             >
               <Icon name={sendSVG} size="20px" className="kyra-ai-send-icon" />
             </button>
           </div>
 
           {chatResult && (
-            <div
-              className="kyra-ai-chat-actions"
-              style={{
-                display: 'flex',
-                gap: 8,
-                marginTop: 12,
-                justifyContent: 'flex-start',
-              }}
-            >
+            <div className="kyra-ai-chat-actions">
               <button
                 type="button"
                 onClick={handleInsertFromPreview}
-                style={{
-                  padding: '7px 16px',
-                  borderRadius: 999,
-                  border: '1px solid #1f7ae0',
-                  background: '#0094d4',
-                  color: '#fff',
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="kyra-ai-chat-actions__insert"
               >
                 {t('Insert', 'Einf\u00fcgen')}
               </button>
               <button
                 type="button"
                 onClick={handleSubmitCustomPrompt}
-                style={{
-                  padding: '7px 16px',
-                  borderRadius: 999,
-                  border: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                }}
+                className="kyra-ai-chat-actions__retry"
               >
                 {t('Try again', 'Nochmals versuchen')}
               </button>
               <button
                 type="button"
                 onClick={handleCloseChat}
-                style={{
-                  padding: '7px 16px',
-                  borderRadius: 999,
-                  border: '1px solid transparent',
-                  background: 'transparent',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  color: '#64748b',
-                }}
+                className="kyra-ai-chat-actions__close"
               >
                 {t('Close', 'Schlie\u00dfen')}
               </button>
@@ -552,7 +361,6 @@ const AIAssistantSlateButton = () => {
     <div
       ref={wrapperRef}
       className={`ai-slate-wrapper${isRunning ? ' ai-slate-wrapper--running' : ''}`}
-      style={{ position: 'relative', display: 'inline-block' }}
     >
       <ToolbarButton
         title={
@@ -582,20 +390,7 @@ const AIAssistantSlateButton = () => {
       />
 
       {isPromptDropdownOpen && !isRunning && (
-        <div
-          className="ai-slate-dropdown"
-          style={{
-            position: 'absolute',
-            top: '32px',
-            right: 0,
-            background: 'white',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            padding: '4px',
-            zIndex: 9999,
-            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
-          }}
-        >
+        <div className="ai-slate-dropdown">
           <AIAssistantButton onSelectPrompt={handleSelectPrompt} />
         </div>
       )}

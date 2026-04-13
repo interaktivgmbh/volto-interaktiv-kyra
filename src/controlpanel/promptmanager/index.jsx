@@ -192,7 +192,6 @@ const PromptManager = () => {
     fetchPrompts();
   }, [fetchPrompts]);
 
-  // --- Upload progress helpers ---
   const startUploadProgress = useCallback(() => {
     dispatch({ type: 'UPLOAD_START' });
     const interval = setInterval(() => {
@@ -207,7 +206,6 @@ const PromptManager = () => {
     setTimeout(() => dispatch({ type: 'UPLOAD_RESET' }), 500);
   }, []);
 
-  // --- File item helpers ---
   const resetCreateForm = useCallback(() => {
     clearFileItems(uploadedFiles);
     dispatch({ type: 'RESET_CREATE_FORM' });
@@ -218,7 +216,6 @@ const PromptManager = () => {
     dispatch({ type: 'SET_EDIT_NEW_FILES', files: [] });
   }, [editNewFiles]);
 
-  // --- Modal handlers ---
   const handleCloseCreateModal = useCallback(() => {
     resetCreateForm();
     dispatch({ type: 'SET_FORM_ERRORS', scope: 'create', errors: {} });
@@ -240,7 +237,6 @@ const PromptManager = () => {
     dispatch({ type: 'SET_EDIT_FIELD', field, value });
   }, []);
 
-  // --- File selection handlers ---
   const handleAddCreateFiles = useCallback((files) => {
     const items = makeFileItems(files);
     if (items.length) {
@@ -255,7 +251,6 @@ const PromptManager = () => {
     }
   }, []);
 
-  // --- Load prompt files (for edit modal) ---
   const loadPromptFiles = useCallback(async (promptId) => {
     try {
       const result = await getPromptFiles(promptId, token);
@@ -306,7 +301,6 @@ const PromptManager = () => {
     }
   }, [token]);
 
-  // --- Load single file for preview ---
   const loadPreviewFile = useCallback(async (promptId, fileId) => {
     try {
       const file = await getPromptFile(promptId, fileId, token);
@@ -316,7 +310,6 @@ const PromptManager = () => {
     }
   }, [token]);
 
-  // --- Download file ---
   const handleDownload = useCallback(async (promptId, fileId, fallbackFilename) => {
     try {
       const file = await getPromptFile(promptId, fileId, token);
@@ -345,7 +338,6 @@ const PromptManager = () => {
     }
   }, [token]);
 
-  // --- Validation ---
   const validateForm = useCallback(
     (form) => {
       const errors = {};
@@ -360,7 +352,6 @@ const PromptManager = () => {
     [isDe], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // --- Submit prompt (create or update) with optional file upload ---
   const submitPrompt = useCallback(
     async ({ mode, form, files = [] }) => {
       const payload = {
@@ -404,7 +395,6 @@ const PromptManager = () => {
     [fetchPrompts, finishUploadProgress, startUploadProgress, token],
   );
 
-  // --- Create prompt ---
   const handleOpenCreateModal = useCallback(() => {
     dispatch({ type: 'CLEAR_STATUS' });
     dispatch({ type: 'SET_MODAL', modal: 'showCreateModal', value: true });
@@ -466,7 +456,6 @@ const PromptManager = () => {
     }
   }, [createForm, resetCreateForm, submitPrompt, uploadedFiles, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // --- Edit prompt ---
   const handleOpenEditModal = useCallback(
     (prompt) => {
       dispatch({
@@ -548,7 +537,6 @@ const PromptManager = () => {
     }
   }, [editForm, editNewFiles, resetEditFiles, submitPrompt, isDe, validateForm]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // --- Delete prompt ---
   const handleDeletePrompt = useCallback(
     async (id) => {
       try {
@@ -561,7 +549,6 @@ const PromptManager = () => {
     [fetchPrompts, token],
   );
 
-  // --- File actions for edit modal ---
   const handleDeleteAttachedFile = useCallback(
     async (fileId) => {
       dispatch({
