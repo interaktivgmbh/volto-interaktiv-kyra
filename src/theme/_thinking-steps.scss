@@ -38,7 +38,7 @@
 
 .kyra-thinking__step {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
   padding: 3px 0;
   font-size: 12px;
@@ -60,7 +60,13 @@
 }
 
 .kyra-thinking__step--active .kyra-thinking__step-icon {
-  animation: kyra-thinking-spin 1s linear infinite;
+  font-size: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ai-chat-accent, #3b97d4);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: kyra-thinking-spin 0.7s linear infinite;
 }
 
 @keyframes kyra-thinking-spin {

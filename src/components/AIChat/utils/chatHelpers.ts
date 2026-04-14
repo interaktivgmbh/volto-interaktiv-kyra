@@ -162,16 +162,16 @@ export const sanitizePartialState = (state: Record<string, any>, prevBlocks?: Re
 
     blocks[id] = sanitizeBlock(block);
 
-    // Some blocks (form, tabs) initialize internal React state from props
-    // only on mount and never sync afterwards. When the agent creates or
-    // modifies them, we force a remount by swapping the block UUID so React
-    // treats them as new components.
+
+    const bt = block['@type'];
+    const changed = prevBlocks?.[id] && JSON.stringify(block) !== JSON.stringify(prevBlocks[id]);
     const needsRemount =
-      (block['@type'] === 'form' && (!prevBlocks?.[id] || (
+      ((bt === 'title' || bt === 'heading') && changed) ||
+      (bt === 'form' && (!prevBlocks?.[id] || (
         Array.isArray(block.subblocks) && Array.isArray(prevBlocks[id]?.subblocks) &&
         block.subblocks.length !== prevBlocks[id].subblocks.length
       ))) ||
-      (block['@type'] === 'tabs_block' && (!prevBlocks?.[id] || (
+      (bt === 'tabs_block' && (!prevBlocks?.[id] || (
         JSON.stringify(block.data?.blocks_layout?.items) !==
         JSON.stringify(prevBlocks[id]?.data?.blocks_layout?.items)
       )));

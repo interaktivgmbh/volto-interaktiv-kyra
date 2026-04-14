@@ -35,6 +35,7 @@ import {
   generateId,
   buildTitle,
   darkenColor,
+  sanitizePartialState,
 } from './utils/chatHelpers';
 import { useConversation } from './hooks/useConversation';
 import { useEditMode } from './hooks/useEditMode';
@@ -854,13 +855,16 @@ const ChatWidgetProvider: React.FC = () => {
     const msg = conversation?.messages.find((m) => m.id === messageUid);
     if (!msg?.stateSnapshot) return;
     const s = msg.stateSnapshot;
-    const restored = { ...formData };
-    if (s.blocks) restored.blocks = s.blocks;
-    if (s.blocks_layout) restored.blocks_layout = s.blocks_layout;
-    if (s.title !== undefined) restored.title = s.title;
-    if (s.description !== undefined) restored.description = s.description;
-    if (s.preview_image !== undefined) restored.preview_image = s.preview_image;
-    if (s.subjects !== undefined) restored.subjects = s.subjects;
+    const sanitized = sanitizePartialState(s, formData.blocks);
+    const restored = {
+      ...JSON.parse(JSON.stringify(formData)),
+      ...(sanitized.blocks ? { blocks: sanitized.blocks } : {}),
+      ...(sanitized.blocks_layout ? { blocks_layout: sanitized.blocks_layout } : {}),
+      ...(s.title !== undefined ? { title: s.title } : {}),
+      ...(s.description !== undefined ? { description: s.description } : {}),
+      ...(s.preview_image !== undefined ? { preview_image: s.preview_image } : {}),
+      ...(s.subjects !== undefined ? { subjects: s.subjects } : {}),
+    };
     dispatch(setFormData(restored));
   };
 
