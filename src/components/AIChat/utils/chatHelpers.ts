@@ -3,12 +3,6 @@ import type { Citation } from '../types';
 export const generateId = () =>
   `chat_${Math.random().toString(36).slice(2, 10)}`;
 
-export const AVAILABLE_SKILLS = [
-  { name: 'design-landing-page', description: 'Landing Page aufbauen' },
-  { name: 'extract-from-document', description: 'Inhalte aus Dokument extrahieren' },
-  { name: 'improve-text-flow', description: 'Textfluss verbessern' },
-];
-
 export const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   de: 'Deutsch',

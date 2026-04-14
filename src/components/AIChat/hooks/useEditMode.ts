@@ -10,8 +10,9 @@ import {
   sendChatMessage,
   pollChatJob,
   cancelChatJob,
+  getEditMessages,
+  getChatMessages,
 } from '../api';
-import type { LayoutJobStatus } from '../api';
 import type { ChatConversation, ChatMessage } from '../types';
 import { setFormData } from '@plone/volto/actions/form/form';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
@@ -49,6 +50,7 @@ interface UseEditModeDeps {
       conversationId?: string;
       actions?: ChatMessage['actions'];
       wizardMeta?: ChatMessage['wizardMeta'];
+      toolCalls?: ChatMessage['toolCalls'];
     },
     previousId?: string,
   ) => void;
@@ -292,42 +294,95 @@ export function useEditMode(deps: UseEditModeDeps) {
         }
       }
 
-      const pollUntilDone = async (): Promise<LayoutJobStatus> => {
+      const pollUntilDone = async (): Promise<{ status: string; message?: string; state?: Record<string, any>; error?: string; toolCalls?: Array<{ name: string; description: string }> }> => {
+        const getMessages = isEditMode ? getEditMessages : getChatMessages;
+        const convId = activeConvRef.current;
+
+        let userMessageUid = '';
+        if (convId) {
+          try {
+            const currentMessages = await getMessages(convId, undefined, token);
+            const lastUser = [...currentMessages].reverse().find(m => m.role === 'user');
+            if (lastUser) userMessageUid = lastUser.uid;
+          } catch (_err) {}
+        }
+
+        let lastPolledUid = userMessageUid;
+        let toolCalls: Array<{ name: string; description: string }> = [];
+        let latestState: Record<string, any> | undefined;
+
         while (!aborted.current) {
           await new Promise<void>((resolve) => setTimeout(resolve, 1500));
           if (aborted.current) break;
-          const status = isEditMode
+
+          const jobStatus = isEditMode
             ? await pollLayoutJob(editBackendUrl, jobId, token)
             : await pollChatJob(jobId, token);
-          if (status.status === 'running') {
-            if (status.progress) {
-              applyAssistantUpdate(editAssistantId, (m) => ({
-                ...m,
-                content: status.progress!,
-              }));
-            }
-            if (status.state && isVoltoEditMode && formData) {
-              try {
-                const partial = status.state;
-                const sanitized = sanitizePartialState(partial, formData?.blocks);
-                const liveFormData = { ...formData };
-                if (sanitized.blocks && Object.keys(sanitized.blocks).length > 0) {
-                  liveFormData.blocks = sanitized.blocks;
-                  if (sanitized.blocks_layout) liveFormData.blocks_layout = sanitized.blocks_layout;
+
+          try {
+            if (convId) {
+              const newMessages = await getMessages(convId, lastPolledUid || undefined, token);
+              for (const msg of newMessages) {
+                lastPolledUid = msg.uid;
+                if (msg.state) latestState = msg.state;
+
+                if (msg.role === 'assistant' && msg.tool_calls?.length) {
+                  toolCalls = msg.tool_calls;
+                  const lastTool = msg.tool_calls[msg.tool_calls.length - 1];
+                  applyAssistantUpdate(editAssistantId, (m) => ({
+                    ...m,
+                    content: lastTool.description || lastTool.name,
+                    toolCalls: toolCalls,
+                  }));
                 }
-                if (sanitized.title !== undefined) liveFormData.title = sanitized.title;
-                if (sanitized.description !== undefined) liveFormData.description = sanitized.description;
-                if (sanitized.preview_image !== undefined) liveFormData.preview_image = sanitized.preview_image;
-                if (sanitized.subjects !== undefined) liveFormData.subjects = sanitized.subjects;
-                dispatch(setFormData(liveFormData));
-              } catch (_err) {
-                // Skip this partial update if sanitization fails
+
+                if (msg.state && isVoltoEditMode && formData) {
+                  try {
+                    const sanitized = sanitizePartialState(msg.state, formData?.blocks);
+                    const liveFormData = { ...formData };
+                    if (sanitized.blocks && Object.keys(sanitized.blocks).length > 0) {
+                      liveFormData.blocks = sanitized.blocks;
+                      if (sanitized.blocks_layout) liveFormData.blocks_layout = sanitized.blocks_layout;
+                    }
+                    if (sanitized.title !== undefined) liveFormData.title = sanitized.title;
+                    if (sanitized.description !== undefined) liveFormData.description = sanitized.description;
+                    if (sanitized.preview_image !== undefined) liveFormData.preview_image = sanitized.preview_image;
+                    if (sanitized.subjects !== undefined) liveFormData.subjects = sanitized.subjects;
+                    dispatch(setFormData(liveFormData));
+                  } catch (_err) {}
+                }
               }
             }
-            continue;
+          } catch (_err) {}
+
+          if (jobStatus.status !== 'running') {
+            let finalMessage = '';
+            let finalState = latestState;
+            let finalToolCalls = toolCalls;
+            try {
+              if (convId) {
+                const afterMessages = await getMessages(convId, userMessageUid || undefined, token);
+                const lastAssistant = [...afterMessages].reverse().find(m => m.role === 'assistant' && m.content);
+                if (lastAssistant) {
+                  finalMessage = lastAssistant.content || '';
+                  if (lastAssistant.state) finalState = lastAssistant.state;
+                  if (finalToolCalls.length === 0 && lastAssistant.tool_calls?.length) {
+                    finalToolCalls = lastAssistant.tool_calls;
+                  }
+                }
+              }
+            } catch (_err) {}
+
+            return {
+              status: jobStatus.status,
+              message: finalMessage,
+              state: finalState,
+              error: jobStatus.status === 'failed' ? (jobStatus as any).error : undefined,
+              toolCalls: finalToolCalls,
+            };
           }
-          return status;
         }
+
         await (isEditMode
           ? cancelLayoutJob(editBackendUrl, jobId, token)
           : cancelChatJob(jobId, token)
@@ -413,7 +468,7 @@ export function useEditMode(deps: UseEditModeDeps) {
         referencePagesRef.current,
         attachments.filter((a) => a.file_id).map((a) => a.name),
       );
-      finalizeAssistant(editAssistantId, { content: successMsg, citations, status: 'done' });
+      finalizeAssistant(editAssistantId, { content: successMsg, citations, status: 'done', toolCalls: result.toolCalls, stateSnapshot: result.state });
     } catch (err: any) {
       finalizeAssistant(editAssistantId, {
         content: isDe

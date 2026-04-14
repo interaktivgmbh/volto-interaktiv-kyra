@@ -24,6 +24,8 @@ export type ChatMessage = {
   feedback?: 'up' | 'down' | null;
   actions?: ChatMessageAction[];
   wizardMeta?: Record<string, any>;
+  toolCalls?: Array<{ name: string; description: string }>;
+  stateSnapshot?: Record<string, any>;
 };
 
 export type ChatConversation = {

@@ -1,10 +1,24 @@
 import { buildApiUrl, buildHeaders } from './core';
 
 export type LayoutJobStatus =
-  | { status: 'running'; progress?: string; state?: Record<string, any> }
-  | { status: 'completed'; message?: string; state?: Record<string, any> }
+  | { status: 'running' }
+  | { status: 'completed' }
   | { status: 'failed'; error?: string }
   | { status: 'cancelled' };
+
+export type AgentMessage = {
+  uid: string;
+  role: 'user' | 'assistant';
+  content: string;
+  tool_calls?: Array<{ name: string; description: string }>;
+  state?: Record<string, any>;
+};
+
+export type SkillInfo = {
+  name: string;
+  description: string;
+  invocation: string;
+};
 
 export type ReferencePage = {
   link: string;
@@ -409,4 +423,47 @@ export const cancelChatJob = async (
   }
 
   return response.json();
+};
+
+export const getEditMessages = async (
+  conversationId: string,
+  after?: string,
+  token?: string,
+): Promise<AgentMessage[]> => {
+  let url = `/@ai-edit-messages?conversation_id=${encodeURIComponent(conversationId)}`;
+  if (after) url += `&after=${encodeURIComponent(after)}`;
+  const response = await fetch(buildApiUrl(url), {
+    method: 'GET',
+    headers: { ...buildHeaders(token), Accept: 'application/json' },
+    credentials: 'same-origin',
+  });
+  if (!response.ok) throw new Error(await response.text() || 'Failed to get messages');
+  return response.json();
+};
+
+export const getChatMessages = async (
+  conversationId: string,
+  after?: string,
+  token?: string,
+): Promise<AgentMessage[]> => {
+  let url = `/@ai-chat-messages?conversation_id=${encodeURIComponent(conversationId)}`;
+  if (after) url += `&after=${encodeURIComponent(after)}`;
+  const response = await fetch(buildApiUrl(url), {
+    method: 'GET',
+    headers: { ...buildHeaders(token), Accept: 'application/json' },
+    credentials: 'same-origin',
+  });
+  if (!response.ok) throw new Error(await response.text() || 'Failed to get messages');
+  return response.json();
+};
+
+export const getEditSkills = async (token?: string): Promise<SkillInfo[]> => {
+  const response = await fetch(buildApiUrl('/@ai-edit-skills'), {
+    method: 'GET',
+    headers: { ...buildHeaders(token), Accept: 'application/json' },
+    credentials: 'same-origin',
+  });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.skills || [];
 };

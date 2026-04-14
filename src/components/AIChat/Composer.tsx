@@ -95,6 +95,8 @@ const Composer: React.FC<Props> = ({
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showSkillsPanel, setShowSkillsPanel] = useState(false);
   const [text, setText] = useState('');
+  const [slashFilter, setSlashFilter] = useState<string | null>(null);
+  const [slashIndex, setSlashIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const plusMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -104,6 +106,12 @@ const Composer: React.FC<Props> = ({
   const t = getComposerLabels(uiLanguage);
 
   const speechAvailable = !!getSpeechRecognition();
+
+  const filteredSkills = slashFilter !== null && skills.length > 0
+    ? skills.filter((s) =>
+        `/${s.name}`.toLowerCase().startsWith(`/${slashFilter.toLowerCase()}`)
+      )
+    : [];
 
   const handleSubmit = () => {
     const trimmed = text.trim();
@@ -491,13 +499,43 @@ const Composer: React.FC<Props> = ({
             }}
           />
         </div>
+        {slashFilter !== null && filteredSkills.length > 0 && (
+          <div className="kyra-slash-menu">
+            {filteredSkills.map((skill, i) => (
+              <button
+                key={skill.name}
+                type="button"
+                className={`kyra-slash-menu__item ${i === slashIndex ? 'kyra-slash-menu__item--active' : ''}`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setText(`/${skill.name} `);
+                  setSlashFilter(null);
+                  inputRef.current?.focus();
+                }}
+                onMouseEnter={() => setSlashIndex(i)}
+              >
+                <span className="kyra-slash-menu__name">/{skill.name}</span>
+                <span className="kyra-slash-menu__desc">{skill.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           ref={inputRef}
           className="kyra-ai-chat__composer-input"
           value={text}
           onChange={(e) => {
-            setText(e.target.value);
-            // Auto-grow textarea
+            const val = e.target.value;
+            setText(val);
+
+            const slashMatch = val.match(/^\/([^\s]*)$/);
+            if (slashMatch !== null && skills.length > 0) {
+              setSlashFilter(slashMatch[1]);
+              setSlashIndex(0);
+            } else {
+              setSlashFilter(null);
+            }
+
             const el = e.target;
             el.style.height = 'auto';
             const maxH = 150;
@@ -506,6 +544,31 @@ const Composer: React.FC<Props> = ({
             el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
           }}
           onKeyDown={(e) => {
+            if (slashFilter !== null && filteredSkills.length > 0) {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSlashIndex((i) => Math.min(i + 1, filteredSkills.length - 1));
+                return;
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSlashIndex((i) => Math.max(i - 1, 0));
+                return;
+              }
+              if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                const selected = filteredSkills[slashIndex];
+                if (selected) {
+                  setText(`/${selected.name} `);
+                  setSlashFilter(null);
+                }
+                return;
+              }
+              if (e.key === 'Escape') {
+                setSlashFilter(null);
+                return;
+              }
+            }
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSubmit();

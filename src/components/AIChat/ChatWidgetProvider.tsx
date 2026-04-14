@@ -13,6 +13,7 @@ import {
   putAiChatHistory,
   patchAiChatHistory,
   postAiChatUpload,
+  getEditSkills,
 } from './api';
 import type { ChatCapabilities, ChatConversation, ChatMessage, ChatMessageAction, ChatRequestPayload, ChatContextPayload, ChatResponsePayload, AiChatUploadResponse, TranslationStatus } from './types';
 import { extractPageContent } from './extractPageContent';
@@ -33,12 +34,12 @@ import {
 import {
   generateId,
   buildTitle,
-  AVAILABLE_SKILLS,
   darkenColor,
 } from './utils/chatHelpers';
 import { useConversation } from './hooks/useConversation';
 import { useEditMode } from './hooks/useEditMode';
 import { useWizard } from './hooks/useWizard';
+import { setFormData } from '@plone/volto/actions/form/form';
 
 const DEFAULT_CAPABILITIES: ChatCapabilities = {
   is_anonymous: true,
@@ -94,6 +95,7 @@ const ChatWidgetProvider: React.FC = () => {
   const [selectionText, setSelectionText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<{ name: string; id: string; file_id: string; text?: string }[]>([]);
+  const [skills, setSkills] = useState<Array<{name: string; description: string}>>([]);
   const [editModeActive, setEditModeActive] = useState(false);
   const editModeActiveRef = useRef(false);
   const [editBackendUrl, setEditBackendUrl] = useState('');
@@ -316,6 +318,12 @@ const ChatWidgetProvider: React.FC = () => {
           }));
           if (response.edit_backend_url) {
             setEditBackendUrl(response.edit_backend_url);
+            try {
+              const skillsList = await getEditSkills(token);
+              if (isMounted) {
+                setSkills(skillsList.map(s => ({ name: s.name, description: s.description })));
+              }
+            } catch (_err) {}
           }
         }
       } catch (_error) {
@@ -841,6 +849,21 @@ const ChatWidgetProvider: React.FC = () => {
     }
   };
 
+  const handleRestoreState = (messageUid: string) => {
+    if (!formData) return;
+    const msg = conversation?.messages.find((m) => m.id === messageUid);
+    if (!msg?.stateSnapshot) return;
+    const s = msg.stateSnapshot;
+    const restored = { ...formData };
+    if (s.blocks) restored.blocks = s.blocks;
+    if (s.blocks_layout) restored.blocks_layout = s.blocks_layout;
+    if (s.title !== undefined) restored.title = s.title;
+    if (s.description !== undefined) restored.description = s.description;
+    if (s.preview_image !== undefined) restored.preview_image = s.preview_image;
+    if (s.subjects !== undefined) restored.subjects = s.subjects;
+    dispatch(setFormData(restored));
+  };
+
   const accentStyles = accentColor
     ? {
         '--ai-chat-accent': accentColor,
@@ -891,7 +914,8 @@ const ChatWidgetProvider: React.FC = () => {
         editingMessageId={editingMessageId}
         onEditAndResend={handleEditAndResend}
         onCancelEdit={handleCancelEdit}
-        skills={editModeActive ? AVAILABLE_SKILLS : []}
+        skills={editModeActive ? skills : []}
+        onRestoreState={editBackendUrl ? handleRestoreState : undefined}
         editModeActive={editModeActive}
         editBackendUrl={editBackendUrl}
         onEditModeToggle={() => {

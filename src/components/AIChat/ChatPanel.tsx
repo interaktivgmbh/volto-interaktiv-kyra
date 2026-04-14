@@ -97,6 +97,7 @@ type Props = {
   attachments?: { name: string; id: string }[];
   onRemoveAttachment?: (id: string) => void;
   skills?: { name: string; description: string }[];
+  onRestoreState?: (messageUid: string) => void;
 };
 
 const ChatPanel: React.FC<Props> = ({
@@ -145,6 +146,7 @@ const ChatPanel: React.FC<Props> = ({
   attachments,
   onRemoveAttachment,
   skills = [],
+  onRestoreState,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagMappings, setShowTagMappings] = useState(false);
@@ -327,6 +329,7 @@ const ChatPanel: React.FC<Props> = ({
             editingMessageId={editingMessageId}
             onEditAndResend={onEditAndResend}
             onCancelEdit={onCancelEdit}
+            onRestoreState={onRestoreState}
           />
         )}
       </div>

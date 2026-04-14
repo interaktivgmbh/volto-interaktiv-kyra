@@ -219,6 +219,8 @@ export function useConversation({
       conversationId?: string;
       actions?: ChatMessage['actions'];
       wizardMeta?: ChatMessage['wizardMeta'];
+      toolCalls?: ChatMessage['toolCalls'];
+      stateSnapshot?: ChatMessage['stateSnapshot'];
     },
     previousId?: string,
   ) => {
@@ -233,6 +235,8 @@ export function useConversation({
         status: data.status ?? 'done',
         ...(data.actions ? { actions: data.actions } : {}),
         ...(data.wizardMeta ? { wizardMeta: data.wizardMeta } : {}),
+        ...(data.toolCalls ? { toolCalls: data.toolCalls } : {}),
+        ...(data.stateSnapshot ? { stateSnapshot: data.stateSnapshot } : {}),
       };
     });
     const nextConversation = {

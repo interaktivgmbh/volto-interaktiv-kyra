@@ -3156,3 +3156,55 @@ body.has-ai-panel-docked {
 .kyra-ai-chat__permission-matrix-status--error {
   color: #ef4444;
 }
+
+.kyra-slash-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+  margin-bottom: 4px;
+  z-index: 50;
+  padding: 4px;
+}
+
+.kyra-slash-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.1s ease;
+
+  &:hover,
+  &--active {
+    background: color-mix(in srgb, var(--ai-chat-accent, #3b97d4) 10%, #fff);
+  }
+}
+
+.kyra-slash-menu__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ai-chat-accent, #3b97d4);
+  white-space: nowrap;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.kyra-slash-menu__desc {
+  font-size: 12px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

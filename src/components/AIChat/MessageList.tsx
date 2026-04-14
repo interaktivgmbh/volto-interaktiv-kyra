@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ChatMessage } from './types';
+import ThinkingSteps from './ThinkingSteps';
 
 type Props = {
   messages: ChatMessage[];
@@ -9,6 +10,7 @@ type Props = {
   editingMessageId?: string | null;
   onEditAndResend?: (messageId: string, newText: string) => void;
   onCancelEdit?: () => void;
+  onRestoreState?: (messageUid: string) => void;
 };
 
 const getMessageLabels = (lang?: string) => {
@@ -142,6 +144,7 @@ const MessageList: React.FC<Props> = ({
   editingMessageId,
   onEditAndResend,
   onCancelEdit,
+  onRestoreState,
 }) => {
   const rendered = useMemo(() => messages, [messages]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -291,6 +294,14 @@ const MessageList: React.FC<Props> = ({
                   </div>
                 )}
               </>
+            )}
+            {isAssistant && message.toolCalls && message.toolCalls.length > 0 && (
+              <ThinkingSteps
+                steps={message.toolCalls}
+                isRunning={message.status === 'streaming'}
+                messageUid={message.id}
+                onRestoreState={onRestoreState}
+              />
             )}
             {/* Wizard action buttons */}
             {isAssistant && message.actions && message.actions.length > 0 && (
