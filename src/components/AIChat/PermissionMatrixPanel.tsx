@@ -48,6 +48,8 @@ type Props = {
   uiLanguage?: string;
 };
 
+const getAuthToken = () => document.cookie.match(/auth_token=([^;]+)/)?.[1] || '';
+
 const PermissionMatrixPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) => {
   const [data, setData] = useState<MatrixData | null>(null);
   const [matrix, setMatrix] = useState<Record<string, string[]>>({});
@@ -61,11 +63,11 @@ const PermissionMatrixPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) =
     if (!open) return;
     setLoading(true);
     setStatus('idle');
-    fetch('/++api++/@ai-permission-matrix', {
-      headers: { Accept: 'application/json' },
-      credentials: 'include',
-    })
-      .then((r) => r.json())
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const t = getAuthToken();
+    if (t) headers['Authorization'] = `Bearer ${t}`;
+    fetch('/++api++/@ai-permission-matrix', { headers, credentials: 'same-origin' })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then((d: MatrixData) => {
         setData(d);
         setMatrix(JSON.parse(JSON.stringify(d.matrix)));
@@ -92,13 +94,13 @@ const PermissionMatrixPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) =
     setSaving(true);
     setStatus('idle');
     try {
+      const saveHeaders: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      const st = getAuthToken();
+      if (st) saveHeaders['Authorization'] = `Bearer ${st}`;
       const resp = await fetch('/++api++/@ai-permission-matrix', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        credentials: 'include',
+        headers: saveHeaders,
+        credentials: 'same-origin',
         body: JSON.stringify({ matrix }),
       });
       if (resp.ok) {
@@ -145,7 +147,7 @@ const PermissionMatrixPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) =
         <div className="kyra-ai-chat__permission-matrix-body">
           {loading ? (
             <div className="kyra-ai-chat__permission-matrix-loading">{t.loading}</div>
-          ) : data ? (
+          ) : data?.groups && data?.features ? (
             <div className="kyra-ai-chat__permission-matrix-table-wrap">
               <table className="kyra-ai-chat__permission-matrix-table">
                 <thead>
@@ -183,7 +185,11 @@ const PermissionMatrixPanel: React.FC<Props> = ({ open, onClose, uiLanguage }) =
                 </tbody>
               </table>
             </div>
-          ) : null}
+          ) : (
+            <div className="kyra-ai-chat__permission-matrix-loading">
+              {t.error || 'Berechtigungen konnten nicht geladen werden.'}
+            </div>
+          )}
         </div>
         <div className="kyra-ai-chat__permission-matrix-footer">
           {status === 'saved' && (

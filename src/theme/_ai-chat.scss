@@ -8,14 +8,10 @@
   --ai-chat-border: rgba(148, 163, 184, 0.3);
   --ai-chat-shadow: 0 14px 38px rgba(15, 23, 42, 0.16);
   --ai-chat-radius: 18px;
-  font-family: Helvetica, sans-serif;
-  font-size: 14px;
-  font-weight: normal;
-  font-stretch: normal;
-  font-style: normal;
-  line-height: 1.57;
+
+  font: normal 14px/1.57 Helvetica, sans-serif;
   letter-spacing: normal;
-  color: #000;
+  color: var(--ai-chat-text);
 }
 
 .kyra-ai-chat__launcher {
@@ -25,21 +21,21 @@
   z-index: 1400;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
   padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
   border: 1px solid var(--ai-chat-border);
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--ai-chat-accent) 0%, var(--ai-chat-accent-strong) 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.2px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
 
   svg {
     width: 38px !important;
