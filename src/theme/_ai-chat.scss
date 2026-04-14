@@ -34,8 +34,8 @@
   font-weight: 700;
   letter-spacing: 0.2px;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,27 +66,33 @@
   mask-position: center;
 }
 
-@property --outline-progress {
-  syntax: '<percentage>';
-  initial-value: 0%;
-  inherits: false;
-}
-
 .kyra-ai-chat__launcher::after {
   content: '';
   position: absolute;
-  inset: -2px;
+  inset: 0;
   border-radius: 50%;
-  background: conic-gradient(from -90deg, #FFFFFF var(--outline-progress), transparent 0);
-  -webkit-mask: radial-gradient(circle farthest-side, transparent calc(100% - 5.5px), #000 calc(100% - 4.5px));
-  mask: radial-gradient(circle farthest-side, transparent calc(100% - 5.5px), #000 calc(100% - 4.5px));
-  --outline-progress: 0%;
-  transition: --outline-progress 0.5s ease-out;
+  background: inherit;
+  z-index: -1;
+  opacity: 0;
+  transform: scale(1);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out, filter 0.2s ease-out;
   pointer-events: none;
 }
 
+.kyra-ai-chat__launcher:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+}
+
 .kyra-ai-chat__launcher:hover::after {
-  --outline-progress: 100%;
+  opacity: 0.2;
+  transform: scale(1.45);
+  filter: blur(4px);
+}
+
+.kyra-ai-chat__launcher:active {
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .kyra-ai-chat__launcher--open {
