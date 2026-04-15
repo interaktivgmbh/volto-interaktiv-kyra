@@ -25,15 +25,14 @@ const ThinkingSteps = ({ steps, isRunning, onRestoreState, messageUid }: Thinkin
     }
   }, [isRunning]);
 
-  if (!steps || steps.length === 0) return null;
+  const toolCount = steps.filter(s => s.type !== 'message').length;
+  if (!steps || steps.length === 0 || (!isRunning && toolCount === 0)) return null;
 
   const handleRestore = () => {
     if (!onRestoreState || !messageUid) return;
     onRestoreState(messageUid);
     setShowConfirm(false);
   };
-
-  const toolCount = steps.filter(s => s.type !== 'message').length;
 
   return (
     <div className={`kyra-thinking ${isRunning ? 'kyra-thinking--running' : ''}`}>

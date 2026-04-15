@@ -398,10 +398,11 @@ export function useEditMode(deps: UseEditModeDeps) {
                 if (msg.state) latestState = msg.state;
 
                 if (msg.role === 'assistant') {
-                  if (msg.content && msg.content.trim()) {
+                  const hasTools = msg.tool_calls && msg.tool_calls.length > 0;
+                  if (msg.content && msg.content.trim() && hasTools) {
                     toolCalls = [...toolCalls, { name: '', description: msg.content.trim(), type: 'message' as const }];
                   }
-                  if (msg.tool_calls?.length) {
+                  if (hasTools) {
                     for (const tc of msg.tool_calls) {
                       toolCalls = [...toolCalls, { ...tc, type: 'tool' as const }];
                     }
