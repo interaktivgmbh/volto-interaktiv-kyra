@@ -52,6 +52,15 @@
   font-weight: 500;
 }
 
+.kyra-thinking__step--message {
+  padding: 4px 0 2px;
+}
+
+.kyra-thinking__step-text--message {
+  font-style: italic;
+  color: #888;
+}
+
 .kyra-thinking__step-icon {
   flex-shrink: 0;
   width: 16px;

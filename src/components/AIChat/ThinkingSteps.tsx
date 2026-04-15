@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 type ToolCallStep = {
   name: string;
   description: string;
+  type?: 'tool' | 'message';
 };
 
 type ThinkingStepsProps = {
@@ -32,14 +33,16 @@ const ThinkingSteps = ({ steps, isRunning, onRestoreState, messageUid }: Thinkin
     setShowConfirm(false);
   };
 
+  const toolCount = steps.filter(s => s.type !== 'message').length;
+
   return (
     <div className={`kyra-thinking ${isRunning ? 'kyra-thinking--running' : ''}`}>
       <button className="kyra-thinking__toggle" onClick={() => setExpanded(e => !e)} type="button">
         <span className="kyra-thinking__icon">{expanded ? '▼' : '▶'}</span>
         <span className="kyra-thinking__label">
           {isRunning
-            ? `${steps.length} Schritte\u2026`
-            : `${steps.length} Schritte${expanded ? '' : ' anzeigen'}`}
+            ? `${toolCount} Schritte\u2026`
+            : `${toolCount} Schritte${expanded ? '' : ' anzeigen'}`}
         </span>
       </button>
       {expanded && (
@@ -47,15 +50,18 @@ const ThinkingSteps = ({ steps, isRunning, onRestoreState, messageUid }: Thinkin
           {steps.map((step, i) => {
             const isLast = i === steps.length - 1;
             const showSpinner = isRunning && isLast;
+            const isMessage = step.type === 'message';
             return (
               <li
                 key={`${step.name}-${i}`}
-                className={`kyra-thinking__step ${showSpinner ? 'kyra-thinking__step--active' : ''}`}
+                className={`kyra-thinking__step ${showSpinner ? 'kyra-thinking__step--active' : ''} ${isMessage ? 'kyra-thinking__step--message' : ''}`}
               >
-                <span className="kyra-thinking__step-icon">
-                  {showSpinner ? '⟳' : '✓'}
-                </span>
-                <span className="kyra-thinking__step-text">
+                {!isMessage && (
+                  <span className="kyra-thinking__step-icon">
+                    {showSpinner ? '⟳' : '✓'}
+                  </span>
+                )}
+                <span className={`kyra-thinking__step-text ${isMessage ? 'kyra-thinking__step-text--message' : ''}`}>
                   {step.description || step.name}
                 </span>
               </li>

@@ -397,14 +397,23 @@ export function useEditMode(deps: UseEditModeDeps) {
                 lastPolledUid = msg.uid;
                 if (msg.state) latestState = msg.state;
 
-                if (msg.role === 'assistant' && msg.tool_calls?.length) {
-                  toolCalls = msg.tool_calls;
-                  const lastTool = msg.tool_calls[msg.tool_calls.length - 1];
-                  applyAssistantUpdate(editAssistantId, (m) => ({
-                    ...m,
-                    content: lastTool.description || lastTool.name,
-                    toolCalls: toolCalls,
-                  }));
+                if (msg.role === 'assistant') {
+                  if (msg.content && msg.content.trim()) {
+                    toolCalls = [...toolCalls, { name: '', description: msg.content.trim(), type: 'message' as const }];
+                  }
+                  if (msg.tool_calls?.length) {
+                    for (const tc of msg.tool_calls) {
+                      toolCalls = [...toolCalls, { ...tc, type: 'tool' as const }];
+                    }
+                  }
+                  const lastEntry = toolCalls[toolCalls.length - 1];
+                  if (lastEntry) {
+                    applyAssistantUpdate(editAssistantId, (m) => ({
+                      ...m,
+                      content: lastEntry.description || lastEntry.name,
+                      toolCalls: toolCalls,
+                    }));
+                  }
                 }
 
                 if (msg.state && isVoltoEditMode && formData) {
