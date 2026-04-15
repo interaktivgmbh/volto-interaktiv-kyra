@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSlate } from 'slate-react';
-import { Editor, Transforms } from 'slate';
+import { Editor, Transforms, Text, Range, Node } from 'slate';
 import { useSelector } from 'react-redux';
 import ToolbarButton from '@plone/volto-slate/editor/ui/ToolbarButton';
 import AIAssistantButton from './AIAssistantButton';
@@ -9,6 +9,42 @@ import { aichatSVG, aiSVG, sendSVG } from '../../helpers/icons';
 import { useIntl } from 'react-intl';
 
 const CUSTOM_PROMPT_UUID = '123e4567-e89b-12d3-a456-426614174000';
+
+const parseHighlightWords = (text) => {
+  if (!text) return [];
+  return text
+    .split(/[,\n;]+/)
+    .map((w) => w.replace(/^[-•*\d.)\s]+/, '').trim())
+    .filter((w) => w.length > 1 && w.length < 60);
+};
+
+const HIGHLIGHT_COLORS = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa'];
+
+let globalHighlightWords = [];
+let globalHighlightColor = '#fde68a';
+
+export const kyraHighlightDecorate = (editor, [node, path], acc = []) => {
+  if (!Text.isText(node) || globalHighlightWords.length === 0) return acc;
+  const { text } = node;
+  const lower = text.toLowerCase();
+  const ranges = [...acc];
+  for (const word of globalHighlightWords) {
+    const wLower = word.toLowerCase();
+    let idx = 0;
+    while (idx < lower.length) {
+      const found = lower.indexOf(wLower, idx);
+      if (found === -1) break;
+      ranges.push({
+        anchor: { path, offset: found },
+        focus: { path, offset: found + word.length },
+        kyraHighlight: true,
+        kyraHighlightColor: globalHighlightColor,
+      });
+      idx = found + word.length;
+    }
+  }
+  return ranges;
+};
 
 const AIAssistantSlateButton = () => {
   const intl = useIntl();
@@ -24,6 +60,8 @@ const AIAssistantSlateButton = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatResult, setChatResult] = useState(null);
+  const [highlightActive, setHighlightActive] = useState(false);
+  const [highlightCount, setHighlightCount] = useState(0);
 
   const editor = useSlate();
   const wrapperRef = useRef(null);
@@ -64,6 +102,21 @@ const AIAssistantSlateButton = () => {
     }
     return '';
   };
+
+  const applyHighlights = useCallback((words, color) => {
+    globalHighlightWords = words;
+    globalHighlightColor = color || '#fde68a';
+    setHighlightActive(true);
+    setHighlightCount(words.length);
+    editor.onChange();
+  }, [editor]);
+
+  const clearHighlights = useCallback(() => {
+    globalHighlightWords = [];
+    setHighlightActive(false);
+    setHighlightCount(0);
+    editor.onChange();
+  }, [editor]);
 
   const applyResultToEditor = (resultText = '', actionType = 'replace') => {
     if (!resultText) return;
@@ -159,7 +212,13 @@ const AIAssistantSlateButton = () => {
 
       const actionType = data.actionType || promptPayload.actionType || 'replace';
 
-      if (preview) {
+      if (actionType === 'highlight') {
+        const words = data.highlights || parseHighlightWords(resultText);
+        if (words.length > 0) {
+          const colorIndex = Math.floor(Math.random() * HIGHLIGHT_COLORS.length);
+          applyHighlights(words, data.highlightColor || HIGHLIGHT_COLORS[colorIndex]);
+        }
+      } else if (preview) {
         setChatResult({ text: resultText, actionType });
       } else {
         applyResultToEditor(resultText, actionType);
@@ -358,6 +417,13 @@ const AIAssistantSlateButton = () => {
   };
 
   return (
+    <>
+    {highlightActive && (
+      <div className="kyra-highlight-banner">
+        <span>{highlightCount} {isDe ? 'Markierungen' : 'highlights'}</span>
+        <button type="button" onClick={clearHighlights}>✕</button>
+      </div>
+    )}
     <div
       ref={wrapperRef}
       className={`ai-slate-wrapper${isRunning ? ' ai-slate-wrapper--running' : ''}`}
@@ -398,6 +464,7 @@ const AIAssistantSlateButton = () => {
       {renderStatusMessage()}
       {renderChatOverlay()}
     </div>
+    </>
   );
 };
 

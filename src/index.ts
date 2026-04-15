@@ -4,6 +4,7 @@ import { robotSVG, aichatSVG } from './helpers/icons';
 
 import ChatWidgetProvider from './components/AIChat/ChatWidgetProvider';
 import PromptManager from './controlpanel/promptmanager';
+import { kyraHighlightDecorate } from './components/AIAssistant/AIAssistantSlateButton';
 
 export default function applyConfig(config) {
   config.settings.appExtras = [
@@ -27,6 +28,21 @@ export default function applyConfig(config) {
       component: PromptManager,
     },
   ];
+
+  if (config.settings?.slate?.runtimeDecorators) {
+    config.settings.slate.runtimeDecorators.push(kyraHighlightDecorate);
+  }
+
+  const existingLeaf = config.settings?.slate?.leafs?.kyraHighlight;
+  config.settings.slate = config.settings.slate || {};
+  config.settings.slate.leafs = config.settings.slate.leafs || {};
+  config.settings.slate.leafs.kyraHighlight = ({ children, leaf }) => (
+    <span
+      style={{ backgroundColor: leaf.kyraHighlightColor || '#fde68a', borderRadius: '2px', padding: '1px 0' }}
+    >
+      {children}
+    </span>
+  );
 
   return config;
 }

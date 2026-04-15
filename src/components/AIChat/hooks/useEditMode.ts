@@ -21,6 +21,67 @@ import {
   buildCitations,
   sanitizePartialState,
 } from '../utils/chatHelpers';
+import { resolveImageScales } from '../utils/resolveImageScales';
+
+const IMAGE_FIELDS = ['preview_image', 'image', 'href', 'buttonLink'];
+
+const sameImageId = (a: string, b: string) => {
+  const normalize = (s: string) => s.replace(/^https?:\/\/[^/]+/, '').replace(/\/+$/, '');
+  return normalize(a) === normalize(b);
+};
+
+const patchImageField = (newVal: any, oldVal: any): any => {
+  if (
+    Array.isArray(newVal) && newVal.length > 0 && newVal[0]?.['@id'] && !newVal[0]?.image_scales &&
+    Array.isArray(oldVal) && oldVal.length > 0 && oldVal[0]?.image_scales &&
+    sameImageId(newVal[0]['@id'], oldVal[0]['@id'])
+  ) {
+    return oldVal;
+  }
+  return null;
+};
+
+const patchBlockImages = (block: any, oldBlock: any): any => {
+  if (!block || !oldBlock) return block;
+  let result = block;
+  for (const field of IMAGE_FIELDS) {
+    const patched = patchImageField(block[field], oldBlock[field]);
+    if (patched) result = { ...result, [field]: patched };
+  }
+  const arrayFields = ['slides', 'columns'];
+  for (const af of arrayFields) {
+    if (Array.isArray(block[af]) && Array.isArray(oldBlock[af])) {
+      const arr = block[af].map((item: any, i: number) => {
+        const oldItem = oldBlock[af][i];
+        if (!item || !oldItem) return item;
+        let patched = item;
+        for (const field of IMAGE_FIELDS) {
+          const p = patchImageField(item[field], oldItem[field]);
+          if (p) patched = { ...patched, [field]: p };
+        }
+        return patched;
+      });
+      result = { ...result, [af]: arr };
+    }
+  }
+  return result;
+};
+
+const preserveImageData = (
+  newState: Record<string, any>,
+  oldFormData: Record<string, any>,
+): Record<string, any> => {
+  if (!newState?.blocks || !oldFormData?.blocks) return newState;
+  const blocks = { ...newState.blocks };
+  for (const [id, block] of Object.entries(blocks)) {
+    if (typeof block !== 'object' || !block) continue;
+    const oldBlock = oldFormData.blocks[id];
+    if (oldBlock) {
+      blocks[id] = patchBlockImages(block, oldBlock);
+    }
+  }
+  return { ...newState, blocks };
+};
 import { saveEditConvId, loadEditConvId } from './useConversation';
 
 interface UseEditModeDeps {
@@ -338,7 +399,8 @@ export function useEditMode(deps: UseEditModeDeps) {
 
                 if (msg.state && isVoltoEditMode && formData) {
                   try {
-                    const sanitized = sanitizePartialState(msg.state, formData?.blocks);
+                    const merged = preserveImageData(msg.state, formData);
+                    const sanitized = sanitizePartialState(merged, formData?.blocks);
                     const liveFormData = { ...formData };
                     if (sanitized.blocks && Object.keys(sanitized.blocks).length > 0) {
                       liveFormData.blocks = sanitized.blocks;
@@ -409,6 +471,13 @@ export function useEditMode(deps: UseEditModeDeps) {
           status: 'error',
         });
         return true;
+      }
+
+      if (result.state && formData) {
+        result.state = preserveImageData(result.state, formData);
+        try {
+          result.state = await resolveImageScales(result.state, token);
+        } catch (_err) {}
       }
 
       const hasBlocks = result.state?.blocks && Object.keys(result.state.blocks).length > 0;
