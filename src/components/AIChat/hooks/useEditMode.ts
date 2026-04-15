@@ -44,6 +44,16 @@ const patchImageField = (newVal: any, oldVal: any): any => {
 const patchBlockImages = (block: any, oldBlock: any): any => {
   if (!block || !oldBlock) return block;
   let result = block;
+
+  if (typeof block.url === 'string' && typeof oldBlock.url === 'string') {
+    if (sameImageId(block.url, oldBlock.url) && !block.image_scales && oldBlock.image_scales) {
+      result = { ...result, image_scales: oldBlock.image_scales, image_field: oldBlock.image_field || 'image' };
+    } else if (!sameImageId(block.url, oldBlock.url) && block.image_scales) {
+      const { image_scales, image_field, ...rest } = result;
+      result = rest;
+    }
+  }
+
   for (const field of IMAGE_FIELDS) {
     const patched = patchImageField(block[field], oldBlock[field]);
     if (patched) result = { ...result, [field]: patched };
@@ -411,6 +421,12 @@ export function useEditMode(deps: UseEditModeDeps) {
                     if (sanitized.preview_image !== undefined) liveFormData.preview_image = sanitized.preview_image;
                     if (sanitized.subjects !== undefined) liveFormData.subjects = sanitized.subjects;
                     dispatch(setFormData(liveFormData));
+                    resolveImageScales(sanitized, token).then((resolved) => {
+                      if (resolved !== sanitized) {
+                        const patched = { ...liveFormData, blocks: resolved.blocks || liveFormData.blocks };
+                        dispatch(setFormData(patched));
+                      }
+                    }).catch(() => {});
                   } catch (_err) {}
                 }
               }
