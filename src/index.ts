@@ -33,13 +33,10 @@ export default function applyConfig(config) {
     config.settings.slate.runtimeDecorators.push(kyraHighlightDecorate);
   }
 
-  const existingLeaf = config.settings?.slate?.leafs?.kyraHighlight;
   config.settings.slate = config.settings.slate || {};
   config.settings.slate.leafs = config.settings.slate.leafs || {};
-  config.settings.slate.leafs.kyraHighlight = ({ children, leaf }) => (
-    <span
-      style={{ backgroundColor: leaf.kyraHighlightColor || '#fde68a', borderRadius: '2px', padding: '1px 0' }}
-    >
+  config.settings.slate.leafs.kyraHighlight = ({ children }: { children: any }) => (
+    <span className="kyra-slate-highlight">
       {children}
     </span>
   );

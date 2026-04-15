@@ -71,6 +71,7 @@ const PromptFields = ({
         options={[
           { key: 'replace', value: 'replace', text: t('Replace', 'Ersetzen') },
           { key: 'append', value: 'append', text: t('Append', 'Anhängen') },
+          { key: 'highlight', value: 'highlight', text: t('Highlight', 'Markieren') },
         ]}
         value={form.actionType}
         onChange={(_, { value }) => onChange('actionType', value)}

@@ -19,7 +19,9 @@ const PromptRow = ({ prompt, onEdit, onDelete, t }) => {
       </Table.Cell>
       <Table.Cell>
         {prompt.actionType === 'append'
-          ? t('Append', 'Anh\u00e4ngen')
+          ? t('Append', 'Anhängen')
+          : prompt.actionType === 'highlight'
+          ? t('Highlight', 'Markieren')
           : t('Replace', 'Ersetzen')}
       </Table.Cell>
       <Table.Cell textAlign="right">
