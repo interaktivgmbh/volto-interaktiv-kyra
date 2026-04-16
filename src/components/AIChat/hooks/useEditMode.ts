@@ -223,6 +223,8 @@ export function useEditMode(deps: UseEditModeDeps) {
       if (description) pageState.description = description;
       if (preview_image) pageState.preview_image = preview_image;
       if (subjects && subjects.length > 0) pageState.subjects = subjects;
+      const reviewState = content?.review_state;
+      if (reviewState) pageState.review_state = reviewState;
 
       const activeConvRef = editModeActiveRef.current ? layoutConversationIdRef : chatConversationIdRef;
       if (!activeConvRef.current) {
