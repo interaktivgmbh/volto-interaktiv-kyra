@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 
 import { postAiActionsApply, postAiActionsPlan } from './api';
 import type { ChatCapabilities, ChatContextPayload, TranslationOptions, TranslationStatus } from './types';
@@ -62,6 +63,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 const DEFAULT_CAPS: ChatCapabilities = { is_anonymous: true, can_edit: false, features: [] };
 
 const ActionsTab: React.FC<Props> = ({ canEdit, capabilities = DEFAULT_CAPS, pageContext, onApplied, uiLanguage, translationStatus, onRefetchTranslationStatus }) => {
+  const token = useSelector((state: any) => state.userSession?.token);
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -100,13 +102,13 @@ const ActionsTab: React.FC<Props> = ({ canEdit, capabilities = DEFAULT_CAPS, pag
         page: pagePayload,
         constraints: { allowlist: ['translate_content'] },
         translation,
-      });
+      }, token);
       const result = await postAiActionsApply({
         plan_id: planResponse.plan_id,
         actions: planResponse.actions,
         page: pagePayload,
         translation,
-      });
+      }, token);
       setSuccess(
         uiLanguage?.startsWith('de')
           ? `Übersetzung nach ${LANGUAGE_NAMES[targetLanguage] || targetLanguage} erfolgreich.`
@@ -142,13 +144,13 @@ const ActionsTab: React.FC<Props> = ({ canEdit, capabilities = DEFAULT_CAPS, pag
         page: pagePayload,
         constraints: { allowlist: ['translate_content'] },
         translation,
-      });
+      }, token);
       await postAiActionsApply({
         plan_id: planResponse.plan_id,
         actions: planResponse.actions,
         page: pagePayload,
         translation,
-      });
+      }, token);
       setSuccess(
         uiLanguage?.startsWith('de')
           ? `Übersetzung nach ${LANGUAGE_NAMES[lang] || lang} synchronisiert.`
