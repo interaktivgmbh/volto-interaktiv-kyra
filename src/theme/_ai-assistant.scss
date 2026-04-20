@@ -362,3 +362,16 @@ body.kyra-ai-running .block .block.slate.selected::after {
   border-radius: 2px;
   padding: 1px 0;
 }
+
+// CSS Custom Highlight API (for DOM-based highlights in edit mode)
+::highlight(kyra-highlight) {
+  background-color: #fde68a;
+  color: inherit;
+}
+
+mark.kyra-dom-highlight {
+  background-color: #fde68a;
+  border-radius: 2px;
+  padding: 0 1px;
+  color: inherit;
+}

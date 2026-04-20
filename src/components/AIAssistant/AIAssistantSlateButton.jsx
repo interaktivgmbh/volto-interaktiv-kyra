@@ -7,62 +7,17 @@ import AIAssistantButton from './AIAssistantButton';
 import { Icon } from '@plone/volto/components';
 import { aichatSVG, aiSVG, sendSVG } from '../../helpers/icons';
 import { useIntl } from 'react-intl';
+import {
+  parseHighlightWords,
+  HIGHLIGHT_COLORS,
+  applyHighlightsGlobal,
+  clearHighlightsGlobal,
+  kyraHighlightDecorate,
+} from '../AIChat/utils/highlights';
+
+export { kyraHighlightDecorate };
 
 const CUSTOM_PROMPT_UUID = '123e4567-e89b-12d3-a456-426614174000';
-
-const parseHighlightWords = (text) => {
-  if (!text) return [];
-  let body = text;
-  const markers = ['Relevant Context:', 'Füllwörter:', 'Filler words:', 'Markierte Wörter:', 'Ergebnis:', 'Gefundene Wörter:', 'Wörter:'];
-  for (const marker of markers) {
-    const idx = body.indexOf(marker);
-    if (idx !== -1) {
-      body = body.substring(idx + marker.length);
-      break;
-    }
-  }
-  const lines = body.split(/\n/).map((l) => l.trim()).filter(Boolean);
-  const words = [];
-  for (const line of lines) {
-    const parts = line.split(/[,;]+/).map((w) => w.replace(/^[-•*\d.)\s"„"»«]+/, '').replace(/["„"»«]+$/, '').trim());
-    for (const p of parts) {
-      if (p.length >= 2 && p.length <= 40 && p.split(/\s+/).length <= 3) {
-        words.push(p);
-      }
-    }
-  }
-  return [...new Set(words)];
-};
-
-const HIGHLIGHT_COLORS = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa'];
-
-let globalHighlightWords = [];
-let globalHighlightColor = '#fde68a';
-let globalHighlightEditor = null;
-
-export const kyraHighlightDecorate = (editor, [node, path], acc = []) => {
-  if (!Text.isText(node) || globalHighlightWords.length === 0) return acc;
-  if (globalHighlightEditor && editor !== globalHighlightEditor) return acc;
-  const { text } = node;
-  const lower = text.toLowerCase();
-  const ranges = [...acc];
-  for (const word of globalHighlightWords) {
-    const wLower = word.toLowerCase();
-    let idx = 0;
-    while (idx < lower.length) {
-      const found = lower.indexOf(wLower, idx);
-      if (found === -1) break;
-      ranges.push({
-        anchor: { path, offset: found },
-        focus: { path, offset: found + word.length },
-        kyraHighlight: true,
-        kyraHighlightColor: globalHighlightColor,
-      });
-      idx = found + word.length;
-    }
-  }
-  return ranges;
-};
 
 const AIAssistantSlateButton = () => {
   const intl = useIntl();
@@ -86,9 +41,7 @@ const AIAssistantSlateButton = () => {
 
   useEffect(() => {
     return () => {
-      globalHighlightWords = [];
-      globalHighlightColor = '#fde68a';
-      globalHighlightEditor = null;
+      clearHighlightsGlobal();
     };
   }, []);
 
@@ -130,32 +83,16 @@ const AIAssistantSlateButton = () => {
   };
 
   const applyHighlights = useCallback((words, color) => {
-    globalHighlightWords = words;
-    globalHighlightColor = color || '#fde68a';
-    globalHighlightEditor = editor;
-    let matches = 0;
-    const fullText = Editor.string(editor, []).toLowerCase();
-    for (const w of words) {
-      const wl = w.toLowerCase();
-      let idx = 0;
-      while (idx < fullText.length) {
-        const found = fullText.indexOf(wl, idx);
-        if (found === -1) break;
-        matches++;
-        idx = found + wl.length;
-      }
-    }
+    const matches = applyHighlightsGlobal(words, color, editor);
     setHighlightActive(true);
     setHighlightCount(matches);
-    editor.onChange();
   }, [editor]);
 
   const clearHighlights = useCallback(() => {
-    globalHighlightWords = [];
-    globalHighlightEditor = null;
+    clearHighlightsGlobal();
     setHighlightActive(false);
     setHighlightCount(0);
-    editor.onChange();
+    try { editor.onChange(); } catch (_e) { /* unmounted */ }
   }, [editor]);
 
   const applyResultToEditor = (resultText = '', actionType = 'replace') => {

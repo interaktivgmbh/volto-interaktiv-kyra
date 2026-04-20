@@ -37,6 +37,12 @@ import {
   darkenColor,
   sanitizePartialState,
 } from './utils/chatHelpers';
+import {
+  detectHighlightIntent,
+  parseHighlightWords,
+  applyHighlightsGlobal,
+  clearHighlightsGlobal,
+} from './utils/highlights';
 import { useConversation } from './hooks/useConversation';
 import { useEditMode } from './hooks/useEditMode';
 import { useWizard } from './hooks/useWizard';
@@ -62,7 +68,13 @@ const ChatWidgetProvider: React.FC = () => {
   useEffect(() => {
     const check = () => {
       const onEdit = window.location.pathname.endsWith('/edit');
-      setIsVoltoEditMode((prev) => (prev !== onEdit ? onEdit : prev));
+      setIsVoltoEditMode((prev) => {
+        if (prev && !onEdit) {
+          // Leaving edit mode → clear highlights
+          clearHighlightsGlobal();
+        }
+        return prev !== onEdit ? onEdit : prev;
+      });
     };
     check();
     window.addEventListener('popstate', check);
@@ -500,10 +512,20 @@ const ChatWidgetProvider: React.FC = () => {
     }
     updateConversationState(workingConversation, true);
 
+    const isHighlightRequest = detectHighlightIntent(contentText);
+
     // Edit-engine path (layout or chat conversation via backend)
     if (editBackendUrl) {
-      const handled = await sendEditMessage(contentText, workingConversation, now);
-      if (handled) return;
+      const editResult = await sendEditMessage(contentText, workingConversation, now);
+      if (editResult !== false) {
+        if (isHighlightRequest && editResult) {
+          const words = parseHighlightWords(editResult);
+          if (words.length > 0) {
+            applyHighlightsGlobal(words);
+          }
+        }
+        return;
+      }
     }
 
     const activeMode = contextOverrides?.mode || contextModeRef.current;
@@ -592,12 +614,27 @@ const ChatWidgetProvider: React.FC = () => {
       paramsPayload.language = resolvedLanguage;
     }
 
+    const mappedMessages = workingConversation.messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+
+    if (isHighlightRequest) {
+      mappedMessages.push({
+        role: 'system',
+        content:
+          'The user wants to highlight/mark specific words in their text. ' +
+          'After your explanation, include a line starting with "Markierte Wörter:" ' +
+          'followed by a comma-separated list of ONLY the words/phrases from the actual page content ' +
+          'that are directly related to what the user asked to highlight. Be very selective — ' +
+          'only include words that match the user\'s specific request, not all issues you find. ' +
+          'Example: "Markierte Wörter: also, eigentlich, quasi, halt"',
+      });
+    }
+
     const payload: ChatRequestPayload = {
       conversation_id: workingConversation.id,
-      messages: workingConversation.messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
+      messages: mappedMessages,
       context: contextPayload,
       params: Object.keys(paramsPayload).length ? paramsPayload : undefined,
     };
@@ -613,6 +650,14 @@ const ChatWidgetProvider: React.FC = () => {
     streamControllerRef.current = controller;
     setIsSending(true);
     setAttachments([]);
+
+    const tryApplyHighlights = (text: string) => {
+      if (!isHighlightRequest || !text) return;
+      const words = parseHighlightWords(text);
+      if (words.length > 0) {
+        applyHighlightsGlobal(words);
+      }
+    };
 
     const handleNonStreaming = async (response: ChatResponsePayload) => {
       const assistantContent =
@@ -630,6 +675,7 @@ const ChatWidgetProvider: React.FC = () => {
         },
         previousId,
       );
+      tryApplyHighlights(assistantContent);
       if (response.capabilities) {
         setCapabilities(response.capabilities);
       }
@@ -671,6 +717,7 @@ const ChatWidgetProvider: React.FC = () => {
               },
               previousId,
             );
+            tryApplyHighlights(data?.message?.content || '');
             if (data?.capabilities) {
               setCapabilities(data.capabilities);
             }

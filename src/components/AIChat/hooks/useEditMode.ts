@@ -13,6 +13,7 @@ import {
   getEditMessages,
   getChatMessages,
 } from '../api';
+import { detectHighlightIntent } from '../utils/highlights';
 import type { ChatConversation, ChatMessage } from '../types';
 import { setFormData } from '@plone/volto/actions/form/form';
 import { updateContent, unlockContent, lockContent } from '@plone/volto/actions';
@@ -174,7 +175,7 @@ export function useEditMode(deps: UseEditModeDeps) {
     contentText: string,
     workingConversation: ChatConversation,
     now: string,
-  ): Promise<boolean> => {
+  ): Promise<string | false> => {
     const {
       editBackendUrl,
       token,
@@ -269,9 +270,15 @@ export function useEditMode(deps: UseEditModeDeps) {
         content: isDe ? 'Deine Anfrage wird verarbeitet\u2026' : 'Processing your request\u2026',
       }));
 
+      const wantsHighlight = detectHighlightIntent(contentText);
+
       let jobId: string;
       const buildMessagePayload = () => {
-        const mp: { message: string; context?: { text?: string; block_id?: string } } = { message: contentText };
+        let msgText = contentText;
+        if (wantsHighlight) {
+          msgText += '\n\n[System: After your analysis, include a line starting with "Markierte Wörter:" followed by a comma-separated list of ONLY the words/phrases from the actual page content that are directly related to what the user asked to highlight. Be very selective — only include words that match the user\'s specific request, not all issues you find. Example: "Markierte Wörter: H3 Überschrift, H2 Überschrift"]';
+        }
+        const mp: { message: string; context?: { text?: string; block_id?: string } } = { message: msgText };
         const activeSelection = selectionTextRef.current;
         const contextParts: string[] = [];
         if (activeSelection && activeSelection.length > 5) {
@@ -566,6 +573,7 @@ export function useEditMode(deps: UseEditModeDeps) {
         attachments.filter((a) => a.file_id).map((a) => a.name),
       );
       finalizeAssistant(editAssistantId, { content: successMsg, citations, status: 'done', toolCalls: result.toolCalls, stateSnapshot: result.state });
+      return successMsg;
     } catch (err: any) {
       finalizeAssistant(editAssistantId, {
         content: isDe
@@ -573,11 +581,11 @@ export function useEditMode(deps: UseEditModeDeps) {
           : `Error: ${err?.message || 'Unknown error'}`,
         status: 'error',
       });
+      return '';
     } finally {
       layoutJobAbortRef.current = null;
       setIsSending(false);
     }
-    return true;
   }, [deps]);
 
   return {
