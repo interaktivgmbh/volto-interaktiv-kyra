@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Marked } from 'marked';
 
 import type { ChatMessage } from './types';
 import ThinkingSteps from './ThinkingSteps';
@@ -39,102 +40,67 @@ const getMessageLabels = (lang?: string) => {
 
 const stripHtml = (value: string) => value.replace(/<[^>]+>/g, '').trim();
 
+// Underline via ++text++ (non-standard, added because CommonMark/GFM have no underline).
+const underlineExtension = {
+  name: 'underline',
+  level: 'inline' as const,
+  start(src: string) {
+    return src.indexOf('++');
+  },
+  tokenizer(src: string) {
+    const match = /^\+\+(?=\S)([\s\S]*?\S)\+\+/.exec(src);
+    if (!match) return undefined;
+    return {
+      type: 'underline',
+      raw: match[0],
+      text: match[1],
+      tokens: (this as any).lexer.inlineTokens(match[1]),
+    };
+  },
+  renderer(token: any) {
+    return `<u>${(this as any).parser.parseInline(token.tokens)}</u>`;
+  },
+};
+
+const markedInstance = new Marked({
+  gfm: true,
+  breaks: true,
+  async: false,
+});
+markedInstance.use({ extensions: [underlineExtension as any] });
+
+// Allow only safe URL schemes on links/images.
+const SAFE_URL = /^(https?:|mailto:|tel:|\/|#)/i;
+const sanitizeUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  return SAFE_URL.test(trimmed) ? trimmed : '';
+};
+
 /**
- * Lightweight markdown-to-HTML converter for chat messages.
- * Supports: headings (##), bold (**), italic (*), unordered lists (-),
- * ordered lists (1.), and paragraphs.
+ * Render markdown for chat messages. Supports GFM (tables, strikethrough,
+ * task lists), bold/italic/code/inline-code/blockquote/headings/lists,
+ * and custom ++underline++. HTML in the input is escaped before parsing,
+ * so no raw HTML from the model can reach the DOM.
  */
 const renderMarkdown = (text: string): string => {
   if (!text) return '';
+  // Escape HTML first so model-emitted tags become literal text, not DOM.
   const escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-
-  const lines = escaped.split('\n');
-  const htmlParts: string[] = [];
-  let inList: 'ul' | 'ol' | null = null;
-  let paragraph: string[] = [];
-
-  const flushParagraph = () => {
-    if (paragraph.length > 0) {
-      htmlParts.push(`<p>${paragraph.join(' ')}</p>`);
-      paragraph = [];
-    }
-  };
-
-  const closeList = () => {
-    if (inList) {
-      htmlParts.push(inList === 'ul' ? '</ul>' : '</ol>');
-      inList = null;
-    }
-  };
-
-  const inlineFormat = (line: string): string => {
-    // Bold: **text**
-    line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    // Italic: *text* (but not inside bold)
-    line = line.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
-    return line;
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-
-    // Empty line: flush paragraph
-    if (!line) {
-      flushParagraph();
-      closeList();
-      continue;
-    }
-
-    // Headings: ## Text or ### Text
-    const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
-    if (headingMatch) {
-      flushParagraph();
-      closeList();
-      const level = headingMatch[1].length;
-      // Use h3/h4 to keep headings smaller in chat context
-      const tag = `h${Math.min(level + 1, 5)}`;
-      htmlParts.push(`<${tag}>${inlineFormat(headingMatch[2])}</${tag}>`);
-      continue;
-    }
-
-    // Unordered list: - item or * item
-    const ulMatch = line.match(/^[-*]\s+(.+)$/);
-    if (ulMatch) {
-      flushParagraph();
-      if (inList !== 'ul') {
-        closeList();
-        htmlParts.push('<ul>');
-        inList = 'ul';
-      }
-      htmlParts.push(`<li>${inlineFormat(ulMatch[1])}</li>`);
-      continue;
-    }
-
-    // Ordered list: 1. item
-    const olMatch = line.match(/^\d+\.\s+(.+)$/);
-    if (olMatch) {
-      flushParagraph();
-      if (inList !== 'ol') {
-        closeList();
-        htmlParts.push('<ol>');
-        inList = 'ol';
-      }
-      htmlParts.push(`<li>${inlineFormat(olMatch[1])}</li>`);
-      continue;
-    }
-
-    // Regular text line: accumulate into paragraph
-    closeList();
-    paragraph.push(inlineFormat(line));
-  }
-
-  flushParagraph();
-  closeList();
-
-  return htmlParts.join('');
+  const html = markedInstance.parse(escaped) as string;
+  // Neutralize unsafe URLs that survived via markdown link syntax.
+  return html
+    .replace(/(<a\s[^>]*?href=")([^"]*)(")/gi, (_m, pre, url, post) => {
+      const safe = sanitizeUrl(url);
+      return `${pre}${safe}${post}${safe ? ' target="_blank" rel="noopener noreferrer"' : ''}`;
+    })
+    .replace(/(<img\s[^>]*?src=")([^"]*)(")/gi, (_m, pre, url, post) => {
+      const safe = sanitizeUrl(url);
+      return `${pre}${safe}${post}`;
+    });
 };
 
 const MessageList: React.FC<Props> = ({

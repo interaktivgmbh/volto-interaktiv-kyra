@@ -156,6 +156,79 @@ const ChatPanel: React.FC<Props> = ({
   const [showPermissionMatrix, setShowPermissionMatrix] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const DOCK_WIDTH_STORAGE_KEY = 'kyra.chatDockedWidth';
+  const DOCK_WIDTH_DEFAULT = 520;
+  const DOCK_WIDTH_MIN = 360;
+  const DOCK_WIDTH_MAX_FRAC = 0.8;
+
+  const [dockedWidth, setDockedWidth] = useState<number>(DOCK_WIDTH_DEFAULT);
+  const dockedWidthRef = useRef<number>(DOCK_WIDTH_DEFAULT);
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(DOCK_WIDTH_STORAGE_KEY);
+      if (raw) {
+        const parsed = parseInt(raw, 10);
+        if (Number.isFinite(parsed) && parsed >= DOCK_WIDTH_MIN) {
+          setDockedWidth(parsed);
+          dockedWidthRef.current = parsed;
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    dockedWidthRef.current = dockedWidth;
+  }, [dockedWidth]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDocked && isOpen) {
+      root.style.setProperty('--kyra-ai-chat-docked-width', `${dockedWidth}px`);
+    } else {
+      root.style.removeProperty('--kyra-ai-chat-docked-width');
+    }
+    return () => {
+      root.style.removeProperty('--kyra-ai-chat-docked-width');
+    };
+  }, [isDocked, isOpen, dockedWidth]);
+
+  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDocked) return;
+    e.preventDefault();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = dockedWidthRef.current;
+    const maxWidth = Math.floor(window.innerWidth * DOCK_WIDTH_MAX_FRAC);
+    const prevUserSelect = document.body.style.userSelect;
+    const prevCursor = document.body.style.cursor;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX;
+      const next = Math.max(DOCK_WIDTH_MIN, Math.min(maxWidth, startWidth + delta));
+      dockedWidthRef.current = next;
+      setDockedWidth(next);
+    };
+    const onUp = () => {
+      setIsResizing(false);
+      document.body.style.userSelect = prevUserSelect;
+      document.body.style.cursor = prevCursor;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      try {
+        window.localStorage.setItem(
+          DOCK_WIDTH_STORAGE_KEY,
+          String(dockedWidthRef.current),
+        );
+      } catch (_) {}
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
   useEffect(() => {
     if (!showMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -174,8 +247,18 @@ const ChatPanel: React.FC<Props> = ({
     <div
       className={`kyra-ai-chat__panel${
         isDocked ? ' kyra-ai-chat__panel--docked' : ''
-      }`}
+      }${isResizing ? ' is-resizing' : ''}`}
     >
+      {isDocked && (
+        <div
+          className="kyra-ai-chat__resize-handle"
+          onMouseDown={handleResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize chat panel"
+          title="Drag to resize"
+        />
+      )}
       <div className="kyra-ai-chat__header">
         <div className="kyra-ai-chat__title">
           <div>{chatName || t.title}</div>

@@ -125,7 +125,7 @@
   right: 24px;
   bottom: 90px;
   z-index: 1090;
-  width: 440px;
+  width: 500px;
   height: 520px;
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.94) 100%);
   border: 1px solid rgba(148, 163, 184, 0.3);
@@ -141,7 +141,7 @@
   top: 0;
   bottom: 0;
   right: 0;
-  width: 460px;
+  width: var(--kyra-ai-chat-docked-width, 520px);
   height: 100vh;
   border-radius: 0;
   border-left: 1px solid rgba(148, 163, 184, 0.25);
@@ -418,6 +418,112 @@
 
   li {
     margin-bottom: 0.1em;
+  }
+
+  u {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  del, s {
+    text-decoration: line-through;
+    color: var(--ai-chat-muted, #64748b);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0.6em 0 0.3em;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+  }
+  h1 { font-size: 17px !important; }
+  h2 { font-size: 15.5px !important; }
+  h3 { font-size: 14.5px !important; }
+  h4, h5, h6 { font-size: 13.5px !important; }
+
+  a {
+    color: var(--ai-chat-accent, #4f46e5);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    word-break: break-all;
+
+    &:hover {
+      text-decoration-thickness: 2px;
+    }
+  }
+
+  blockquote {
+    margin: 0.4em 0;
+    padding: 0.25em 0.75em;
+    border-left: 3px solid var(--ai-chat-accent, rgba(99, 102, 241, 0.5));
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 0 6px 6px 0;
+    color: #334155;
+
+    p { margin: 0; }
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.3);
+    margin: 0.8em 0;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12px !important;
+    background: rgba(148, 163, 184, 0.18);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    word-break: break-word;
+  }
+
+  pre {
+    margin: 0.5em 0;
+    padding: 0.6em 0.75em;
+    background: rgba(15, 23, 42, 0.92);
+    color: #f1f5f9;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+
+    code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: 12px !important;
+      white-space: pre;
+    }
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    width: 100%;
+    font-size: 12.5px !important;
+    display: block;
+    overflow-x: auto;
+
+    th, td {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 4px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(148, 163, 184, 0.18);
+      font-weight: 600 !important;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(241, 245, 249, 0.6);
+    }
+  }
+
+  input[type="checkbox"] {
+    margin-right: 0.3em;
+    vertical-align: middle;
   }
 }
 
@@ -1671,13 +1777,55 @@
 
 // Dock-Modus: Seiteninhalt einrücken wie Volto Edit-Sidebar
 body.has-ai-panel-docked {
-  margin-right: 460px !important;
+  margin-right: var(--kyra-ai-chat-docked-width, 520px) !important;
   overflow-x: hidden !important;
   transition: margin-right 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045);
 
   .full-width,
   .has--fullwidth--true {
-    width: calc(100vw - 515px) !important;
+    width: calc(100vw - var(--kyra-ai-chat-docked-width, 520px) - 55px) !important;
+  }
+}
+
+// Während des Resize keine Transition, damit die Breite dem Cursor folgt
+.kyra-ai-chat__panel--docked.is-resizing,
+body.has-ai-panel-docked:has(.kyra-ai-chat__panel--docked.is-resizing) {
+  transition: none !important;
+}
+
+.kyra-ai-chat__resize-handle {
+  position: absolute;
+  top: 50%;
+  left: -10px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 56px;
+  cursor: col-resize;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.55);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+    transition: background 0.15s ease, height 0.15s ease, width 0.15s ease;
+  }
+
+  &:hover::before,
+  .kyra-ai-chat__panel--docked.is-resizing &::before {
+    background: var(--ai-chat-accent, rgba(99, 102, 241, 0.9));
+    height: 48px;
+    width: 5px;
   }
 }
 

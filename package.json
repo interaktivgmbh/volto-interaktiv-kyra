@@ -28,6 +28,7 @@
   },
   "addons": [],
   "dependencies": {
+    "marked": "^9.1.6",
     "react-color": "^2.19.3"
   },
   "peerDependencies": {
