@@ -105,6 +105,9 @@ interface UseEditModeDeps {
   editModeActiveRef: React.MutableRefObject<boolean>;
   preferredLanguage: string;
   selectionTextRef: React.MutableRefObject<string>;
+  /** Block IDs currently part of a multi-block selection (Ctrl+click). Empty
+   *  when the selection was a native text selection or none is active. */
+  selectedBlockIdsRef: React.MutableRefObject<string[]>;
   pageContentText: string;
   attachments: { name: string; id: string; file_id: string; text?: string }[];
   applyAssistantUpdate: (
@@ -186,6 +189,7 @@ export function useEditMode(deps: UseEditModeDeps) {
       editModeActiveRef,
       preferredLanguage,
       selectionTextRef,
+      selectedBlockIdsRef,
       pageContentText,
       attachments,
       applyAssistantUpdate,
@@ -274,11 +278,30 @@ export function useEditMode(deps: UseEditModeDeps) {
 
       let jobId: string;
       const buildMessagePayload = () => {
+        const selectedBlockIds = Array.isArray(selectedBlockIdsRef?.current)
+          ? selectedBlockIdsRef.current.filter((v) => typeof v === 'string' && v)
+          : [];
+        const hasMultiBlockScope = selectedBlockIds.length >= 2;
+
         let msgText = contentText;
+        if (hasMultiBlockScope) {
+          const scopeNote = isDe
+            ? `\n\n[SCOPE — STRIKT BEFOLGEN: Die Änderungen dürfen AUSSCHLIESSLICH auf die folgenden ${selectedBlockIds.length} Blöcke angewendet werden. Keine anderen Blöcke auf der Seite modifizieren, hinzufügen oder löschen. Block-IDs: ${selectedBlockIds.join(', ')}]`
+            : `\n\n[SCOPE — STRICTLY FOLLOW: Apply changes ONLY to the following ${selectedBlockIds.length} blocks. Do not modify, add, or delete any other blocks on the page. Block IDs: ${selectedBlockIds.join(', ')}]`;
+          msgText += scopeNote;
+        }
         if (wantsHighlight) {
           msgText += '\n\n[System: After your analysis, include a line starting with "Markierte Wörter:" followed by a comma-separated list of ONLY the words/phrases from the actual page content that are directly related to what the user asked to highlight. Be very selective — only include words that match the user\'s specific request, not all issues you find. Example: "Markierte Wörter: H3 Überschrift, H2 Überschrift"]';
         }
-        const mp: { message: string; context?: { text?: string; block_id?: string } } = { message: msgText };
+        const mp: {
+          message: string;
+          context?: {
+            text?: string;
+            block_id?: string;
+            block_ids?: string[];
+            scope?: string;
+          };
+        } = { message: msgText };
         const activeSelection = selectionTextRef.current;
         const contextParts: string[] = [];
         if (activeSelection && activeSelection.length > 5) {
@@ -293,8 +316,15 @@ export function useEditMode(deps: UseEditModeDeps) {
         if (attachmentTexts) {
           contextParts.push(attachmentTexts);
         }
-        if (contextParts.length > 0) {
-          mp.context = { text: contextParts.join('\n\n---\n\n') };
+        if (contextParts.length > 0 || hasMultiBlockScope) {
+          mp.context = {};
+          if (contextParts.length > 0) {
+            mp.context.text = contextParts.join('\n\n---\n\n');
+          }
+          if (hasMultiBlockScope) {
+            mp.context.block_ids = selectedBlockIds;
+            mp.context.scope = 'selected_blocks';
+          }
         }
         return mp;
       };

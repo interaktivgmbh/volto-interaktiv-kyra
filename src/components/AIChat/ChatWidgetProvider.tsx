@@ -16,7 +16,7 @@ import {
   getEditSkills,
 } from './api';
 import type { ChatCapabilities, ChatConversation, ChatMessage, ChatMessageAction, ChatRequestPayload, ChatContextPayload, ChatResponsePayload, AiChatUploadResponse, TranslationStatus } from './types';
-import { extractPageContent } from './extractPageContent';
+import { extractBlocksByIds, extractPageContent } from './extractPageContent';
 import {
   loadLocalConversations,
   loadCustomIcon,
@@ -61,6 +61,9 @@ const ChatWidgetProvider: React.FC = () => {
   const token = userSession?.token;
   const content = useSelector((state: any) => state.content?.data);
   const formData = useSelector((state: any) => state.form?.global);
+  const multiSelectedBlockIds = useSelector(
+    (state: any) => state.form?.ui?.multiSelected as string[] | undefined,
+  );
   const [isVoltoEditMode, setIsVoltoEditMode] = useState(
     typeof window !== 'undefined' && window.location.pathname.endsWith('/edit'),
   );
@@ -116,6 +119,16 @@ const ChatWidgetProvider: React.FC = () => {
   const selectionTextRef = useRef('');
   const manualSiteModeRef = useRef(false);
   const streamControllerRef = useRef<AbortController | null>(null);
+  // Tracks whether the current 'selection' mode was driven by a Volto
+  // multi-block (Ctrl+click) selection rather than a native text selection.
+  const multiBlockSelectionActiveRef = useRef(false);
+  // Signature (sorted IDs joined) of a multi-block set the user has dismissed,
+  // so the effect doesn't immediately re-promote the same selection.
+  const dismissedMultiBlockSigRef = useRef<string | null>(null);
+  // IDs of the currently selection-scoped blocks. Non-empty only when
+  // multi-block selection drives the 'selection' mode; empty for native
+  // text selections.
+  const selectedBlockIdsRef = useRef<string[]>([]);
 
   const fallbackLanguage = useMemo(() => {
     if (typeof document !== 'undefined') {
@@ -196,6 +209,7 @@ const ChatWidgetProvider: React.FC = () => {
     editModeActiveRef,
     preferredLanguage,
     selectionTextRef,
+    selectedBlockIdsRef,
     pageContentText,
     attachments,
     applyAssistantUpdate,
@@ -404,6 +418,9 @@ const ChatWidgetProvider: React.FC = () => {
   // Listen for text selection on the page (outside chat)
   useEffect(() => {
     const handleSelection = () => {
+      // Volto multi-block selection takes priority; don't override it with
+      // the native window selection.
+      if (multiBlockSelectionActiveRef.current) return;
       const sel = window.getSelection();
       const text = sel?.toString()?.trim() || '';
       if (text.length > 5) {
@@ -419,6 +436,7 @@ const ChatWidgetProvider: React.FC = () => {
       } else if (contextModeRef.current === 'selection') {
         setTimeout(() => {
           if (contextModeRef.current !== 'selection') return;
+          if (multiBlockSelectionActiveRef.current) return;
           const activeEl = document.activeElement;
           const inChat = activeEl?.closest('.kyra-ai-chat');
           if (inChat) return;
@@ -432,6 +450,55 @@ const ChatWidgetProvider: React.FC = () => {
     return () => document.removeEventListener('selectionchange', handleSelection);
   }, []);
 
+  // Volto multi-block selection (Ctrl+click) -> treat the union of selected
+  // blocks' text as the chat selection context. Only active in edit mode and
+  // when at least two blocks are selected (a single selected block is the
+  // normal editing state, not a deliberate multi-selection).
+  useEffect(() => {
+    if (!isVoltoEditMode) {
+      if (multiBlockSelectionActiveRef.current) {
+        multiBlockSelectionActiveRef.current = false;
+        selectedBlockIdsRef.current = [];
+        if (contextModeRef.current === 'selection') {
+          updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
+          updateSelectionText('');
+        }
+      }
+      return;
+    }
+    const ids = Array.isArray(multiSelectedBlockIds) ? multiSelectedBlockIds : [];
+    const sig = [...ids].sort().join('|');
+    if (dismissedMultiBlockSigRef.current && sig !== dismissedMultiBlockSigRef.current) {
+      dismissedMultiBlockSigRef.current = null;
+    }
+    if (
+      ids.length >= 2 &&
+      formData?.blocks &&
+      sig !== dismissedMultiBlockSigRef.current
+    ) {
+      const text = extractBlocksByIds(
+        formData.blocks,
+        formData.blocks_layout,
+        ids,
+      ).trim();
+      if (text.length > 5) {
+        multiBlockSelectionActiveRef.current = true;
+        selectedBlockIdsRef.current = ids;
+        updateContextMode('selection');
+        updateSelectionText(text);
+        return;
+      }
+    }
+    if (multiBlockSelectionActiveRef.current) {
+      multiBlockSelectionActiveRef.current = false;
+      selectedBlockIdsRef.current = [];
+      if (contextModeRef.current === 'selection') {
+        updateContextMode(manualSiteModeRef.current ? 'site' : 'page');
+        updateSelectionText('');
+      }
+    }
+  }, [isVoltoEditMode, multiSelectedBlockIds, formData?.blocks, formData?.blocks_layout]);
+
   const handleDismissContext = () => {
     if (contextMode === 'page') {
       updateContextMode('site');
@@ -441,6 +508,12 @@ const ChatWidgetProvider: React.FC = () => {
       manualSiteModeRef.current = false;
       updateSelectionText('');
       window.getSelection()?.removeAllRanges();
+      if (multiBlockSelectionActiveRef.current) {
+        const ids = Array.isArray(multiSelectedBlockIds) ? multiSelectedBlockIds : [];
+        dismissedMultiBlockSigRef.current = [...ids].sort().join('|');
+        multiBlockSelectionActiveRef.current = false;
+        selectedBlockIdsRef.current = [];
+      }
     }
   };
 
@@ -448,10 +521,20 @@ const ChatWidgetProvider: React.FC = () => {
     if (contextMode === 'site') return null;
     if (contextMode === 'selection') {
       const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
+      if (multiBlockSelectionActiveRef.current) {
+        const count = (multiSelectedBlockIds || []).length;
+        return isDe ? `${count} Blöcke ausgewählt` : `${count} blocks selected`;
+      }
       return isDe ? 'Ausgewählter Text' : 'Selected text';
     }
     return content?.title || content?.Title || null;
-  }, [contextMode, content?.title, content?.Title, preferredLanguage]);
+  }, [
+    contextMode,
+    content?.title,
+    content?.Title,
+    preferredLanguage,
+    multiSelectedBlockIds,
+  ]);
 
   const handleFilesSelected = async (files: File[]) => {
     for (const file of files) {

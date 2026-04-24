@@ -68,7 +68,7 @@ function slateToText(nodes: SlateNode | SlateNode[]): string {
 }
 
 /** Extract text from a single Volto block. */
-function extractBlockText(block: ContentBlock): string {
+export function extractBlockText(block: ContentBlock): string {
   const type = block['@type'];
 
   // Skip title/description blocks — already in metadata header
@@ -155,6 +155,34 @@ function extractFromBlocksLayout(
       const block = blocks[id];
       if (!block) return '';
       return extractBlockText(block);
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+/**
+ * Extract text from an arbitrary list of block IDs, preserving layout order
+ * where possible. Used for Volto's multi-block selection (Ctrl+click) so the
+ * chat can treat several blocks as a unified selection context.
+ */
+export function extractBlocksByIds(
+  blocks: Record<string, ContentBlock> | undefined,
+  blocksLayout: { items?: string[] } | undefined,
+  ids: string[] | undefined,
+): string {
+  if (!blocks || !ids || ids.length === 0) return '';
+  const layoutOrder = blocksLayout?.items || [];
+  const orderIndex = new Map<string, number>();
+  layoutOrder.forEach((id, idx) => orderIndex.set(id, idx));
+  const sortedIds = [...ids].sort((a, b) => {
+    const ia = orderIndex.has(a) ? (orderIndex.get(a) as number) : Number.MAX_SAFE_INTEGER;
+    const ib = orderIndex.has(b) ? (orderIndex.get(b) as number) : Number.MAX_SAFE_INTEGER;
+    return ia - ib;
+  });
+  return sortedIds
+    .map((id) => {
+      const block = blocks[id];
+      return block ? extractBlockText(block) : '';
     })
     .filter(Boolean)
     .join('\n\n');
