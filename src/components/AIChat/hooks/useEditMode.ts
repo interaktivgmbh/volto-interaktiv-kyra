@@ -23,6 +23,8 @@ import {
   sanitizePartialState,
 } from '../utils/chatHelpers';
 import { resolveImageScales } from '../utils/resolveImageScales';
+import { diffFormState, diffIsEmpty } from '../utils/diffFormState';
+import type { LiveAnimationsAPI } from './useLiveLayoutAnimations';
 
 const IMAGE_FIELDS = ['preview_image', 'image', 'href', 'buttonLink'];
 
@@ -93,6 +95,79 @@ const preserveImageData = (
   }
   return { ...newState, blocks };
 };
+
+// Order-independent deep equality. Used to decide whether a block's content
+// has actually changed regardless of property order or harmless extra fields
+// the AI may echo back (e.g. plaintext on slate values).
+const deepEqualOrderIndependent = (a: any, b: any): boolean => {
+  if (a === b) return true;
+  if (a == null || b == null) return a === b;
+  if (typeof a !== typeof b) return false;
+  if (typeof a !== 'object') return a === b;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqualOrderIndependent(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const k of aKeys) {
+    if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+    if (!deepEqualOrderIndependent(a[k], b[k])) return false;
+  }
+  return true;
+};
+
+// Compare a block's "user-visible content" -- ignores incidental fields
+// the backend may add/strip (plaintext on slate, image_scales on images)
+// so a Slate block whose text is unchanged keeps its reference even if the
+// AI omitted plaintext.
+const blockContentEqual = (a: any, b: any): boolean => {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') {
+    return a === b;
+  }
+  const IGNORE_KEYS = new Set(['plaintext', 'image_scales', 'image_field']);
+  const stripped = (obj: any): any => {
+    if (Array.isArray(obj)) return obj.map(stripped);
+    if (obj && typeof obj === 'object') {
+      const out: Record<string, any> = {};
+      for (const k of Object.keys(obj)) {
+        if (IGNORE_KEYS.has(k)) continue;
+        out[k] = stripped(obj[k]);
+      }
+      return out;
+    }
+    return obj;
+  };
+  return deepEqualOrderIndependent(stripped(a), stripped(b));
+};
+
+// Preserve referential identity for blocks whose content is unchanged.
+// Without this, a fresh `blocks` dict from the AI replaces every block
+// reference even when content is identical -- Volto block components
+// (notably SlateTitleCore) then re-mount and visually flash/pop in.
+const preserveUnchangedBlockRefs = (
+  incomingBlocks: Record<string, any> | undefined,
+  oldBlocks: Record<string, any> | undefined,
+): Record<string, any> | undefined => {
+  if (!incomingBlocks || !oldBlocks) return incomingBlocks;
+  const merged: Record<string, any> = {};
+  for (const id of Object.keys(incomingBlocks)) {
+    const incoming = incomingBlocks[id];
+    const old = oldBlocks[id];
+    if (old && incoming && blockContentEqual(old, incoming)) {
+      merged[id] = old;
+    } else {
+      merged[id] = incoming;
+    }
+  }
+  return merged;
+};
 import { saveEditConvId, loadEditConvId } from './useConversation';
 
 interface UseEditModeDeps {
@@ -135,6 +210,7 @@ interface UseEditModeDeps {
     previousId?: string,
   ) => void;
   setIsSending: (value: boolean) => void;
+  liveAnimations?: LiveAnimationsAPI;
 }
 
 export function useEditMode(deps: UseEditModeDeps) {
@@ -196,9 +272,12 @@ export function useEditMode(deps: UseEditModeDeps) {
       finalizeAssistant,
       updateConversationState,
       setIsSending,
+      liveAnimations,
     } = deps;
 
     if (!editBackendUrl) return false;
+
+    let lastApplied: any = formData || null;
 
     const isEditMode = editModeActiveRef.current;
     const isDe = (preferredLanguage || '').toLowerCase().startsWith('de');
@@ -462,17 +541,51 @@ export function useEditMode(deps: UseEditModeDeps) {
                     const sanitized = sanitizePartialState(merged, formData?.blocks);
                     const liveFormData = { ...formData };
                     if (sanitized.blocks && Object.keys(sanitized.blocks).length > 0) {
-                      liveFormData.blocks = sanitized.blocks;
+                      liveFormData.blocks = preserveUnchangedBlockRefs(
+                        sanitized.blocks,
+                        lastApplied?.blocks,
+                      ) || sanitized.blocks;
                       if (sanitized.blocks_layout) liveFormData.blocks_layout = sanitized.blocks_layout;
                     }
-                    if (sanitized.title !== undefined) liveFormData.title = sanitized.title;
-                    if (sanitized.description !== undefined) liveFormData.description = sanitized.description;
-                    if (sanitized.preview_image !== undefined) liveFormData.preview_image = sanitized.preview_image;
-                    if (sanitized.subjects !== undefined) liveFormData.subjects = sanitized.subjects;
+                    const metaChanged = (a: any, b: any) =>
+                      !deepEqualOrderIndependent(a, b);
+                    if (sanitized.title !== undefined && metaChanged(sanitized.title, lastApplied?.title)) {
+                      liveFormData.title = sanitized.title;
+                    }
+                    if (sanitized.description !== undefined && metaChanged(sanitized.description, lastApplied?.description)) {
+                      liveFormData.description = sanitized.description;
+                    }
+                    if (sanitized.preview_image !== undefined && metaChanged(sanitized.preview_image, lastApplied?.preview_image)) {
+                      liveFormData.preview_image = sanitized.preview_image;
+                    }
+                    if (sanitized.subjects !== undefined && metaChanged(sanitized.subjects, lastApplied?.subjects)) {
+                      liveFormData.subjects = sanitized.subjects;
+                    }
+                    const streamDiff = liveAnimations
+                      ? diffFormState(lastApplied, liveFormData)
+                      : null;
+                    if (liveAnimations && streamDiff && !diffIsEmpty(streamDiff)) {
+                      liveAnimations.captureBefore();
+                    }
                     dispatch(setFormData(liveFormData));
+                    if (liveAnimations && streamDiff && !diffIsEmpty(streamDiff)) {
+                      liveAnimations.applyDiff(streamDiff, 'full');
+                      const touched = Array.from(new Set([
+                        ...streamDiff.added,
+                        ...streamDiff.moved,
+                        ...streamDiff.textChanged,
+                      ]));
+                      if (touched.length > 0) liveAnimations.markWorking(touched);
+                    }
+                    lastApplied = liveFormData;
                     resolveImageScales(sanitized, token).then((resolved) => {
                       if (resolved !== sanitized) {
-                        const patched = { ...liveFormData, blocks: resolved.blocks || liveFormData.blocks };
+                        const resolvedBlocks = resolved.blocks || liveFormData.blocks;
+                        const preservedBlocks = preserveUnchangedBlockRefs(
+                          resolvedBlocks,
+                          liveFormData.blocks,
+                        ) || resolvedBlocks;
+                        const patched = { ...liveFormData, blocks: preservedBlocks };
                         dispatch(setFormData(patched));
                       }
                     }).catch(() => {});
@@ -559,16 +672,41 @@ export function useEditMode(deps: UseEditModeDeps) {
         const sanitizedResult = sanitizePartialState(result.state!, formData?.blocks);
         const updatedFormData = { ...formData };
         if (hasBlocks) {
-          updatedFormData.blocks = sanitizedResult.blocks || result.state!.blocks;
+          const incomingBlocks = sanitizedResult.blocks || result.state!.blocks;
+          updatedFormData.blocks = preserveUnchangedBlockRefs(
+            incomingBlocks,
+            lastApplied?.blocks,
+          ) || incomingBlocks;
           if (sanitizedResult.blocks_layout || result.state!.blocks_layout) {
             updatedFormData.blocks_layout = sanitizedResult.blocks_layout || result.state!.blocks_layout;
           }
         }
-        if (result.state!.title !== undefined) updatedFormData.title = result.state!.title;
-        if (result.state!.description !== undefined) updatedFormData.description = result.state!.description;
-        if (result.state!.preview_image !== undefined) updatedFormData.preview_image = result.state!.preview_image;
-        if (result.state!.subjects !== undefined) updatedFormData.subjects = result.state!.subjects;
+        const metaChangedFinal = (a: any, b: any) =>
+          !deepEqualOrderIndependent(a, b);
+        if (result.state!.title !== undefined && metaChangedFinal(result.state!.title, lastApplied?.title)) {
+          updatedFormData.title = result.state!.title;
+        }
+        if (result.state!.description !== undefined && metaChangedFinal(result.state!.description, lastApplied?.description)) {
+          updatedFormData.description = result.state!.description;
+        }
+        if (result.state!.preview_image !== undefined && metaChangedFinal(result.state!.preview_image, lastApplied?.preview_image)) {
+          updatedFormData.preview_image = result.state!.preview_image;
+        }
+        if (result.state!.subjects !== undefined && metaChangedFinal(result.state!.subjects, lastApplied?.subjects)) {
+          updatedFormData.subjects = result.state!.subjects;
+        }
+        const finalDiff = liveAnimations
+          ? diffFormState(lastApplied, updatedFormData)
+          : null;
+        if (liveAnimations) liveAnimations.clearWorking();
+        if (liveAnimations && finalDiff && !diffIsEmpty(finalDiff)) {
+          liveAnimations.captureBefore();
+        }
         dispatch(setFormData(updatedFormData));
+        if (liveAnimations && finalDiff && !diffIsEmpty(finalDiff)) {
+          liveAnimations.applyDiff(finalDiff, 'full');
+        }
+        lastApplied = updatedFormData;
       } else if (hasChanges) {
         applyAssistantUpdate(editAssistantId, (m) => ({
           ...m,
@@ -615,6 +753,7 @@ export function useEditMode(deps: UseEditModeDeps) {
     } finally {
       layoutJobAbortRef.current = null;
       setIsSending(false);
+      if (liveAnimations) liveAnimations.clearWorking();
     }
   }, [deps]);
 

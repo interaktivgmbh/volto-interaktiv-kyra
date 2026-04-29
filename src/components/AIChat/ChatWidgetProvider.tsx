@@ -45,6 +45,7 @@ import {
 } from './utils/highlights';
 import { useConversation } from './hooks/useConversation';
 import { useEditMode } from './hooks/useEditMode';
+import { useLiveLayoutAnimations } from './hooks/useLiveLayoutAnimations';
 import { useWizard } from './hooks/useWizard';
 import { setFormData } from '@plone/volto/actions/form/form';
 
@@ -199,6 +200,8 @@ const ChatWidgetProvider: React.FC = () => {
     defaultChatTitle,
   });
 
+  const liveAnimations = useLiveLayoutAnimations();
+
   const editModeDeps = useMemo(() => ({
     editBackendUrl,
     token,
@@ -216,10 +219,12 @@ const ChatWidgetProvider: React.FC = () => {
     finalizeAssistant,
     updateConversationState,
     setIsSending,
+    liveAnimations,
   }), [
     editBackendUrl, token, content, formData, dispatch, isVoltoEditMode,
     preferredLanguage, pageContentText, attachments,
     applyAssistantUpdate, finalizeAssistant, updateConversationState,
+    liveAnimations,
   ]);
 
   const {
