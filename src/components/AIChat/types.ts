@@ -195,19 +195,31 @@ export type AiChatUploadResponse = {
   text?: string;
 };
 
+/** Machine-translation marker info returned by the backend. */
+export type MachineTranslationMarker = {
+  is_machine_translated: boolean;
+  /** machine-translated AND not yet editorially reviewed */
+  is_unreviewed: boolean;
+  translated_at?: string;
+  source_language?: string;
+  gateway_used?: boolean;
+};
+
 export type TranslationStatusItem = {
   language: string;
   title: string;
   url: string;
   modified: string;
   is_outdated: boolean;
-};
+} & Partial<MachineTranslationMarker>;
 
 export type TranslationStatus = {
   source_language: string;
   source_modified: string;
   translations: TranslationStatusItem[];
   outdated_count: number;
+  /** Marker for the currently viewed object itself. */
+  current?: MachineTranslationMarker;
 };
 
 export type Prompt = {

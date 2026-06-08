@@ -83,6 +83,15 @@ const getTranslationLabels = (lang?: string) => {
       syncRunning: (name: string) => `Synchronisiere ${name}\u2026`,
       syncSuccess: (name: string) => `${name} wurde erfolgreich synchronisiert.`,
       syncTitle: 'Welche \u00dcbersetzung soll synchronisiert werden?',
+      reportCounts: (r: ReportCounts) =>
+        `Erstellt: ${r.created}, Aktualisiert: ${r.updated}, \u00dcbersprungen: ${r.skipped}, Fehlgeschlagen: ${r.failed}`,
+      gatewayUnavailable:
+        'Hinweis: Der \u00dcbersetzungsdienst (DeepL) war nicht erreichbar \u2013 die Inhalte wurden in der Ausgangssprache \u00fcbernommen und k\u00f6nnen manuell \u00fcbersetzt werden.',
+      partialFailure: (n: number) =>
+        `${n} Objekt${n > 1 ? 'e konnten' : ' konnte'} nicht vollst\u00e4ndig \u00fcbersetzt werden.`,
+      totalFailure: 'Es konnte nichts \u00fcbersetzt werden. Bitte erneut versuchen.',
+      aiMarkNotice:
+        'Die \u00fcbersetzten Inhalte sind als KI-erzeugt gekennzeichnet, bis sie redaktionell gepr\u00fcft wurden.',
     };
   }
   return {
@@ -109,7 +118,67 @@ const getTranslationLabels = (lang?: string) => {
     syncRunning: (name: string) => `Syncing ${name}\u2026`,
     syncSuccess: (name: string) => `${name} has been synced successfully.`,
     syncTitle: 'Which translation should be synced?',
+    reportCounts: (r: ReportCounts) =>
+      `Created: ${r.created}, Updated: ${r.updated}, Skipped: ${r.skipped}, Failed: ${r.failed}`,
+    gatewayUnavailable:
+      'Note: the translation service (DeepL) was unreachable – content was copied in the source language and can be translated manually.',
+    partialFailure: (n: number) =>
+      `${n} item${n > 1 ? 's' : ''} could not be fully translated.`,
+    totalFailure: 'Nothing could be translated. Please try again.',
+    aiMarkNotice:
+      'The translated content is flagged as AI-generated until it has been editorially reviewed.',
   };
+};
+
+type ReportCounts = {
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+};
+
+type TranslationReport = {
+  created?: number;
+  updated?: number;
+  skipped?: number;
+  failed?: number;
+  details?: Array<Record<string, any>>;
+};
+
+/**
+ * Turn a backend translation_report into a user-facing summary and an overall
+ * status, so editors can distinguish success / partial failure / total failure
+ * and see when the translation service was unreachable.
+ */
+const summarizeTranslationReport = (
+  report: TranslationReport | undefined,
+  t: ReturnType<typeof getTranslationLabels>,
+): { lines: string[]; status: 'done' | 'error' } => {
+  if (!report) return { lines: [], status: 'done' };
+  const counts: ReportCounts = {
+    created: report.created || 0,
+    updated: report.updated || 0,
+    skipped: report.skipped || 0,
+    failed: report.failed || 0,
+  };
+  const lines: string[] = [t.reportCounts(counts)];
+  const details = report.details || [];
+
+  const gatewayUnavailable = details.some(
+    (d) => d && d.gateway_used === false,
+  );
+  if (gatewayUnavailable) lines.push(t.gatewayUnavailable);
+
+  const touched = counts.created + counts.updated;
+  let status: 'done' | 'error' = 'done';
+  if (counts.failed > 0 && touched === 0) {
+    lines.push(t.totalFailure);
+    status = 'error';
+  } else if (counts.failed > 0) {
+    lines.push(t.partialFailure(counts.failed));
+    status = 'error';
+  }
+  return { lines, status };
 };
 
 const buildTitle = (content: string, lang?: string) => {
@@ -1000,9 +1069,23 @@ const ChatWidgetProvider: React.FC = () => {
           ? t.successSubtree(langName)
           : t.successSingle(langName));
 
+      // Surface the backend translation_report: counts, gateway-unavailable
+      // notice and partial/total failure, plus the AI-marking hint.
+      const report = (result as any)?.report || (planResponse as any)?.translation_report;
+      const { lines: reportLines, status: reportStatus } =
+        summarizeTranslationReport(report, t);
+      const isError = reportStatus === 'error';
+      const headline = isError
+        ? reportLines[reportLines.length - 1] || t.error
+        : successText;
+      const detailLines = isError
+        ? reportLines.slice(0, -1)
+        : [...reportLines, t.aiMarkNotice];
+      const messageContent = [headline, ...detailLines].filter(Boolean).join('\n\n');
+
       finalizeAssistant(runningId, {
-        content: successText,
-        status: 'done',
+        content: messageContent,
+        status: isError ? 'error' : 'done',
       });
 
       handleTranslationComplete(result || { reload: true });
