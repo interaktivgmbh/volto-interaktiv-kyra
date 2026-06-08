@@ -92,6 +92,8 @@ const getTranslationLabels = (lang?: string) => {
       totalFailure: 'Es konnte nichts \u00fcbersetzt werden. Bitte erneut versuchen.',
       aiMarkNotice:
         'Die \u00fcbersetzten Inhalte sind als KI-erzeugt gekennzeichnet, bis sie redaktionell gepr\u00fcft wurden.',
+      linkSummary: (rewritten: number, kept: number) =>
+        `Interne Links: ${rewritten} auf die Zielsprache umgestellt, ${kept} beibehalten (keine Zielsprachversion).`,
     };
   }
   return {
@@ -127,6 +129,8 @@ const getTranslationLabels = (lang?: string) => {
     totalFailure: 'Nothing could be translated. Please try again.',
     aiMarkNotice:
       'The translated content is flagged as AI-generated until it has been editorially reviewed.',
+    linkSummary: (rewritten: number, kept: number) =>
+      `Internal links: ${rewritten} switched to the target language, ${kept} kept (no target-language version).`,
   };
 };
 
@@ -168,6 +172,20 @@ const summarizeTranslationReport = (
     (d) => d && d.gateway_used === false,
   );
   if (gatewayUnavailable) lines.push(t.gatewayUnavailable);
+
+  // Internal-link handling: how many were switched to the target language vs.
+  // kept because no target-language version exists (Spec 4.2).
+  const linksRewritten = details.reduce(
+    (sum, d) => sum + (d?.links?.rewritten || 0),
+    0,
+  );
+  const linksKept = details.reduce(
+    (sum, d) => sum + (d?.links?.kept || 0),
+    0,
+  );
+  if (linksRewritten + linksKept > 0) {
+    lines.push(t.linkSummary(linksRewritten, linksKept));
+  }
 
   const touched = counts.created + counts.updated;
   let status: 'done' | 'error' = 'done';
